@@ -1,0 +1,8 @@
+{
+  "basePath": "/sim",
+  "requiredFolders": [
+    "Pictures",
+    "Programmation",
+    "Schemas"
+  ]
+}

@@ -1,0 +1,21 @@
+[
+  {
+    "id": "r_1772202539724",
+    "name": "Technieker",
+    "defaultPermissions": [
+      "projects.read",
+      "projects.write",
+      "files.read"
+    ]
+  },
+  {
+    "id": "r_1772205471531",
+    "name": "Verkoper",
+    "defaultPermissions": [
+      "projects.read",
+      "files.read",
+      "projects.write",
+      "files.write"
+    ]
+  }
+]

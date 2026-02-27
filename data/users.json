@@ -1,0 +1,17 @@
+[
+  {
+    "id": "u_1772205093261",
+    "name": "Ray",
+    "email": "ray@crea-accent.be",
+    "passwordHash": "$2b$12$G7UKHb8LL40pZV25L0Emwe4EleHrSvaMvC8TJfE/z5c43gzjJ3/I2",
+    "roleId": "r_1772202539724",
+    "permissions": [
+      "projects.read",
+      "files.read",
+      "projects.write",
+      "files.write",
+      "users.read",
+      "users.write"
+    ]
+  }
+]
