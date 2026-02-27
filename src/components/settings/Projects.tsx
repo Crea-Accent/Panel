@@ -1,5 +1,4 @@
 /** @format */
-
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -9,41 +8,78 @@ import { useEffect, useState } from 'react';
 type ProjectsSettings = {
 	basePath?: string;
 	requiredFolders?: string[];
+	dateFormat?: string;
 };
 
 export default function ProjectsSettings() {
 	const [settings, setSettings] = useState<ProjectsSettings>({
 		basePath: '',
 		requiredFolders: [],
+		dateFormat: 'DDMMYYYY',
 	});
 
 	const [newFolder, setNewFolder] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 
+	const [dateParts, setDateParts] = useState<string[]>(['DD', 'MM', 'YYYY']);
+	const [dragIndex, setDragIndex] = useState<number | null>(null);
+
+	// ---------------- LOAD ----------------
 	useEffect(() => {
 		async function load() {
 			const res = await fetch('/api/settings/projects');
 			const data = await res.json();
 
-			setSettings({
+			const merged = {
 				basePath: '',
 				requiredFolders: [],
+				dateFormat: 'DDMMYYYY',
 				...data,
-			});
+			};
+
+			setSettings(merged);
+
+			// derive draggable parts from stored format
+			if (merged.dateFormat) {
+				const parts = ['DD', 'MM', 'YYYY'].sort((a, b) => merged.dateFormat!.indexOf(a) - merged.dateFormat!.indexOf(b));
+
+				setDateParts(parts);
+			}
 
 			setLoading(false);
 		}
+
 		load();
 	}, []);
 
+	// ---------------- DRAG ----------------
+	function handleDrop(index: number) {
+		if (dragIndex === null) return;
+
+		const next = [...dateParts];
+		const [moved] = next.splice(dragIndex, 1);
+		next.splice(index, 0, moved);
+
+		setDateParts(next);
+		setDragIndex(null);
+	}
+
+	// ---------------- SAVE ----------------
 	async function save() {
 		setSaving(true);
+
+		const updated = {
+			...settings,
+			dateFormat: dateParts.join(''),
+		};
+
 		await fetch('/api/settings/projects', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify(settings),
+			body: JSON.stringify(updated),
 		});
+
 		setTimeout(() => setSaving(false), 600);
 	}
 
@@ -63,6 +99,15 @@ export default function ProjectsSettings() {
 			...settings,
 			requiredFolders: settings.requiredFolders?.filter((f) => f !== name) || [],
 		});
+	}
+
+	function formatPreview(parts: string[]) {
+		const d = new Date();
+		const DD = String(d.getDate()).padStart(2, '0');
+		const MM = String(d.getMonth() + 1).padStart(2, '0');
+		const YYYY = d.getFullYear();
+
+		return parts.join('').replace('DD', DD).replace('MM', MM).replace('YYYY', String(YYYY));
 	}
 
 	if (loading) return <div className='p-8'>Loading...</div>;
@@ -116,13 +161,10 @@ export default function ProjectsSettings() {
 								animate={{ opacity: 1, y: 0 }}
 								exit={{ opacity: 0, x: 10 }}
 								transition={{ duration: 0.15 }}
-								className='flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 bg-gray-50 hover:bg-gray-100 transition'>
-								<div className='flex items-center gap-2 text-sm font-medium'>
-									<Folder size={16} />
-									{folder}
-								</div>
+								className='flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 bg-gray-50'>
+								<span className='text-sm font-medium'>{folder}</span>
 
-								<button onClick={() => removeFolder(folder)} className='text-red-500 hover:text-red-600 transition'>
+								<button onClick={() => removeFolder(folder)} className='text-red-500'>
 									<Trash2 size={16} />
 								</button>
 							</motion.div>
@@ -138,18 +180,42 @@ export default function ProjectsSettings() {
 						onChange={(e) => setNewFolder(e.target.value)}
 					/>
 
-					<motion.button whileTap={{ scale: 0.95 }} onClick={addFolder} className='px-4 py-2 rounded-lg bg-black text-white text-sm font-medium flex items-center gap-2 hover:opacity-90 transition'>
-						<Plus size={16} />
+					<button onClick={addFolder} className='px-4 py-2 rounded-lg bg-black text-white text-sm font-medium'>
 						Add
-					</motion.button>
+					</button>
+				</div>
+			</div>
+
+			{/* Date Format */}
+			<div className='bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6'>
+				<h3 className='text-lg font-medium'>Date Format</h3>
+
+				<p className='text-sm text-gray-500'>Drag to reorder how dates are saved in project uploads.</p>
+
+				<div className='flex gap-3'>
+					{dateParts.map((part, index) => (
+						<div
+							key={part}
+							draggable
+							onDragStart={() => setDragIndex(index)}
+							onDragOver={(e) => e.preventDefault()}
+							onDrop={() => handleDrop(index)}
+							className='px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-move text-sm font-medium'>
+							{part}
+						</div>
+					))}
 				</div>
 
-				<div className='pt-4 border-t border-gray-200'>
-					<motion.button whileTap={{ scale: 0.97 }} onClick={save} className='px-5 py-2 rounded-lg bg-black text-white text-sm font-medium flex items-center gap-2 hover:opacity-90 transition'>
-						<Save size={16} />
-						{saving ? 'Saving...' : 'Save Changes'}
-					</motion.button>
+				<div className='text-sm text-gray-600'>
+					Preview: <b>{formatPreview(dateParts)}</b>
 				</div>
+			</div>
+
+			{/* Save */}
+			<div>
+				<button onClick={save} className='px-5 py-2 rounded-lg bg-black text-white text-sm font-medium'>
+					{saving ? 'Saving...' : 'Save Changes'}
+				</button>
 			</div>
 		</motion.div>
 	);

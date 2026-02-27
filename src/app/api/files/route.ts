@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
-const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
+const SETTINGS_PATH = path.join(DATA_DIR, 'projects.json');
 
 function loadSettings() {
 	if (!fs.existsSync(SETTINGS_PATH)) {

@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { Clock, Folder, Search, Users } from 'lucide-react';
+import { Clock, FolderKanban, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
@@ -10,7 +10,8 @@ import { motion } from 'framer-motion';
 type FileEntry = {
 	path: string;
 	name: string;
-	type: string;
+	type: 'directory' | 'file';
+	accessible: boolean;
 };
 
 type Settings = {
@@ -20,30 +21,41 @@ type Settings = {
 
 export default function Home() {
 	const [settings, setSettings] = useState<Settings | null>(null);
-	const [clients, setClients] = useState<FileEntry[]>([]);
+	const [projects, setProjects] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
+	const [loading, setLoading] = useState(true);
 
 	useEffect(() => {
 		(async () => {
-			const s = await fetch('/api/settings/projects').then((r) => r.json());
-			setSettings(s);
+			try {
+				const s = await fetch('/api/settings/projects').then((r) => r.json());
+				setSettings(s);
 
-			if (!s.basePath) return;
+				if (!s.basePath) {
+					setLoading(false);
+					return;
+				}
 
-			const res = await fetch(`/api/files?view=${encodeURIComponent(s.basePath)}`);
-			const data = await res.json();
+				const res = await fetch(`/api/files?view=${encodeURIComponent(s.basePath)}`);
 
-			const foldersOnly = data.filter((f: FileEntry) => f.type === 'directory');
+				const data: FileEntry[] = await res.json();
 
-			setClients(foldersOnly);
+				const foldersOnly = data.filter((f) => f.type === 'directory' && f.accessible !== false);
+
+				setProjects(foldersOnly);
+			} catch (err) {
+				console.error('Failed loading projects', err);
+			} finally {
+				setLoading(false);
+			}
 		})();
 	}, []);
 
-	const filteredClients = useMemo(() => {
+	const filteredProjects = useMemo(() => {
 		const q = query.toLowerCase().trim();
 		if (!q) return [];
-		return clients.filter((c) => c.name.toLowerCase().includes(q));
-	}, [clients, query]);
+		return projects.filter((p) => p.name.toLowerCase().includes(q));
+	}, [projects, query]);
 
 	return (
 		<div className='w-full max-w-7xl mx-auto space-y-10'>
@@ -54,51 +66,51 @@ export default function Home() {
 				<div className='relative max-w-xl'>
 					<Search size={18} className='absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400' />
 					<input
-						placeholder='Search clients…'
+						placeholder='Search projects…'
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						className='w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-blue-500'
+						className='w-full pl-10 pr-4 py-2 border border-zinc-200 rounded-lg bg-white text-zinc-900 focus:outline-none focus:ring-2 focus:ring-indigo-500'
 					/>
 				</div>
 
-				{query && filteredClients.length > 0 && (
+				{query && filteredProjects.length > 0 && (
 					<div className='mt-4 border border-zinc-200 rounded-lg divide-y'>
-						{filteredClients.slice(0, 5).map((c) => (
-							<Link key={c.path} href={`/clients/${encodeURIComponent(c.name)}`} className='block px-4 py-2 hover:bg-zinc-50'>
-								{c.name}
+						{filteredProjects.slice(0, 5).map((p) => (
+							<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} className='block px-4 py-2 hover:bg-zinc-50'>
+								{p.name}
 							</Link>
 						))}
 					</div>
 				)}
 
-				{query && filteredClients.length === 0 && <p className='text-sm text-zinc-500'>No matching clients.</p>}
+				{query && filteredProjects.length === 0 && <p className='text-sm text-zinc-500'>No matching projects.</p>}
 			</motion.section>
 
 			{/* DASHBOARD ROW */}
 			<motion.section initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }} className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-				{/* CLIENT COUNT */}
+				{/* PROJECT COUNT */}
 				<div className='bg-white border border-zinc-200 rounded-xl shadow-sm p-5'>
 					<div className='flex items-center gap-3 mb-2'>
 						<div className='w-10 h-10 rounded-lg bg-indigo-100 flex items-center justify-center text-indigo-600'>
-							<Users size={20} />
+							<FolderKanban size={20} />
 						</div>
-						<h2 className='text-lg font-medium'>Clients</h2>
+						<h2 className='text-lg font-medium'>Projects</h2>
 					</div>
 
-					<p className='text-2xl font-semibold'>{clients.length}</p>
-					<p className='text-sm text-zinc-500'>Total projects available</p>
+					<p className='text-2xl font-semibold'>{loading ? '—' : projects.length}</p>
+					<p className='text-sm text-zinc-500'>Total project folders</p>
 				</div>
 
 				{/* QUICK NAV */}
 				<Link href='/projects' className='bg-white border border-zinc-200 rounded-xl shadow-sm p-5 hover:shadow-md transition'>
 					<div className='flex items-center gap-3 mb-2'>
 						<div className='w-10 h-10 rounded-lg bg-blue-100 flex items-center justify-center text-blue-600'>
-							<Folder size={20} />
+							<FolderKanban size={20} />
 						</div>
 						<h2 className='text-lg font-medium'>Browse projects</h2>
 					</div>
 
-					<p className='text-sm text-zinc-500'>Open the full client list</p>
+					<p className='text-sm text-zinc-500'>Open the full project list</p>
 				</Link>
 
 				{/* RECENT PLACEHOLDER */}

@@ -2,6 +2,16 @@
 
 export const PERMISSIONS = [
 	{
+		key: 'admin.read',
+		label: 'Admin - Read',
+		group: 'Admin',
+	},
+	{
+		key: 'admin.write',
+		label: 'Admin - Write',
+		group: 'Admin',
+	},
+	{
 		key: 'projects.read',
 		label: 'Projects - Read',
 		group: 'Projects',
@@ -20,16 +30,6 @@ export const PERMISSIONS = [
 		key: 'files.write',
 		label: 'Files - Write',
 		group: 'Files',
-	},
-	{
-		key: 'users.read',
-		label: 'Users - Read',
-		group: 'Users',
-	},
-	{
-		key: 'users.write',
-		label: 'Users - Write',
-		group: 'Users',
 	},
 ];
 

@@ -164,6 +164,30 @@ export default function UserSettings() {
 											transition={{ duration: 0.2 }}
 											className='border-t border-gray-200 px-6 pb-6'>
 											<div className='pt-6 space-y-6'>
+												{/* Editable Info */}
+												<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+													<input
+														className='rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+														value={user.name}
+														onChange={(e) => setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, name: e.target.value } : u)))}
+														placeholder='Name'
+													/>
+
+													<input
+														className='rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+														value={user.email}
+														onChange={(e) => setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, email: e.target.value } : u)))}
+														placeholder='Email'
+													/>
+
+													<input
+														type='password'
+														className='md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+														placeholder='New password (leave empty to keep current)'
+														onChange={(e) => setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, password: e.target.value } : u)))}
+													/>
+												</div>
+
 												{/* Role Select */}
 												<select
 													className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
@@ -182,7 +206,6 @@ export default function UserSettings() {
 												</select>
 
 												{/* Permissions */}
-
 												<PermissionMatrix
 													value={user.permissions}
 													compareWith={roles.find((r) => r.id === user.roleId)?.defaultPermissions}
@@ -190,9 +213,29 @@ export default function UserSettings() {
 												/>
 
 												<div className='flex justify-between items-center pt-4 border-t border-gray-200'>
-													<button onClick={() => resetToRole(user)} className='text-sm text-gray-500 hover:text-black transition'>
-														Reset to role defaults
-													</button>
+													<div className='flex gap-3'>
+														<button onClick={() => resetToRole(user)} className='text-sm text-gray-500 hover:text-black transition'>
+															Reset to role defaults
+														</button>
+
+														<button
+															onClick={() => {
+																const { id, name, email } = user;
+																const password = (user as unknown as Record<string, string>).password;
+
+																updateUser({
+																	id,
+																	name,
+																	email,
+																	roleId: user.roleId,
+																	permissions: user.permissions,
+																	...(password ? { password } : {}),
+																});
+															}}
+															className='text-sm bg-black text-white px-3 py-1.5 rounded-lg'>
+															Save changes
+														</button>
+													</div>
 
 													{savingUser === user.id && <span className='text-xs text-gray-500'>Saving...</span>}
 												</div>

@@ -5,7 +5,7 @@
 import { HEADER_HEIGHT } from '@/lib/layout';
 import Image from 'next/image';
 import { Menu } from 'lucide-react';
-import { useSidebar } from './SidebarProvider';
+import { useSidebar } from '../providers/SidebarProvider';
 
 export default function Header() {
 	const { toggle } = useSidebar();

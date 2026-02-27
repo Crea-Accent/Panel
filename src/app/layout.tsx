@@ -4,10 +4,11 @@ import './globals.css';
 
 import Header from '@/components/Header';
 import type { Metadata } from 'next';
-import { SessionProvider } from '@/components/SessionProvider';
+import { PermissionsProvider } from '@/providers/PermissionsProvider';
+import { SessionProvider } from '@/providers/SessionProvider';
 import Sidebar from '@/components/Sidebar';
 import { SidebarLayout } from '@/components/SidebarLayout';
-import { SidebarProvider } from '@/components/SidebarProvider';
+import { SidebarProvider } from '@/providers/SidebarProvider';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 
@@ -32,13 +33,15 @@ export default async function RootLayout({
 		<html lang='en'>
 			<body className={``}>
 				<SessionProvider>
-					<SidebarProvider>
-						<Header />
-						<Sidebar />
-						<SidebarLayout>
-							<main className='flex-1'>{children}</main>
-						</SidebarLayout>
-					</SidebarProvider>
+					<PermissionsProvider>
+						<SidebarProvider>
+							<Header />
+							<Sidebar />
+							<SidebarLayout>
+								<main className='flex-1'>{children}</main>
+							</SidebarLayout>
+						</SidebarProvider>
+					</PermissionsProvider>
 				</SessionProvider>
 			</body>
 		</html>

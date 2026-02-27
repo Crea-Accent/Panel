@@ -4,7 +4,7 @@
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 
 import { motion } from 'framer-motion';
-import { useSidebar } from './SidebarProvider';
+import { useSidebar } from '../providers/SidebarProvider';
 
 export function SidebarLayout({ children }: { children: React.ReactNode }) {
 	const { open } = useSidebar();

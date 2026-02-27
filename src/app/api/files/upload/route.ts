@@ -3,35 +3,76 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import AdmZip from 'adm-zip';
+import { authConfig } from '@/lib/auth'; // adjust if needed
 import fs from 'fs';
+import { getServerSession } from 'next-auth';
 import path from 'path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
-const SETTINGS_PATH = path.join(DATA_DIR, 'settings.json');
+const SETTINGS_PATH = path.join(DATA_DIR, 'projects.json');
 
 function loadSettings() {
 	if (!fs.existsSync(SETTINGS_PATH)) {
-		return { basePath: '', requiredFolders: [] };
+		return { basePath: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
 	}
 	try {
 		return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
 	} catch {
-		return { basePath: '', requiredFolders: [] };
+		return { basePath: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
 	}
 }
 
-// DDMMYYYY
-function todayStamp() {
+function formatDate(format?: string) {
 	const d = new Date();
-	const dd = String(d.getDate()).padStart(2, '0');
-	const mm = String(d.getMonth() + 1).padStart(2, '0');
-	const yyyy = d.getFullYear();
-	return `${dd}${mm}${yyyy}`;
+	const DD = String(d.getDate()).padStart(2, '0');
+	const MM = String(d.getMonth() + 1).padStart(2, '0');
+	const YYYY = d.getFullYear();
+
+	const safeFormat = format || 'DDMMYYYY';
+
+	return safeFormat.replace('DD', DD).replace('MM', MM).replace('YYYY', String(YYYY));
+}
+
+function getInitials(name?: string | null) {
+	if (!name) return 'XX';
+
+	const parts = name.trim().split(/\s+/);
+	const letters = parts.map((p) => p[0]?.toUpperCase() || '');
+	return letters.join('');
+}
+
+function resolveUniquePath(baseDir: string, baseName: string) {
+	const finalPath = path.join(baseDir, baseName);
+
+	if (!fs.existsSync(finalPath)) {
+		return finalPath;
+	}
+
+	let i = 1;
+
+	while (true) {
+		const candidateName = baseName.replace(/(\d{8})(\s+[A-Z]+)(\.[^.]*)?$/, (_, date, initials, ext = '') => `${date}_${i}${initials}${ext}`);
+
+		const candidate = path.join(baseDir, candidateName);
+
+		if (!fs.existsSync(candidate)) {
+			return candidate;
+		}
+
+		i++;
+	}
 }
 
 export async function POST(request: NextRequest) {
+	const session = await getServerSession(authConfig);
+
+	if (!session?.user) {
+		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+	}
+
 	const settings = loadSettings();
 
+	console.log(settings);
 	if (!settings.basePath) {
 		return NextResponse.json({ error: 'No basePath configured' }, { status: 400 });
 	}
@@ -40,7 +81,6 @@ export async function POST(request: NextRequest) {
 	const file = formData.get('file') as File | null;
 	const rawClient = formData.get('client') as string | null;
 	const kind = formData.get('kind') as string | null;
-	const initials = formData.get('initials') as string | null;
 
 	if (!file || !rawClient || !kind) {
 		return NextResponse.json({ error: 'Missing file, client, or kind' }, { status: 400 });
@@ -54,6 +94,8 @@ export async function POST(request: NextRequest) {
 	}
 
 	const buffer = Buffer.from(await file.arrayBuffer());
+	const stamp = formatDate(settings.dateFormat);
+	const initials = getInitials(session.user.name);
 
 	// -------- SCHEMAS --------
 	if (kind === 'schemas') {
@@ -63,50 +105,45 @@ export async function POST(request: NextRequest) {
 			fs.mkdirSync(targetDir, { recursive: true });
 		}
 
-		const targetPath = path.join(targetDir, file.name);
-		fs.writeFileSync(targetPath, buffer);
+		const ext = path.extname(file.name);
+		const baseName = `${client} ${stamp} ${initials}${ext}`;
+
+		const uniquePath = resolveUniquePath(targetDir, baseName);
+
+		fs.writeFileSync(uniquePath, buffer);
 
 		return NextResponse.json({
 			ok: true,
-			savedAs: targetPath,
+			savedAs: uniquePath,
 			kind: 'schemas',
 		});
 	}
 
 	// -------- PROGRAMMATION --------
 	if (kind === 'programmation') {
-		if (!initials) {
-			return NextResponse.json({ error: 'Initials required for programmation uploads' }, { status: 400 });
-		}
-
 		const progRoot = path.join(baseClientDir, 'programmation');
 
 		if (!fs.existsSync(progRoot)) {
 			fs.mkdirSync(progRoot, { recursive: true });
 		}
 
-		const stamp = todayStamp();
-		const projectName = `${client} ${stamp} ${initials.toUpperCase()}`;
-		const projectDir = path.join(progRoot, projectName);
+		const baseName = `${client} ${stamp} ${initials}`;
+		const uniqueDir = resolveUniquePath(progRoot, baseName);
 
-		if (fs.existsSync(projectDir)) {
-			fs.rmSync(projectDir, { recursive: true, force: true });
-		}
-
-		fs.mkdirSync(projectDir);
+		fs.mkdirSync(uniqueDir);
 
 		const zip = new AdmZip(buffer);
-		zip.extractAllTo(projectDir, true);
+		zip.extractAllTo(uniqueDir, true);
 
 		return NextResponse.json({
 			ok: true,
-			savedAs: projectDir,
-			name: projectName,
+			savedAs: uniqueDir,
+			name: path.basename(uniqueDir),
 			kind: 'programmation',
 		});
 	}
 
-	// -------- PICTURES (new, but boring in a good way) --------
+	// -------- PICTURES --------
 	if (kind === 'pictures') {
 		const picsDir = path.join(baseClientDir, 'pictures');
 
@@ -114,12 +151,16 @@ export async function POST(request: NextRequest) {
 			fs.mkdirSync(picsDir, { recursive: true });
 		}
 
-		const targetPath = path.join(picsDir, file.name);
-		fs.writeFileSync(targetPath, buffer);
+		const ext = path.extname(file.name);
+		const baseName = `${client} ${stamp} ${initials}${ext}`;
+
+		const uniquePath = resolveUniquePath(picsDir, baseName);
+
+		fs.writeFileSync(uniquePath, buffer);
 
 		return NextResponse.json({
 			ok: true,
-			savedAs: targetPath,
+			savedAs: uniquePath,
 			kind: 'pictures',
 		});
 	}

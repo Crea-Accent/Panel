@@ -107,7 +107,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 			const id = decodeURIComponent((await params).id);
 			setClient(id);
 
-			const s = await fetch('/api/settings').then((r) => r.json());
+			const s = await fetch('/api/settings/projects').then((r) => r.json());
 			setSettings(s);
 
 			if (!s.basePath) return;
@@ -137,17 +137,15 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 	};
 
 	// ---------- PROGRAMMATION UPLOAD ----------
+	// ---------- PROGRAMMATION UPLOAD ----------
 	const handleProgrammationUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
 		if (!e.target.files || !client || !settings?.basePath) return;
 
 		const file = e.target.files[0];
-		const initials = prompt('Your initials?');
-		if (!initials) return;
 
 		const fd = new FormData();
 		fd.append('file', file);
 		fd.append('client', client);
-		fd.append('initials', initials.toUpperCase());
 		fd.append('kind', 'programmation');
 
 		await fetch('/api/files/upload', { method: 'POST', body: fd });

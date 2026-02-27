@@ -2,18 +2,49 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
+import { FolderKanban, Home, LogIn, LogOut, Settings } from 'lucide-react';
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
-import { Home, LogIn, LogOut, Settings, User } from 'lucide-react';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSidebar } from './SidebarProvider';
+import { usePermissions } from '@/providers/PermissionsProvider';
+import { useSidebar } from '../providers/SidebarProvider';
 
 export default function Sidebar() {
 	const pathname = usePathname();
 	const { open } = useSidebar();
 	const { data: session } = useSession();
+	const { has, loading } = usePermissions();
+
+	// Wait for permission state
+	if (loading) return null;
+
+	const navItems = [
+		{
+			href: '/',
+			label: 'Home',
+			icon: <Home size={18} />,
+			permission: null, // always visible
+		},
+		{
+			href: '/projects',
+			label: 'Projects',
+			icon: <FolderKanban size={18} />,
+			permission: 'projects.read',
+		},
+		{
+			href: '/settings',
+			label: 'Settings',
+			icon: <Settings size={18} />,
+			permission: 'admin.read',
+		},
+	];
+
+	const visibleItems = navItems.filter((item) => {
+		if (!item.permission) return true;
+		return has(item.permission);
+	});
 
 	return (
 		<AnimatePresence>
@@ -34,13 +65,9 @@ export default function Sidebar() {
 					{/* Top navigation */}
 					<nav>
 						<ul className='space-y-2'>
-							<ul className='space-y-2'>
-								<NavItem href='/' icon={<Home size={18} />} label='Home' currentPath={pathname} />
-
-								<NavItem href='/projects' icon={<User size={18} />} label='Projects' currentPath={pathname} />
-
-								<NavItem href='/settings' icon={<Settings size={18} />} label='Settings' currentPath={pathname} />
-							</ul>
+							{visibleItems.map((item) => (
+								<NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} currentPath={pathname} />
+							))}
 						</ul>
 					</nav>
 
