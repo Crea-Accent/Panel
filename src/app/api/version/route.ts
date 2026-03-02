@@ -55,11 +55,8 @@ export async function PATCH() {
 	try {
 		// Pull latest code
 		console.log('Pulling latest code and installing dependencies...');
-		await exec('git pull && npm i && npm run build');
-
-		console.log('Update complete, restarting PM2...');
-		// Restart PM2 (change name if needed)
-		await exec('pm2 reload 3');
+		await exec('git pull && npm i && npm run build && pm2 reload 3');
+		console.log('Update complete!');
 
 		return NextResponse.json({ success: true });
 	} catch (err: unknown) {
