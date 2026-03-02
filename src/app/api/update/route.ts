@@ -90,7 +90,7 @@ export async function PATCH() {
 
 			send('Starting update...');
 
-			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 reload 3']);
+			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 reload all']);
 
 			child.stdout.on('data', (data) => {
 				send(data.toString());
