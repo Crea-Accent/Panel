@@ -9,7 +9,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 
 type Settings = {
-	basePath: string;
+	path: string;
 	requiredFolders: string[];
 };
 
@@ -56,8 +56,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 	const picsInputRef = useRef<HTMLInputElement | null>(null);
 
 	// ---------- LOAD SCHEMAS ----------
-	const loadSchemas = async (basePath: string, id: string) => {
-		const schemasPath = `${basePath}/${id}/schemas`;
+	const loadSchemas = async (path: string, id: string) => {
+		const schemasPath = `${path}/${id}/schemas`;
 
 		const res = await fetch(`/api/files?view=${encodeURIComponent(schemasPath)}`);
 		const data: FileEntry[] = await res.json();
@@ -73,8 +73,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 	};
 
 	// ---------- LOAD PROGRAMMATION ----------
-	const loadProgrammation = async (basePath: string, id: string) => {
-		const progPath = `${basePath}/${id}/programmation`;
+	const loadProgrammation = async (path: string, id: string) => {
+		const progPath = `${path}/${id}/programmation`;
 
 		const res = await fetch(`/api/files?view=${encodeURIComponent(progPath)}`);
 		const data: FileEntry[] = await res.json();
@@ -86,8 +86,8 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 	};
 
 	// ---------- LOAD PICTURES ----------
-	const loadPictures = async (basePath: string, id: string) => {
-		const picsPath = `${basePath}/${id}/pictures`;
+	const loadPictures = async (path: string, id: string) => {
+		const picsPath = `${path}/${id}/pictures`;
 
 		const res = await fetch(`/api/files?view=${encodeURIComponent(picsPath)}`);
 		const data: FileEntry[] = await res.json();
@@ -110,20 +110,20 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 			const s = await fetch('/api/settings/projects').then((r) => r.json());
 			setSettings(s);
 
-			if (!s.basePath) return;
+			if (!s.path) return;
 
-			const clientPath = `${s.basePath}/${id}`;
+			const clientPath = `${s.path}/${id}`;
 			await fetch(`/api/files?view=${encodeURIComponent(clientPath)}`);
 
-			await loadSchemas(s.basePath, id);
-			await loadProgrammation(s.basePath, id);
-			await loadPictures(s.basePath, id);
+			await loadSchemas(s.path, id);
+			await loadProgrammation(s.path, id);
+			await loadPictures(s.path, id);
 		})();
 	}, [params]);
 
 	// ---------- SCHEMAS UPLOAD ----------
 	const handleSchemaUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (!e.target.files || !client || !settings?.basePath) return;
+		if (!e.target.files || !client || !settings?.path) return;
 
 		const file = e.target.files[0];
 
@@ -133,13 +133,13 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 		fd.append('kind', 'schemas');
 
 		await fetch('/api/files/upload', { method: 'POST', body: fd });
-		await loadSchemas(settings.basePath, client);
+		await loadSchemas(settings.path, client);
 	};
 
 	// ---------- PROGRAMMATION UPLOAD ----------
 	// ---------- PROGRAMMATION UPLOAD ----------
 	const handleProgrammationUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (!e.target.files || !client || !settings?.basePath) return;
+		if (!e.target.files || !client || !settings?.path) return;
 
 		const file = e.target.files[0];
 
@@ -149,12 +149,12 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 		fd.append('kind', 'programmation');
 
 		await fetch('/api/files/upload', { method: 'POST', body: fd });
-		await loadProgrammation(settings.basePath, client);
+		await loadProgrammation(settings.path, client);
 	};
 
 	// ---------- PICTURES UPLOAD ----------
 	const handlePicturesUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-		if (!e.target.files || !client || !settings?.basePath) return;
+		if (!e.target.files || !client || !settings?.path) return;
 
 		const files = Array.from(e.target.files);
 
@@ -170,24 +170,24 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 			});
 		}
 
-		await loadPictures(settings.basePath, client);
+		await loadPictures(settings.path, client);
 	};
 
-	const downloadPath = (path: string, zip = false) => {
-		const url = `/api/files/download?path=${encodeURIComponent(path)}${zip ? '&zip=true' : ''}`;
+	function download(path: string) {
+		const url = `/api/files/download?path=${encodeURIComponent(path)}`;
 
 		const a = document.createElement('a');
 		a.href = url;
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
-	};
+	}
 
 	if (!settings) {
 		return <div className='text-zinc-900'>Loading…</div>;
 	}
 
-	if (!settings.basePath) {
+	if (!settings.path) {
 		return (
 			<div className='w-full max-w-7xl mx-auto'>
 				<h1 className='text-3xl font-semibold'>{client}</h1>
@@ -256,7 +256,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 											<span className='text-zinc-800 truncate'>{file.name}</span>
 										</div>
 
-										<button onClick={() => downloadPath(file.path)} className='text-sm text-zinc-500 flex items-center gap-1 hover:text-indigo-600'>
+										<button onClick={() => download(file.path)} className='text-sm text-zinc-500 flex items-center gap-1 hover:text-indigo-600'>
 											<Download size={14} />
 											Download
 										</button>
@@ -301,7 +301,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 								<div className='px-4 py-3 flex justify-between items-center bg-violet-50'>
 									<span className='font-medium text-zinc-900 truncate'>Latest: {latest.name}</span>
 
-									<button onClick={() => downloadPath(latest.path, true)} className='text-sm text-violet-700 flex items-center gap-1'>
+									<button onClick={() => download(latest.path)} className='text-sm text-violet-700 flex items-center gap-1'>
 										<Download size={14} />
 										Download
 									</button>
@@ -326,7 +326,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 												<div key={folder.path} className='px-4 py-3 flex justify-between items-center hover:bg-zinc-50'>
 													<span className='text-zinc-800 truncate'>{folder.name}</span>
 
-													<button onClick={() => downloadPath(folder.path, true)} className='text-sm text-zinc-500 flex items-center gap-1 hover:text-violet-600'>
+													<button onClick={() => download(folder.path)} className='text-sm text-zinc-500 flex items-center gap-1 hover:text-violet-600'>
 														<Download size={14} />
 														Download
 													</button>
@@ -377,7 +377,7 @@ export default function Page({ params }: { params: Promise<{ id: string }> }) {
 										<div className='p-2 flex justify-between items-center'>
 											<span className='text-xs text-zinc-600 truncate'>{img.name}</span>
 
-											<button onClick={() => downloadPath(img.path)} className='text-xs text-zinc-500 hover:text-emerald-600'>
+											<button onClick={() => download(img.path)} className='text-xs text-zinc-500 hover:text-emerald-600'>
 												<Download size={14} />
 											</button>
 										</div>

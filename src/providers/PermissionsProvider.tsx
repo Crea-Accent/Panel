@@ -31,7 +31,6 @@ export function PermissionsProvider({ children }: { children: ReactNode }) {
 	}
 
 	function hasAll(perms: string[]) {
-		console.log(permissions, perms);
 		return perms.every((p) => permissions.includes(p));
 	}
 

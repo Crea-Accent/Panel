@@ -13,12 +13,12 @@ const SETTINGS_PATH = path.join(DATA_DIR, 'projects.json');
 
 function loadSettings() {
 	if (!fs.existsSync(SETTINGS_PATH)) {
-		return { basePath: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
+		return { path: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
 	}
 	try {
 		return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
 	} catch {
-		return { basePath: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
+		return { path: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
 	}
 }
 
@@ -72,9 +72,8 @@ export async function POST(request: NextRequest) {
 
 	const settings = loadSettings();
 
-	console.log(settings);
-	if (!settings.basePath) {
-		return NextResponse.json({ error: 'No basePath configured' }, { status: 400 });
+	if (!settings.path) {
+		return NextResponse.json({ error: 'No path configured' }, { status: 400 });
 	}
 
 	const formData = await request.formData();
@@ -87,7 +86,7 @@ export async function POST(request: NextRequest) {
 	}
 
 	const client = decodeURIComponent(rawClient);
-	const baseClientDir = path.join(settings.basePath, client);
+	const baseClientDir = path.join(settings.path, client);
 
 	if (!fs.existsSync(baseClientDir)) {
 		fs.mkdirSync(baseClientDir, { recursive: true });

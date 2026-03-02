@@ -17,7 +17,7 @@ type FileEntry = {
 };
 
 type Settings = {
-	basePath: string;
+	path: string;
 	requiredFolders: string[];
 };
 
@@ -32,9 +32,9 @@ export default function ProjectsPage() {
 			const s = await fetch('/api/settings/projects').then((r) => r.json());
 			setSettings(s);
 
-			if (!s.basePath) return;
+			if (!s.path) return;
 
-			const res = await fetch(`/api/files?view=${encodeURIComponent(s.basePath)}`);
+			const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}&ensure=true`);
 			const data = await res.json();
 
 			const foldersOnly = data.filter((f: FileEntry) => f.type === 'directory');
@@ -59,7 +59,7 @@ export default function ProjectsPage() {
 		return <div className='text-zinc-900'>Loading settings…</div>;
 	}
 
-	if (!settings.basePath) {
+	if (!settings.path) {
 		return (
 			<div className='w-full max-w-7xl mx-auto'>
 				<h1 className='text-3xl font-semibold mb-2'>Projects</h1>
@@ -98,7 +98,7 @@ export default function ProjectsPage() {
 			</div>
 
 			<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.25 }} className='bg-white border border-zinc-200 rounded-xl shadow-sm divide-y divide-zinc-100 w-full'>
-				{filteredProjects.length === 0 && <div className='px-4 sm:px-6 py-4 text-zinc-500'>{query ? `No projects matching “${query}”.` : `No client folders found in ${settings.basePath}.`}</div>}
+				{filteredProjects.length === 0 && <div className='px-4 sm:px-6 py-4 text-zinc-500'>{query ? `No projects matching “${query}”.` : `No client folders found in ${settings.path}.`}</div>}
 
 				{filteredProjects.map((c) => (
 					<Link key={c.path} href={`/projects/${encodeURIComponent(c.name)}`} className='flex items-center gap-3 px-4 sm:px-6 py-3 hover:bg-zinc-50 transition-colors'>

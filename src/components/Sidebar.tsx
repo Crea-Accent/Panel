@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Folder, FolderKanban, Grid2x2, Home, KeyRound, LogIn, LogOut, Settings } from 'lucide-react';
+import { Folder, FolderKanban, Home, KeyRound, LogIn, LogOut, Package, Settings } from 'lucide-react';
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -40,9 +40,9 @@ export default function Sidebar() {
 			permission: 'files.read',
 		},
 		{
-			href: '/applications',
-			label: 'Applications',
-			icon: <Grid2x2 size={18} />,
+			href: '/apps',
+			label: 'Apps',
+			icon: <Package size={18} />,
 			permission: 'applications.read',
 		},
 		{

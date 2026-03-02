@@ -2,18 +2,18 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Folder, HardDrive, Plus, Save, Trash2 } from 'lucide-react';
+import { Folder, HardDrive, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 type ProjectsSettings = {
-	basePath?: string;
+	path?: string;
 	requiredFolders?: string[];
 	dateFormat?: string;
 };
 
 export default function ProjectsSettings() {
 	const [settings, setSettings] = useState<ProjectsSettings>({
-		basePath: '',
+		path: '',
 		requiredFolders: [],
 		dateFormat: 'DDMMYYYY',
 	});
@@ -32,7 +32,7 @@ export default function ProjectsSettings() {
 			const data = await res.json();
 
 			const merged = {
-				basePath: '',
+				path: '',
 				requiredFolders: [],
 				dateFormat: 'DDMMYYYY',
 				...data,
@@ -127,17 +127,17 @@ export default function ProjectsSettings() {
 			<div className='bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-4'>
 				<div className='flex items-center gap-2'>
 					<HardDrive size={18} />
-					<h3 className='text-lg font-medium'>Base Path</h3>
+					<h3 className='text-lg font-medium'>Location</h3>
 				</div>
 
 				<input
 					className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
 					placeholder='/sim'
-					value={settings.basePath || ''}
+					value={settings.path || ''}
 					onChange={(e) =>
 						setSettings({
 							...settings,
-							basePath: e.target.value,
+							path: e.target.value,
 						})
 					}
 				/>

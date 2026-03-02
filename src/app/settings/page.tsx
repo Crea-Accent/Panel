@@ -1,8 +1,9 @@
 /** @format */
 'use client';
 
-import { ChevronDown, Folder, Settings, Shield, Users } from 'lucide-react';
+import { ChevronDown, Folder, Package, Settings, Shield, Users } from 'lucide-react';
 
+import AppsSettings from '@/components/settings/Apps';
 import GeneralSettings from '@/components/settings/General';
 import ProjectSettings from '@/components/settings/Projects';
 import RoleSettings from '@/components/settings/Roles';
@@ -11,7 +12,7 @@ import { motion } from 'framer-motion';
 import { usePermissions } from '@/providers/PermissionsProvider';
 import { useState } from 'react';
 
-type Tab = 'general' | 'projects' | 'users' | 'roles';
+type Tab = 'general' | 'projects' | 'users' | 'roles' | 'apps';
 
 export default function SettingsPage() {
 	const { hasAll, loading } = usePermissions();
@@ -32,6 +33,7 @@ export default function SettingsPage() {
 
 	const tabs = [
 		{ key: 'general', label: 'General', icon: <Settings size={16} /> },
+		{ key: 'apps', label: 'Apps', icon: <Package size={16} /> },
 		{ key: 'projects', label: 'Projects', icon: <Folder size={16} /> },
 		{ key: 'users', label: 'Users', icon: <Users size={16} /> },
 		{ key: 'roles', label: 'Roles', icon: <Shield size={16} /> },
@@ -103,6 +105,7 @@ export default function SettingsPage() {
 					{tab === 'projects' && <ProjectSettings />}
 					{tab === 'users' && <UserSettings />}
 					{tab === 'roles' && <RoleSettings />}
+					{tab === 'apps' && <AppsSettings />}
 				</motion.div>
 			</div>
 		</div>

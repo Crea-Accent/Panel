@@ -31,12 +31,12 @@ export default function Home() {
 				const s = await fetch('/api/settings/projects').then((r) => r.json());
 				setSettings(s);
 
-				if (!s.basePath) {
+				if (!s.path) {
 					setLoading(false);
 					return;
 				}
 
-				const res = await fetch(`/api/files?view=${encodeURIComponent(s.basePath)}`);
+				const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}`);
 
 				const data: FileEntry[] = await res.json();
 
