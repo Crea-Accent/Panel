@@ -51,15 +51,41 @@ export async function GET() {
    PATCH → Run Update
 ========================= */
 
-export async function PATCH() {
-	try {
-		// Pull latest code
-		console.log('Pulling latest code and installing dependencies...');
-		await exec('git pull && npm i && npm run build && pm2 reload 3');
-		console.log('Update complete!');
+import { spawn } from 'child_process';
 
-		return NextResponse.json({ success: true });
-	} catch (err: unknown) {
-		return NextResponse.json({ error: (err as Error).message }, { status: 500 });
-	}
+export async function PATCH() {
+	const encoder = new TextEncoder();
+
+	const stream = new ReadableStream({
+		start(controller) {
+			const send = (message: string) => {
+				controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+			};
+
+			send('Starting update...');
+
+			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 reload 3']);
+
+			child.stdout.on('data', (data) => {
+				send(data.toString());
+			});
+
+			child.stderr.on('data', (data) => {
+				send(`ERROR: ${data.toString()}`);
+			});
+
+			child.on('close', () => {
+				send('Update complete! Refresh page.');
+				controller.close();
+			});
+		},
+	});
+
+	return new Response(stream, {
+		headers: {
+			'Content-Type': 'text/event-stream',
+			'Cache-Control': 'no-cache',
+			'Connection': 'keep-alive',
+		},
+	});
 }
