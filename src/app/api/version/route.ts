@@ -59,6 +59,8 @@ export async function PATCH() {
 		// Optional but recommended
 		execSync('npm install', { stdio: 'inherit' });
 
+		execSync('npm run build', { stdio: 'inherit' });
+
 		// Restart PM2 (change name if needed)
 		execSync('pm2 reload all', { stdio: 'inherit' });
 
