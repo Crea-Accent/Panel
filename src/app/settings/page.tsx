@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { Folder, Settings, Shield, Users } from 'lucide-react';
+import { ChevronDown, Folder, Settings, Shield, Users } from 'lucide-react';
 
 import GeneralSettings from '@/components/settings/General';
 import ProjectSettings from '@/components/settings/Projects';
@@ -17,13 +17,11 @@ export default function SettingsPage() {
 	const { hasAll, loading } = usePermissions();
 	const [tab, setTab] = useState<Tab>('general');
 
-	// 🔒 Wait for session
 	if (loading) return null;
 
-	// 🔒 Block non-admins
 	if (!hasAll(['admin.read', 'admin.write'])) {
 		return (
-			<div className='min-h-screen flex items-center justify-center bg-gray-50'>
+			<div className='min-h-screen flex items-center justify-center bg-gray-50 px-6'>
 				<div className='text-center space-y-2'>
 					<h1 className='text-xl font-semibold'>Access denied</h1>
 					<p className='text-sm text-gray-500'>You do not have permission to view/edit settings.</p>
@@ -41,15 +39,33 @@ export default function SettingsPage() {
 
 	return (
 		<div className='min-h-screen bg-gray-50'>
-			<div className='max-w-6xl mx-auto py-12 px-6 space-y-12'>
+			<div className='max-w-6xl mx-auto py-10 sm:py-12 px-4 sm:px-6 space-y-8 sm:space-y-12'>
 				{/* Header */}
 				<div>
-					<h1 className='text-3xl font-semibold tracking-tight'>Settings</h1>
+					<h1 className='text-2xl sm:text-3xl font-semibold tracking-tight'>Settings</h1>
 					<p className='text-sm text-gray-500 mt-2'>Manage project configuration and access control.</p>
 				</div>
 
-				{/* Navigation */}
-				<div className='relative'>
+				{/* Mobile Dropdown */}
+				<div className='sm:hidden'>
+					<div className='relative'>
+						<select
+							value={tab}
+							onChange={(e) => setTab(e.target.value as Tab)}
+							className='w-full appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-black/10'>
+							{tabs.map((t) => (
+								<option key={t.key} value={t.key}>
+									{t.label}
+								</option>
+							))}
+						</select>
+
+						<ChevronDown size={16} className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none' />
+					</div>
+				</div>
+
+				{/* Desktop Tabs */}
+				<div className='hidden sm:block relative z-10'>
 					<div className='flex gap-2 bg-gray-100 p-1 rounded-xl w-fit'>
 						{tabs.map((t) => {
 							const active = tab === t.key;
@@ -62,7 +78,7 @@ export default function SettingsPage() {
 									{active && (
 										<motion.div
 											layoutId='settings-tab'
-											className='absolute inset-0 bg-white rounded-lg shadow-sm'
+											className='absolute inset-0 bg-white rounded-lg shadow-sm z-0'
 											transition={{
 												type: 'spring',
 												stiffness: 300,
@@ -82,7 +98,7 @@ export default function SettingsPage() {
 				</div>
 
 				{/* Content */}
-				<motion.div key={tab} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+				<motion.div key={tab} className='relative z-0' initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
 					{tab === 'general' && <GeneralSettings />}
 					{tab === 'projects' && <ProjectSettings />}
 					{tab === 'users' && <UserSettings />}
