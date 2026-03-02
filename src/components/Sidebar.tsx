@@ -77,7 +77,7 @@ export default function Sidebar() {
 						position: 'fixed',
 						left: 0,
 						top: HEADER_HEIGHT,
-						height: `calc(100vh - ${HEADER_HEIGHT}px)`,
+						height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
 					}}
 					className='bg-white border-r border-zinc-200 p-4 flex flex-col z-40'>
 					{/* Top navigation */}

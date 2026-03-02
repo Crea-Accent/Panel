@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, Copy, Download, File, Folder, Home, Pencil, Search, Trash2, Upload } from 'lucide-react';
+import { ArrowUp, Copy, Download, File, Folder, Home, MoreVertical, Pencil, Search, Trash2, Upload } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type FileEntry = {
@@ -199,40 +199,115 @@ export default function FilesPage() {
 
 				<AnimatePresence>
 					{filtered.map((file) => (
-						<motion.div
-							key={file.path}
-							layout
-							initial={{ opacity: 0, y: -5 }}
-							animate={{ opacity: 1, y: 0 }}
-							exit={{ opacity: 0 }}
-							className='grid grid-cols-4 items-center px-6 py-4 border-t border-gray-100 hover:bg-gray-50 transition'>
-							<div className='flex items-center gap-3 cursor-pointer' onClick={() => navigate(file)}>
-								{file.type === 'directory' ? <Folder size={18} className='text-blue-600' /> : <File size={18} className='text-gray-500' />}
-								<span className='text-sm font-medium truncate'>{file.name}</span>
-							</div>
+						<motion.div key={file.path} layout initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className='border-t border-gray-100 hover:bg-gray-50 transition'>
+							<div className='flex items-center justify-between px-4 py-4 md:grid md:grid-cols-4 md:items-center md:px-6'>
+								{/* Left Side */}
+								<div className='flex items-start gap-3 cursor-pointer flex-1' onClick={() => navigate(file)}>
+									{file.type === 'directory' ? <Folder size={20} className='text-blue-600 mt-0.5 shrink-0' /> : <File size={20} className='text-gray-500 mt-0.5 shrink-0' />}
 
-							<div className='text-sm text-gray-500'>{formatSize(file.size)}</div>
+									<div className='flex flex-col'>
+										<span className='text-sm font-medium truncate'>{file.name}</span>
 
-							<div className='text-sm text-gray-500'>{formatDate(file.modified)}</div>
+										{/* Mobile meta */}
+										<div className='text-xs text-gray-500 md:hidden mt-1 space-x-3'>
+											<span>{formatSize(file.size)}</span>
+											<span>{formatDate(file.modified)}</span>
+										</div>
+									</div>
+								</div>
 
-							<div className='flex justify-end gap-2'>
-								<button onClick={() => copyToClipboard(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
-									<Copy size={16} />
-								</button>
-								<button onClick={() => download(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
-									<Download size={16} />
-								</button>
-								<button onClick={() => rename(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
-									<Pencil size={16} />
-								</button>
-								<button onClick={() => remove(file.path)} className='p-2 hover:bg-gray-100 rounded-lg text-red-500'>
-									<Trash2 size={16} />
-								</button>
+								{/* Desktop Size */}
+								<div className='hidden md:block text-sm text-gray-500'>{formatSize(file.size)}</div>
+
+								{/* Desktop Modified */}
+								<div className='hidden md:block text-sm text-gray-500'>{formatDate(file.modified)}</div>
+
+								{/* Actions */}
+								<div className='flex justify-end md:justify-end relative'>
+									{/* Desktop Buttons */}
+									<div className='hidden md:flex gap-2'>
+										<button onClick={() => copyToClipboard(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
+											<Copy size={16} />
+										</button>
+										<button onClick={() => download(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
+											<Download size={16} />
+										</button>
+										<button onClick={() => rename(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
+											<Pencil size={16} />
+										</button>
+										<button onClick={() => remove(file.path)} className='p-2 hover:bg-gray-100 rounded-lg text-red-500'>
+											<Trash2 size={16} />
+										</button>
+									</div>
+
+									{/* Mobile Dropdown */}
+									<div className='md:hidden relative'>
+										<MobileActions onCopy={() => copyToClipboard(file.path)} onDownload={() => download(file.path)} onRename={() => rename(file.path)} onDelete={() => remove(file.path)} />
+									</div>
+								</div>
 							</div>
 						</motion.div>
 					))}
 				</AnimatePresence>
 			</motion.div>
+		</div>
+	);
+}
+
+function MobileActions({ onCopy, onDownload, onRename, onDelete }: { onCopy: () => void; onDownload: () => void; onRename: () => void; onDelete: () => void }) {
+	const [open, setOpen] = useState(false);
+
+	return (
+		<div className='relative'>
+			<button onClick={() => setOpen(!open)} className='p-2 rounded-lg hover:bg-gray-100'>
+				<MoreVertical size={18} />
+			</button>
+
+			<AnimatePresence>
+				{open && (
+					<motion.div
+						initial={{ opacity: 0, y: -5 }}
+						animate={{ opacity: 1, y: 0 }}
+						exit={{ opacity: 0 }}
+						className='absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20'>
+						<button
+							onClick={() => {
+								onCopy();
+								setOpen(false);
+							}}
+							className='flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50'>
+							<Copy size={14} /> Copy path
+						</button>
+
+						<button
+							onClick={() => {
+								onDownload();
+								setOpen(false);
+							}}
+							className='flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50'>
+							<Download size={14} /> Download
+						</button>
+
+						<button
+							onClick={() => {
+								onRename();
+								setOpen(false);
+							}}
+							className='flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50'>
+							<Pencil size={14} /> Rename
+						</button>
+
+						<button
+							onClick={() => {
+								onDelete();
+								setOpen(false);
+							}}
+							className='flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-50'>
+							<Trash2 size={14} /> Delete
+						</button>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }
