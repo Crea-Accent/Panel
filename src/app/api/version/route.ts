@@ -1,7 +1,7 @@
 /** @format */
 
 import { NextResponse } from 'next/server';
-import { execSync } from 'child_process';
+import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 
@@ -54,15 +54,10 @@ export async function GET() {
 export async function PATCH() {
 	try {
 		// Pull latest code
-		execSync('git pull', { stdio: 'inherit' });
-
-		// Optional but recommended
-		execSync('npm install', { stdio: 'inherit' });
-
-		execSync('npm run build', { stdio: 'inherit' });
+		await exec('git pull && npm i && npm run build');
 
 		// Restart PM2 (change name if needed)
-		execSync('pm2 reload all', { stdio: 'inherit' });
+		await exec('pm2 reload 3');
 
 		return NextResponse.json({ success: true });
 	} catch (err: unknown) {
