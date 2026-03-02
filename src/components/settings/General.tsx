@@ -4,7 +4,7 @@
 
 import { AlertCircle, CheckCircle, Loader2, RefreshCw } from 'lucide-react';
 import { useEffect, useState } from 'react';
-
+import { Info, AlertTriangle } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 type VersionInfo = {
@@ -49,10 +49,9 @@ export default function GeneralSettings() {
 		source.onmessage = (event) => {
 			setLogs((prev) => [...prev, event.data]);
 
-			if (event.data.includes('Update complete')) {
-				setTimeout(() => {
-					window.location.reload();
-				}, 1500);
+			if (event.data.toLowerCase().includes('update complete')) {
+				source.close();
+				window.location.reload();
 			}
 		};
 
@@ -63,6 +62,40 @@ export default function GeneralSettings() {
 
 		return () => {
 			source.close();
+		};
+	}
+
+	function getMessageMeta(message: string) {
+		const lower = message.toLowerCase();
+
+		if (lower.includes('error')) {
+			return {
+				type: 'error',
+				icon: <AlertCircle size={14} />,
+				className: 'bg-red-50 text-red-700 border-red-200',
+			};
+		}
+
+		if (lower.includes('warning') || lower.includes('warn')) {
+			return {
+				type: 'warning',
+				icon: <AlertTriangle size={14} />,
+				className: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+			};
+		}
+
+		if (lower.includes('complete') || lower.includes('success')) {
+			return {
+				type: 'success',
+				icon: <CheckCircle size={14} />,
+				className: 'bg-green-50 text-green-700 border-green-200',
+			};
+		}
+
+		return {
+			type: 'info',
+			icon: <Info size={14} />,
+			className: 'bg-blue-50 text-blue-700 border-blue-200',
 		};
 	}
 
@@ -140,10 +173,17 @@ export default function GeneralSettings() {
 								</motion.button>
 
 								{updating && logs.length > 0 && (
-									<div className="mt-4 bg-gray-100 rounded-lg p-3 text-xs font-mono space-y-1 max-h-48 overflow-y-auto">
-										{logs.map((log, i) => (
-											<div key={i}>{log}</div>
-										))}
+									<div className="mt-4 space-y-2 max-h-56 overflow-y-auto">
+										{logs.map((log, i) => {
+											const meta = getMessageMeta(log);
+
+											return (
+												<div key={i} className={`flex items-start gap-2 text-xs font-mono p-2 rounded-md border ${meta.className}`}>
+													<div className="mt-[2px]">{meta.icon}</div>
+													<div className="whitespace-pre-wrap break-words">{log}</div>
+												</div>
+											);
+										})}
 									</div>
 								)}
 							</div>
