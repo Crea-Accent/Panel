@@ -33,18 +33,44 @@ async function getRemoteVersion(): Promise<string> {
 ========================= */
 
 export async function GET() {
-	try {
-		const localVersion = getLocalVersion();
-		const remoteVersion = await getRemoteVersion();
+	const encoder = new TextEncoder();
 
-		return NextResponse.json({
-			localVersion,
-			remoteVersion,
-			upToDate: localVersion === remoteVersion,
-		});
-	} catch (err: unknown) {
-		return NextResponse.json({ error: (err as Error).message }, { status: 500 });
-	}
+	const stream = new ReadableStream({
+		start(controller) {
+			const send = (message: string) => {
+				controller.enqueue(encoder.encode(`data: ${message.replace(/\n/g, '')}\n\n`));
+			};
+
+			send('Starting update...');
+
+			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 reload 3']);
+
+			child.stdout.on('data', (data) => {
+				send(data.toString());
+			});
+
+			child.stderr.on('data', (data) => {
+				send(`ERROR: ${data.toString()}`);
+			});
+
+			child.on('close', (code) => {
+				if (code === 0) {
+					send('Update complete! Refresh page.');
+				} else {
+					send(`Update failed with code ${code}`);
+				}
+				controller.close();
+			});
+		},
+	});
+
+	return new Response(stream, {
+		headers: {
+			'Content-Type': 'text/event-stream',
+			'Cache-Control': 'no-cache',
+			'Connection': 'keep-alive',
+		},
+	});
 }
 
 /* =========================
