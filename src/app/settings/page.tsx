@@ -40,7 +40,7 @@ export default function SettingsPage() {
 	] as const;
 
 	return (
-		<div className='min-h-screen bg-gray-50'>
+		<div className='min-h-screen'>
 			<div className='max-w-6xl mx-auto py-10 sm:py-12 px-4 sm:px-6 space-y-8 sm:space-y-12'>
 				{/* Header */}
 				<div>

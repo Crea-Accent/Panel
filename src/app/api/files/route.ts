@@ -7,6 +7,12 @@ import path from 'path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const SETTINGS_PATH = path.join(DATA_DIR, 'files.json');
+const PROJECTS_PATH = path.join(DATA_DIR, 'projects.json');
+
+type ProjectsConfig = {
+	path: string;
+	requiredFolders: string[];
+};
 
 function loadSettings() {
 	if (!fs.existsSync(SETTINGS_PATH)) {
@@ -20,22 +26,49 @@ function loadSettings() {
 	}
 }
 
+export function loadProjects(): ProjectsConfig | null {
+	try {
+		if (!fs.existsSync(PROJECTS_PATH)) {
+			return null;
+		}
+
+		const raw = fs.readFileSync(PROJECTS_PATH, 'utf-8');
+		const parsed = JSON.parse(raw);
+
+		return {
+			path: typeof parsed.path === 'string' ? parsed.path : '',
+			requiredFolders: Array.isArray(parsed.requiredFolders) ? parsed.requiredFolders.filter((f: unknown) => typeof f === 'string') : [],
+		};
+	} catch {
+		return null;
+	}
+}
+
 function resolveSafe(targetPath: string, basePath: string) {
 	const resolved = path.resolve(targetPath);
+	const base = path.resolve(basePath);
 
-	if (!resolved.startsWith(path.resolve(basePath))) {
+	if (!resolved.startsWith(base)) {
 		throw new Error('Forbidden path');
 	}
 
 	return resolved;
 }
 
+function resolveAgainstCorrectRoot(target: string, settingsPath: string, projectsPath?: string) {
+	const decoded = decodeURIComponent(target);
+	const absolute = path.resolve(decoded);
+
+	if (projectsPath && absolute.startsWith(path.resolve(projectsPath))) {
+		return resolveSafe(absolute, projectsPath);
+	}
+
+	return resolveSafe(absolute, settingsPath);
+}
+
 export async function GET(request: NextRequest) {
 	const settings = loadSettings();
-
-	if (!settings.path) {
-		return NextResponse.json({ error: 'No base path configured' }, { status: 400 });
-	}
+	const projects = loadProjects();
 
 	const url = new URL(request.url);
 	const rawView = url.searchParams.get('view');
@@ -47,9 +80,46 @@ export async function GET(request: NextRequest) {
 	let resolved: string;
 
 	try {
-		resolved = resolveSafe(decodeURIComponent(rawView), settings.path);
+		resolved = resolveAgainstCorrectRoot(rawView, settings.path, projects?.path);
 	} catch {
 		return NextResponse.json({ error: 'Forbidden path' }, { status: 403 });
+	}
+
+	// ✅ Create required folders + metadata ONLY in project root folder
+	if (projects?.path && Array.isArray(projects.requiredFolders)) {
+		const projectsRoot = path.resolve(projects.path);
+		const current = path.resolve(resolved);
+
+		// Must be directly inside projects root
+		const relative = path.relative(projectsRoot, current);
+
+		const isProjectRootFolder = relative && !relative.startsWith('..') && !path.isAbsolute(relative) && relative.split(path.sep).length === 1;
+
+		if (isProjectRootFolder) {
+			// 1️⃣ Ensure required folders exist
+			for (const folder of projects.requiredFolders) {
+				if (!folder.trim()) continue;
+
+				const folderPath = path.join(current, folder);
+
+				if (!fs.existsSync(folderPath)) {
+					fs.mkdirSync(folderPath, { recursive: true });
+				}
+			}
+
+			// 2️⃣ Ensure metadata.json exists
+			const metadataPath = path.join(current, 'metadata.json');
+
+			if (!fs.existsSync(metadataPath)) {
+				const defaultMetadata = {
+					name: path.basename(current),
+					createdAt: new Date().toISOString(),
+					updatedAt: new Date().toISOString(),
+				};
+
+				fs.writeFileSync(metadataPath, JSON.stringify(defaultMetadata, null, 2), 'utf-8');
+			}
+		}
 	}
 
 	let entries: fs.Dirent[];
@@ -85,9 +155,7 @@ export async function GET(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
 	const settings = loadSettings();
-	if (!settings.path) {
-		return NextResponse.json({ error: 'No base path configured' }, { status: 400 });
-	}
+	const projects = loadProjects();
 
 	const url = new URL(request.url);
 	const rawPath = url.searchParams.get('path');
@@ -99,7 +167,7 @@ export async function DELETE(request: NextRequest) {
 	let resolved: string;
 
 	try {
-		resolved = resolveSafe(decodeURIComponent(rawPath), settings.path);
+		resolved = resolveAgainstCorrectRoot(rawPath, settings.path, projects?.path);
 	} catch {
 		return NextResponse.json({ error: 'Forbidden path' }, { status: 403 });
 	}
@@ -121,9 +189,7 @@ export async function DELETE(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
 	const settings = loadSettings();
-	if (!settings.path) {
-		return NextResponse.json({ error: 'No base path configured' }, { status: 400 });
-	}
+	const projects = loadProjects();
 
 	const body = await request.json();
 	const { oldPath, newName } = body || {};
@@ -135,7 +201,7 @@ export async function PATCH(request: NextRequest) {
 	let resolvedOld: string;
 
 	try {
-		resolvedOld = resolveSafe(oldPath, settings.path);
+		resolvedOld = resolveAgainstCorrectRoot(oldPath, settings.path, projects?.path);
 	} catch {
 		return NextResponse.json({ error: 'Forbidden path' }, { status: 403 });
 	}
@@ -153,9 +219,7 @@ export async function PATCH(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
 	const settings = loadSettings();
-	if (!settings.path) {
-		return NextResponse.json({ error: 'No base path configured' }, { status: 400 });
-	}
+	const projects = loadProjects();
 
 	const formData = await request.formData();
 	const file = formData.get('file') as File | null;
@@ -168,7 +232,7 @@ export async function POST(request: NextRequest) {
 	let dir: string;
 
 	try {
-		dir = resolveSafe(decodeURIComponent(rawDir), settings.path);
+		dir = resolveAgainstCorrectRoot(rawDir, settings.path, projects?.path);
 	} catch {
 		return NextResponse.json({ error: 'Forbidden path' }, { status: 403 });
 	}
