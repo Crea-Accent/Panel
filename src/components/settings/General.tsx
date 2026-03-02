@@ -18,8 +18,8 @@ export default function GeneralSettings() {
 	const [info, setInfo] = useState<VersionInfo | null>(null);
 	const [loading, setLoading] = useState(true);
 	const [updating, setUpdating] = useState(false);
-	
-const [logs, setLogs] = useState<string[]>([]);
+
+	const [logs, setLogs] = useState<string[]>([]);
 
 	async function checkVersion() {
 		setLoading(true);
@@ -40,32 +40,31 @@ const [logs, setLogs] = useState<string[]>([]);
 		setLoading(false);
 	}
 
-
 	function runUpdate() {
-	setUpdating(true);
-	setLogs([]);
+		setUpdating(true);
+		setLogs([]);
 
-	const source = new EventSource('/api/version');
+		const source = new EventSource('/api/update');
 
-	source.onmessage = (event) => {
-		setLogs((prev) => [...prev, event.data]);
+		source.onmessage = (event) => {
+			setLogs((prev) => [...prev, event.data]);
 
-		if (event.data.includes('Update complete')) {
-			setTimeout(() => {
-				window.location.reload();
-			}, 1500);
-		}
-	};
+			if (event.data.includes('Update complete')) {
+				setTimeout(() => {
+					window.location.reload();
+				}, 1500);
+			}
+		};
 
-	source.onerror = () => {
-		source.close();
-		setUpdating(false);
-	};
+		source.onerror = () => {
+			source.close();
+			setUpdating(false);
+		};
 
-	return () => {
-		source.close();
-	};
-}
+		return () => {
+			source.close();
+		};
+	}
 
 	useEffect(() => {
 		(() => {

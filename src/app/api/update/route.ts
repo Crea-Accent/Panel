@@ -46,3 +46,46 @@ export async function GET() {
 		return NextResponse.json({ error: (err as Error).message }, { status: 500 });
 	}
 }
+
+/* =========================
+   PATCH → Run Update
+========================= */
+
+import { spawn } from 'child_process';
+
+export async function PATCH() {
+	const encoder = new TextEncoder();
+
+	const stream = new ReadableStream({
+		start(controller) {
+			const send = (message: string) => {
+				controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+			};
+
+			send('Starting update...');
+
+			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 reload 3']);
+
+			child.stdout.on('data', (data) => {
+				send(data.toString());
+			});
+
+			child.stderr.on('data', (data) => {
+				send(`ERROR: ${data.toString()}`);
+			});
+
+			child.on('close', () => {
+				send('Update complete! Refresh page.');
+				controller.close();
+			});
+		},
+	});
+
+	return new Response(stream, {
+		headers: {
+			'Content-Type': 'text/event-stream',
+			'Cache-Control': 'no-cache',
+			'Connection': 'keep-alive',
+		},
+	});
+}
