@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { FolderKanban, Home, LogIn, LogOut, Settings } from 'lucide-react';
+import { Folder, FolderKanban, Grid2x2, Home, KeyRound, LogIn, LogOut, Settings } from 'lucide-react';
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -32,6 +32,24 @@ export default function Sidebar() {
 			label: 'Projects',
 			icon: <FolderKanban size={18} />,
 			permission: 'projects.read',
+		},
+		{
+			href: '/files',
+			label: 'Files',
+			icon: <Folder size={18} />,
+			permission: 'files.read',
+		},
+		{
+			href: '/applications',
+			label: 'Applications',
+			icon: <Grid2x2 size={18} />,
+			permission: 'applications.read',
+		},
+		{
+			href: '/passwords',
+			label: 'Passwords',
+			icon: <KeyRound size={18} />,
+			permission: 'admin.read',
 		},
 		{
 			href: '/settings',

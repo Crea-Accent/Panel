@@ -31,6 +31,16 @@ export const PERMISSIONS = [
 		label: 'Files - Write',
 		group: 'Files',
 	},
+	{
+		key: 'applications.read',
+		label: 'Applications - Read',
+		group: 'Applications',
+	},
+	{
+		key: 'applications.write',
+		label: 'Applications - Write',
+		group: 'Applications',
+	},
 ];
 
 export function groupPermissions() {
