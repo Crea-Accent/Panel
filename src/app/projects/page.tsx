@@ -34,7 +34,7 @@ export default function ProjectsPage() {
 
 			if (!s.path) return;
 
-			const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}&ensure=true`);
+			const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}`);
 			const data = await res.json();
 
 			const foldersOnly = data.filter((f: FileEntry) => f.type === 'directory');
