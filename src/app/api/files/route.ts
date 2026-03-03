@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
 
 	const url = new URL(request.url);
 	const rawView = url.searchParams.get('view');
+	const recursive = url.searchParams.get('recursive') === '1';
 
 	if (!rawView) {
 		return NextResponse.json({ error: 'Missing view parameter' }, { status: 400 });
@@ -90,13 +91,11 @@ export async function GET(request: NextRequest) {
 		const projectsRoot = path.resolve(projects.path);
 		const current = path.resolve(resolved);
 
-		// Must be directly inside projects root
 		const relative = path.relative(projectsRoot, current);
 
 		const isProjectRootFolder = relative && !relative.startsWith('..') && !path.isAbsolute(relative) && relative.split(path.sep).length === 1;
 
 		if (isProjectRootFolder) {
-			// 1️⃣ Ensure required folders exist
 			for (const folder of projects.requiredFolders) {
 				if (!folder.trim()) continue;
 
@@ -107,7 +106,6 @@ export async function GET(request: NextRequest) {
 				}
 			}
 
-			// 2️⃣ Ensure metadata.json exists
 			const metadataPath = path.join(current, 'metadata.json');
 
 			if (!fs.existsSync(metadataPath)) {
@@ -122,33 +120,44 @@ export async function GET(request: NextRequest) {
 		}
 	}
 
-	let entries: fs.Dirent[];
+	// 🔥 Recursive reader
+	function readRecursive(dir: string) {
+		const entries = fs.readdirSync(dir, { withFileTypes: true });
+		let results: Array<Record<string, string | number | null>> = [];
+
+		for (const entry of entries) {
+			const fullPath = path.join(dir, entry.name);
+
+			let stats: fs.Stats | null = null;
+			try {
+				stats = fs.statSync(fullPath);
+			} catch {
+				stats = null;
+			}
+
+			results.push({
+				path: fullPath,
+				name: entry.name,
+				type: entry.isDirectory() ? 'directory' : 'file',
+				size: entry.isDirectory() ? null : (stats?.size ?? null),
+				modified: stats?.mtime ? stats.mtime.toISOString() : null,
+			});
+
+			if (recursive && entry.isDirectory()) {
+				results = results.concat(readRecursive(fullPath));
+			}
+		}
+
+		return results;
+	}
+
+	let result;
 
 	try {
-		entries = fs.readdirSync(resolved, { withFileTypes: true });
+		result = readRecursive(resolved);
 	} catch {
 		return NextResponse.json({ error: 'Access denied' }, { status: 403 });
 	}
-
-	const result = entries.map((entry) => {
-		const fullPath = path.join(resolved, entry.name);
-
-		let stats: fs.Stats | null = null;
-
-		try {
-			stats = fs.statSync(fullPath);
-		} catch {
-			stats = null;
-		}
-
-		return {
-			path: fullPath,
-			name: entry.name,
-			type: entry.isDirectory() ? 'directory' : 'file',
-			size: entry.isDirectory() ? null : (stats?.size ?? null),
-			modified: stats?.mtime ? stats.mtime.toISOString() : null,
-		};
-	});
 
 	return NextResponse.json(result);
 }
@@ -192,9 +201,9 @@ export async function PATCH(request: NextRequest) {
 	const projects = loadProjects();
 
 	const body = await request.json();
-	const { oldPath, newName } = body || {};
+	const { oldPath, newName, newDir } = body || {};
 
-	if (!oldPath || !newName) {
+	if (!oldPath) {
 		return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
 	}
 
@@ -206,14 +215,22 @@ export async function PATCH(request: NextRequest) {
 		return NextResponse.json({ error: 'Forbidden path' }, { status: 403 });
 	}
 
-	const dir = path.dirname(resolvedOld);
-	const resolvedNew = path.join(dir, newName);
+	let targetPath: string;
 
 	try {
-		fs.renameSync(resolvedOld, resolvedNew);
+		if (newDir) {
+			const resolvedNewDir = resolveAgainstCorrectRoot(newDir, settings.path, projects?.path);
+			targetPath = path.join(resolvedNewDir, path.basename(resolvedOld));
+		} else if (newName) {
+			targetPath = path.join(path.dirname(resolvedOld), newName);
+		} else {
+			return NextResponse.json({ error: 'Nothing to update' }, { status: 400 });
+		}
+
+		fs.renameSync(resolvedOld, targetPath);
 		return NextResponse.json({ ok: true });
 	} catch {
-		return NextResponse.json({ error: 'Rename failed' }, { status: 500 });
+		return NextResponse.json({ error: 'Move/Rename failed' }, { status: 500 });
 	}
 }
 
@@ -221,6 +238,42 @@ export async function POST(request: NextRequest) {
 	const settings = loadSettings();
 	const projects = loadProjects();
 
+	const contentType = request.headers.get('content-type') || '';
+
+	// ===============================
+	// JSON → create folder
+	// ===============================
+	if (contentType.includes('application/json')) {
+		const body = await request.json();
+		const { dir, name } = body || {};
+
+		if (!dir || !name) {
+			return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
+		}
+
+		let resolvedDir: string;
+
+		try {
+			resolvedDir = resolveAgainstCorrectRoot(dir, settings.path, projects?.path);
+		} catch {
+			return NextResponse.json({ error: 'Forbidden path' }, { status: 403 });
+		}
+
+		const newFolderPath = path.join(resolvedDir, name);
+
+		try {
+			if (!fs.existsSync(newFolderPath)) {
+				fs.mkdirSync(newFolderPath, { recursive: true });
+			}
+			return NextResponse.json({ ok: true });
+		} catch {
+			return NextResponse.json({ error: 'Folder creation failed' }, { status: 500 });
+		}
+	}
+
+	// ===============================
+	// Multipart → upload file
+	// ===============================
 	const formData = await request.formData();
 	const file = formData.get('file') as File | null;
 	const rawDir = formData.get('dir') as string | null;

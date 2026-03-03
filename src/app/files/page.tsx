@@ -36,13 +36,31 @@ export default function FilesPage() {
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
 	const [loading, setLoading] = useState(true);
+	const [debouncedQuery, setDebouncedQuery] = useState('');
+	const abortRef = useRef<AbortController | null>(null);
 
 	const uploadRef = useRef<HTMLInputElement>(null);
 
-	async function loadFiles(path: string) {
-		const res = await fetch(`/api/files?view=${encodeURIComponent(path)}`);
-		const data = await res.json();
-		setFiles(Array.isArray(data) ? data : []);
+	async function loadFiles(path: string, recursive = false) {
+		// Cancel previous request
+		if (abortRef.current) {
+			abortRef.current.abort();
+		}
+
+		const controller = new AbortController();
+		abortRef.current = controller;
+
+		const url = `/api/files?view=${encodeURIComponent(path)}${recursive ? '&recursive=1' : ''}`;
+
+		try {
+			const res = await fetch(url, { signal: controller.signal });
+			const data = await res.json();
+			setFiles(Array.isArray(data) ? data : []);
+		} catch (err: unknown) {
+			if ((err as Error).name !== 'AbortError') {
+				console.error('File load failed:', err);
+			}
+		}
 	}
 
 	useEffect(() => {
@@ -62,9 +80,22 @@ export default function FilesPage() {
 	useEffect(() => {
 		(() => {
 			if (!currentPath) return;
-			loadFiles(currentPath);
+
+			let timeout: NodeJS.Timeout | undefined;
+
+			if (query.trim()) {
+				timeout = setTimeout(() => {
+					loadFiles(currentPath, true);
+				}, 800); // slightly faster, feels better
+			} else {
+				loadFiles(currentPath, false);
+			}
+
+			return () => {
+				if (timeout) clearTimeout(timeout);
+			};
 		})();
-	}, [currentPath]);
+	}, [currentPath, query]);
 
 	const filtered = useMemo(() => {
 		const list = !query ? files : files.filter((f) => f.name.toLowerCase().includes(query.toLowerCase()));
