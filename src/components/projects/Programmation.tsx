@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Code, Download, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useUpload } from '@/providers/UploadProvider';
+
 type FileEntry = {
 	path: string;
 	name: string;
@@ -40,6 +42,7 @@ function detectProgrammationType(entry: FileEntry): 'DuoTecno' | 'DALI' | 'Loxon
 }
 
 export default function Programmation({ basePath, client }: { basePath: string; client: string }) {
+	const { uploading, uploadFile } = useUpload();
 	const [items, setItems] = useState<FileEntry[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(true);
@@ -67,17 +70,13 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 	}, [basePath, client]);
 
 	const upload = async (file: File) => {
-		const fd = new FormData();
-		fd.append('file', file);
-		fd.append('client', client);
-		fd.append('kind', 'programmation');
+		const progPath = `${basePath}/${client}/programmation`;
 
-		await fetch('/api/files/upload', {
-			method: 'POST',
-			body: fd,
-		});
+		const success = await uploadFile(file, progPath);
 
-		await load();
+		if (success) {
+			await load();
+		}
 	};
 
 	const download = (path: string) => {
@@ -125,9 +124,14 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 						<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='px-5 pb-5 space-y-6'>
 							{/* Upload */}
 							<div className='flex justify-end'>
-								<button onClick={() => inputRef.current?.click()} className='flex items-center gap-2 px-4 py-2 rounded-xl bg-violet-600 text-white text-sm font-medium hover:opacity-90 transition'>
+								<button
+									onClick={() => inputRef.current?.click()}
+									disabled={uploading}
+									className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+										uploading ? 'bg-violet-400 cursor-not-allowed opacity-70 text-white' : 'bg-violet-600 hover:opacity-90 text-white'
+									}`}>
 									<Upload size={14} />
-									Upload
+									{uploading ? 'Uploading…' : 'Upload'}
 								</button>
 							</div>
 

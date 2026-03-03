@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Download, File, FileText, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useUpload } from '@/providers/UploadProvider';
+
 type FileEntry = {
 	path: string;
 	name: string;
@@ -14,6 +16,7 @@ type FileEntry = {
 const SCHEMA_EXTENSIONS = ['.pdf', '.schrack', '.trikker'];
 
 export default function Schemas({ basePath, client }: { basePath: string; client: string }) {
+	const { uploading, uploadFile } = useUpload();
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(true);
@@ -40,17 +43,13 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 	}, [basePath, client]);
 
 	const upload = async (file: File) => {
-		const fd = new FormData();
-		fd.append('file', file);
-		fd.append('client', client);
-		fd.append('kind', 'schemas');
+		const progPath = `${basePath}/${client}/programmation`;
 
-		await fetch('/api/files/upload', {
-			method: 'POST',
-			body: fd,
-		});
+		const success = await uploadFile(file, progPath);
 
-		await load();
+		if (success) {
+			await load();
+		}
 	};
 
 	const download = (path: string) => {
@@ -92,9 +91,14 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 						<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className='px-5 pb-5 space-y-4'>
 							{/* Upload */}
 							<div className='flex justify-end'>
-								<button onClick={() => inputRef.current?.click()} className='flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:opacity-90 transition'>
+								<button
+									onClick={() => inputRef.current?.click()}
+									disabled={uploading}
+									className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+										uploading ? 'bg-indigo-400 cursor-not-allowed opacity-70 text-white' : 'bg-indigo-600 hover:opacity-90 text-white'
+									}`}>
 									<Upload size={14} />
-									Upload
+									{uploading ? 'Uploading…' : 'Upload'}
 								</button>
 							</div>
 

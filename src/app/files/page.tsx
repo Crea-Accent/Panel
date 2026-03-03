@@ -36,15 +36,14 @@ export default function FilesPage() {
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
 	const [loading, setLoading] = useState(true);
-	const abortRef = useRef<AbortController | null>(null);
 
+	const abortRef = useRef<AbortController | null>(null);
 	const uploadRef = useRef<HTMLInputElement>(null);
 
+	const isSearching = query.trim().length > 0;
+
 	async function loadFiles(path: string, recursive = false) {
-		// Cancel previous request
-		if (abortRef.current) {
-			abortRef.current.abort();
-		}
+		if (abortRef.current) abortRef.current.abort();
 
 		const controller = new AbortController();
 		abortRef.current = controller;
@@ -55,7 +54,7 @@ export default function FilesPage() {
 			const res = await fetch(url, { signal: controller.signal });
 			const data = await res.json();
 			setFiles(Array.isArray(data) ? data : []);
-		} catch (err: unknown) {
+		} catch (err) {
 			if ((err as Error).name !== 'AbortError') {
 				console.error('File load failed:', err);
 			}
@@ -82,10 +81,10 @@ export default function FilesPage() {
 
 			let timeout: NodeJS.Timeout | undefined;
 
-			if (query.trim()) {
+			if (isSearching) {
 				timeout = setTimeout(() => {
 					loadFiles(currentPath, true);
-				}, 800); // slightly faster, feels better
+				}, 800);
 			} else {
 				loadFiles(currentPath, false);
 			}
@@ -109,12 +108,13 @@ export default function FilesPage() {
 
 	function navigate(file: FileEntry) {
 		if (file.type === 'directory') {
+			setQuery('');
 			setCurrentPath(file.path);
 		}
 	}
 
 	function goUp() {
-		if (!currentPath || !settings?.path) return;
+		if (!currentPath || !settings?.path || isSearching) return;
 		if (currentPath === settings.path) return;
 
 		const parent = currentPath.substring(0, currentPath.lastIndexOf('\\'));
@@ -123,10 +123,11 @@ export default function FilesPage() {
 	}
 
 	function goHome() {
-		if (settings?.path) setCurrentPath(settings.path);
+		if (settings?.path && !isSearching) setCurrentPath(settings.path);
 	}
 
 	async function copyToClipboard(text: string) {
+		if (isSearching) return;
 		try {
 			await navigator.clipboard.writeText(text);
 		} catch {
@@ -183,31 +184,46 @@ export default function FilesPage() {
 		<div className='max-w-6xl mx-auto py-12 space-y-8'>
 			<h1 className='text-3xl font-semibold tracking-tight'>Files</h1>
 
-			{/* Toolbar */}
 			<div className='flex items-center gap-3 flex-wrap'>
-				<motion.button whileTap={{ scale: 0.95 }} onClick={goHome} className='flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm'>
+				<motion.button
+					whileTap={{ scale: 0.95 }}
+					onClick={goHome}
+					disabled={isSearching}
+					className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${isSearching ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`}>
 					<Home size={16} />
 				</motion.button>
 
-				<motion.button whileTap={{ scale: 0.95 }} onClick={goUp} className='flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm'>
+				<motion.button
+					whileTap={{ scale: 0.95 }}
+					onClick={goUp}
+					disabled={isSearching}
+					className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${isSearching ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`}>
 					<ArrowUp size={16} />
 				</motion.button>
 
 				<motion.button
 					whileTap={{ scale: 0.95 }}
 					onClick={() => currentPath && copyToClipboard(currentPath)}
-					className='flex items-center gap-2 px-4 py-2 rounded-xl bg-gray-100 hover:bg-gray-200 text-sm'>
+					disabled={isSearching}
+					className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${isSearching ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`}>
 					<Copy size={16} />
 				</motion.button>
 
 				<div className='relative'>
 					<Search size={14} className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' />
+
 					<input
 						placeholder='Search files...'
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						className='pl-8 pr-4 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-black outline-none'
+						className='pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-black outline-none'
 					/>
+
+					{query && (
+						<button onClick={() => setQuery('')} className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black'>
+							✕
+						</button>
+					)}
 				</div>
 
 				<motion.button whileTap={{ scale: 0.95 }} onClick={() => uploadRef.current?.click()} className='flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white text-sm'>
@@ -217,6 +233,8 @@ export default function FilesPage() {
 
 				<input type='file' ref={uploadRef} multiple className='hidden' onChange={upload} />
 			</div>
+
+			{/* Table remains unchanged below */}
 
 			{/* Table */}
 			<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className='bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden'>

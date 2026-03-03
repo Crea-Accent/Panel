@@ -4,6 +4,7 @@ import { NextResponse } from 'next/server';
 import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { spawn } from 'child_process';
 
 const PACKAGE_PATH = path.join(process.cwd(), 'package.json');
 
@@ -77,8 +78,6 @@ export async function GET() {
    PATCH → Run Update
 ========================= */
 
-import { spawn } from 'child_process';
-
 export async function PATCH() {
 	const encoder = new TextEncoder();
 
@@ -90,7 +89,7 @@ export async function PATCH() {
 
 			send('Starting update...');
 
-			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 reload all']);
+			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 restart panel']);
 
 			child.stdout.on('data', (data) => {
 				send(data.toString());

@@ -9,6 +9,7 @@ import { SessionProvider } from '@/providers/SessionProvider';
 import Sidebar from '@/components/Sidebar';
 import { SidebarLayout } from '@/components/SidebarLayout';
 import { SidebarProvider } from '@/providers/SidebarProvider';
+import { UploadProvider } from '@/providers/UploadProvider';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 
@@ -33,15 +34,17 @@ export default async function RootLayout({
 		<html lang='en'>
 			<body className={``}>
 				<SessionProvider>
-					<PermissionsProvider>
-						<SidebarProvider>
-							<Header />
-							<Sidebar />
-							<SidebarLayout>
-								<main className='flex-1'>{children}</main>
-							</SidebarLayout>
-						</SidebarProvider>
-					</PermissionsProvider>
+					<UploadProvider>
+						<PermissionsProvider>
+							<SidebarProvider>
+								<Header />
+								<Sidebar />
+								<SidebarLayout>
+									<main className='flex-1'>{children}</main>
+								</SidebarLayout>
+							</SidebarProvider>
+						</PermissionsProvider>
+					</UploadProvider>
 				</SessionProvider>
 			</body>
 		</html>

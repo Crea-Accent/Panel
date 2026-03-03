@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Download, FolderPlus, Image as ImageIcon, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { useUpload } from '@/providers/UploadProvider';
+
 type FileEntry = {
 	path: string;
 	name: string;
@@ -19,12 +21,14 @@ type FolderGroup = {
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 
 export default function Pictures({ basePath, client }: { basePath: string; client: string }) {
+	const { uploading, uploadFile } = useUpload();
+
 	const [groups, setGroups] = useState<FolderGroup[]>([]);
 	const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(true);
-	const inputRef = useRef<HTMLInputElement | null>(null);
 	const [activeUploadFolder, setActiveUploadFolder] = useState<string | undefined>(undefined);
+	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	const load = async () => {
 		setLoading(true);
@@ -107,19 +111,18 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 		const baseDir = `${basePath}/${client}/pictures`;
 		const targetDir = activeUploadFolder ? `${baseDir}/${activeUploadFolder}` : baseDir;
 
-		for (const file of Array.from(files)) {
-			const fd = new FormData();
-			fd.append('file', file);
-			fd.append('dir', targetDir);
+		let successCount = 0;
 
-			await fetch('/api/files', {
-				method: 'POST',
-				body: fd,
-			});
+		for (const file of Array.from(files)) {
+			const success = await uploadFile(file, targetDir);
+			if (success) successCount++;
+		}
+
+		if (successCount > 0) {
+			await load();
 		}
 
 		setActiveUploadFolder(undefined);
-		await load();
 	};
 
 	const moveImage = async (imagePath: string, targetFolder: string) => {
@@ -183,7 +186,10 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 										setActiveUploadFolder(undefined);
 										inputRef.current?.click();
 									}}
-									className='flex items-center gap-2 px-4 py-2 rounded-xl bg-emerald-600 text-white text-sm font-medium hover:opacity-90 transition'>
+									disabled={uploading}
+									className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
+										uploading ? 'bg-emerald-400 opacity-70 cursor-not-allowed text-white' : 'bg-emerald-600 hover:opacity-90 text-white'
+									}`}>
 									<Upload size={14} />
 									Upload
 								</button>
@@ -233,7 +239,8 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 																setActiveUploadFolder(group.name);
 																inputRef.current?.click();
 															}}
-															className='text-xs px-3 py-1 rounded-lg bg-zinc-100 hover:bg-zinc-200 transition'>
+															disabled={uploading}
+															className={`text-xs px-3 py-1 rounded-lg transition ${uploading ? 'bg-zinc-200 cursor-not-allowed opacity-70' : 'bg-zinc-100 hover:bg-zinc-200'}`}>
 															Upload to {group.name}
 														</button>
 													</div>
