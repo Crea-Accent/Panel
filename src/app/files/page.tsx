@@ -36,7 +36,6 @@ export default function FilesPage() {
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
 	const [loading, setLoading] = useState(true);
-	const [debouncedQuery, setDebouncedQuery] = useState('');
 	const abortRef = useRef<AbortController | null>(null);
 
 	const uploadRef = useRef<HTMLInputElement>(null);
