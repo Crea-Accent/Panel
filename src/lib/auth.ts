@@ -38,13 +38,13 @@ export const authConfig: NextAuthOptions = {
 
 				if (!valid) return null;
 
-				// what ends up in the JWT
 				return {
 					id: user.id,
 					name: user.name,
 					email: user.email,
-					role: user.role,
+					roleId: user.roleId,
 					permissions: user.permissions,
+					theme: user.theme || 'system',
 				};
 			},
 		}),
@@ -54,17 +54,32 @@ export const authConfig: NextAuthOptions = {
 
 	callbacks: {
 		async jwt({ token, user }) {
+			// 🔹 On login
 			if (user) {
-				token.role = (user as unknown as Record<'role', string>).role;
-				token.permissions = (user as unknown as Record<'permissions', string[]>).permissions;
+				token.roleId = user.roleId;
+				token.permissions = user.permissions;
+				token.theme = user.theme;
+				return token;
 			}
+
+			// 🔹 On refresh → rehydrate from users.json
+			const users = loadUsers();
+			const dbUser = users.find((u) => u.email.toLowerCase() === token.email?.toLowerCase());
+
+			if (dbUser) {
+				token.roleId = dbUser.roleId;
+				token.permissions = dbUser.permissions;
+				token.theme = dbUser.theme ?? 'system';
+			}
+
 			return token;
 		},
 
 		async session({ session, token }) {
 			if (session.user) {
-				(session.user as Record<'role', string>).role = token.role as string;
-				(session.user as Record<'permissions', string[]>).permissions = token.permissions as string[];
+				session.user.roleId = token.roleId;
+				session.user.permissions = token.permissions;
+				session.user.theme = token.theme;
 			}
 			return session;
 		},

@@ -12,14 +12,18 @@ export function SidebarLayout({ children }: { children: React.ReactNode }) {
 	return (
 		<motion.main
 			animate={{
-				// 👉 only push content when we're NOT on mobile
-				marginLeft: open && typeof window !== 'undefined' && window.innerWidth >= 768 ? SIDEBAR_WIDTH : 0,
+				marginLeft: open ? SIDEBAR_WIDTH : 0,
 			}}
-			transition={{ type: 'tween', duration: 0.25 }}
+			transition={{ duration: 0.25 }}
 			style={{
-				minHeight: `calc(100vh - ${HEADER_HEIGHT}px)`,
+				minHeight: `calc(100dvh - ${HEADER_HEIGHT}px)`,
 			}}
-			className='px-4 md:px-8 py-6'>
+			className='
+				px-4 md:px-6
+				py-6
+				md:ml-0
+				md:transition-[margin]
+			'>
 			{children}
 		</motion.main>
 	);

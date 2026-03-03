@@ -44,7 +44,6 @@ export default function AppsPage() {
 	const installers = useMemo(() => {
 		return files.filter((f) => {
 			if (f.type !== 'file') return false;
-
 			const lower = f.name.toLowerCase();
 			return INSTALLER_EXTENSIONS.some((ext) => lower.endsWith(ext));
 		});
@@ -52,7 +51,6 @@ export default function AppsPage() {
 
 	function download(path: string) {
 		const url = `/api/files/download?path=${encodeURIComponent(path)}`;
-
 		const a = document.createElement('a');
 		a.href = url;
 		document.body.appendChild(a);
@@ -61,41 +59,68 @@ export default function AppsPage() {
 	}
 
 	if (loading) {
-		return <div className='max-w-6xl mx-auto py-10'>Loading installers...</div>;
+		return <div className='p-6 text-sm text-gray-500 dark:text-zinc-400'>Loading installers…</div>;
 	}
 
 	if (!settings?.path) {
 		return (
-			<div className='max-w-6xl mx-auto py-10 space-y-2'>
-				<h1 className='text-3xl font-semibold'>Apps</h1>
-				<p className='text-gray-500'>No base path configured. Go to Settings → Apps.</p>
+			<div className='space-y-2'>
+				<h1 className='text-2xl font-semibold text-gray-900 dark:text-zinc-100'>Apps</h1>
+				<p className='text-sm text-gray-500 dark:text-zinc-400'>No base path configured. Go to Settings → Apps.</p>
 			</div>
 		);
 	}
 
 	return (
-		<div className='max-w-6xl mx-auto py-10 space-y-8'>
+		<div className='space-y-6'>
 			<div>
-				<h1 className='text-3xl font-semibold'>Apps</h1>
-				<p className='text-gray-500'>Available installer packages</p>
+				<h1 className='text-2xl font-semibold text-gray-900 dark:text-zinc-100'>Apps</h1>
+				<p className='text-sm text-gray-500 dark:text-zinc-400'>Available installer packages</p>
 			</div>
 
-			<div className='bg-white border border-gray-200 rounded-2xl shadow-sm'>
+			<div
+				className='
+					bg-white dark:bg-zinc-900
+					border border-gray-200 dark:border-zinc-800
+					rounded-2xl
+					shadow-sm
+					overflow-hidden
+				'>
 				{installers.length === 0 && (
-					<div className='px-6 py-6 text-sm text-gray-500'>
-						No installer files found in <b>{settings.path}</b>.
+					<div className='px-6 py-6 text-sm text-gray-500 dark:text-zinc-400'>
+						No installer files found in <span className='font-medium text-gray-700 dark:text-zinc-200'>{settings.path}</span>.
 					</div>
 				)}
 
 				{installers.map((file) => (
-					<div key={file.path} className='flex items-center justify-between px-6 py-4 border-b border-gray-100 last:border-b-0 hover:bg-gray-50 transition'>
-						<div className='flex flex-col'>
-							<span className='text-sm font-medium text-gray-900'>{file.name}</span>
-							<span className='text-xs text-gray-500'>{file.path}</span>
+					<div
+						key={file.path}
+						className='
+							flex items-center justify-between
+							px-6 py-4
+							border-t border-gray-100 dark:border-zinc-800
+							first:border-t-0
+							hover:bg-gray-50 dark:hover:bg-zinc-800
+							transition
+						'>
+						<div className='flex flex-col min-w-0'>
+							<span className='text-sm font-medium text-gray-900 dark:text-zinc-100 truncate'>{file.name}</span>
+							<span className='text-xs text-gray-500 dark:text-zinc-400 truncate'>{file.path}</span>
 						</div>
 
-						<button onClick={() => download(file.path)} className='text-sm text-zinc-500 flex items-center gap-1 hover:text-indigo-600'>
-							<Download size={14} />
+						<button
+							onClick={() => download(file.path)}
+							className='
+								h-9 px-3
+								flex items-center gap-2
+								rounded-xl
+								text-sm font-medium
+								text-gray-600 dark:text-zinc-300
+								hover:text-indigo-600 dark:hover:text-indigo-400
+								hover:bg-indigo-50 dark:hover:bg-indigo-900/30
+								transition-colors
+							'>
+							<Download className='w-4 h-4' strokeWidth={1.8} />
 							Download
 						</button>
 					</div>

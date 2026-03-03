@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, Copy, Download, File, Folder, Home, MoreVertical, Pencil, Search, Trash2, Upload } from 'lucide-react';
+import { ArrowUp, Copy, Download, File, Folder, Home, LucideIcon, Pencil, Search, Trash2, Upload } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 type FileEntry = {
@@ -54,11 +54,7 @@ export default function FilesPage() {
 			const res = await fetch(url, { signal: controller.signal });
 			const data = await res.json();
 			setFiles(Array.isArray(data) ? data : []);
-		} catch (err) {
-			if ((err as Error).name !== 'AbortError') {
-				console.error('File load failed:', err);
-			}
-		}
+		} catch {}
 	}
 
 	useEffect(() => {
@@ -79,19 +75,17 @@ export default function FilesPage() {
 		(() => {
 			if (!currentPath) return;
 
-			let timeout: NodeJS.Timeout | undefined;
+			let timeout: NodeJS.Timeout;
 
 			if (isSearching) {
 				timeout = setTimeout(() => {
 					loadFiles(currentPath, true);
-				}, 800);
+				}, 600);
 			} else {
 				loadFiles(currentPath, false);
 			}
 
-			return () => {
-				if (timeout) clearTimeout(timeout);
-			};
+			return () => timeout && clearTimeout(timeout);
 		})();
 	}, [currentPath, query]);
 
@@ -99,9 +93,7 @@ export default function FilesPage() {
 		const list = !query ? files : files.filter((f) => f.name.toLowerCase().includes(query.toLowerCase()));
 
 		return [...list].sort((a, b) => {
-			if (a.type !== b.type) {
-				return a.type === 'directory' ? -1 : 1;
-			}
+			if (a.type !== b.type) return a.type === 'directory' ? -1 : 1;
 			return a.name.localeCompare(b.name);
 		});
 	}, [files, query]);
@@ -130,9 +122,7 @@ export default function FilesPage() {
 		if (isSearching) return;
 		try {
 			await navigator.clipboard.writeText(text);
-		} catch {
-			console.warn('Clipboard failed');
-		}
+		} catch {}
 	}
 
 	function download(path: string) {
@@ -176,186 +166,107 @@ export default function FilesPage() {
 		loadFiles(currentPath);
 	}
 
-	if (loading) return <div className='max-w-6xl mx-auto py-12 text-gray-500'>Loading...</div>;
+	if (loading) return <div className='p-6 text-sm text-gray-500 dark:text-zinc-400'>Loading…</div>;
 
-	if (!settings?.path) return <div className='max-w-6xl mx-auto py-12 text-gray-500'>No files path configured.</div>;
+	if (!settings?.path) return <div className='p-6 text-sm text-gray-500 dark:text-zinc-400'>No files path configured.</div>;
 
 	return (
-		<div className='max-w-6xl mx-auto py-12 space-y-8'>
-			<h1 className='text-3xl font-semibold tracking-tight'>Files</h1>
+		<div className='space-y-6'>
+			<h1 className='text-2xl font-semibold text-gray-900 dark:text-zinc-100'>Files</h1>
 
-			<div className='flex items-center gap-3 flex-wrap'>
-				<motion.button
-					whileTap={{ scale: 0.95 }}
-					onClick={goHome}
-					disabled={isSearching}
-					className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${isSearching ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`}>
-					<Home size={16} />
-				</motion.button>
+			{/* Toolbar */}
+			<div className='flex flex-wrap items-center gap-3'>
+				{[
+					{ icon: Home, onClick: goHome },
+					{ icon: ArrowUp, onClick: goUp },
+					{
+						icon: Copy,
+						onClick: () => currentPath && copyToClipboard(currentPath),
+					},
+				].map(({ icon: Icon, onClick }, i) => (
+					<button
+						key={i}
+						onClick={onClick}
+						disabled={isSearching}
+						className='h-10 w-10 flex items-center justify-center rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-40 transition'>
+						<Icon className='w-4 h-4' />
+					</button>
+				))}
 
-				<motion.button
-					whileTap={{ scale: 0.95 }}
-					onClick={goUp}
-					disabled={isSearching}
-					className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${isSearching ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`}>
-					<ArrowUp size={16} />
-				</motion.button>
-
-				<motion.button
-					whileTap={{ scale: 0.95 }}
-					onClick={() => currentPath && copyToClipboard(currentPath)}
-					disabled={isSearching}
-					className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm ${isSearching ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 'bg-gray-100 hover:bg-gray-200'}`}>
-					<Copy size={16} />
-				</motion.button>
-
-				<div className='relative'>
-					<Search size={14} className='absolute left-3 top-1/2 -translate-y-1/2 text-gray-400' />
-
+				<div className='relative max-w-xs'>
+					<Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
 					<input
-						placeholder='Search files...'
+						placeholder='Search files…'
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						className='pl-8 pr-8 py-2 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-black outline-none'
+						className='h-10 pl-10 pr-8 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition'
 					/>
-
 					{query && (
-						<button onClick={() => setQuery('')} className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-black'>
+						<button onClick={() => setQuery('')} className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200'>
 							✕
 						</button>
 					)}
 				</div>
 
-				<motion.button whileTap={{ scale: 0.95 }} onClick={() => uploadRef.current?.click()} className='flex items-center gap-2 px-4 py-2 rounded-xl bg-black text-white text-sm'>
-					<Upload size={16} />
+				<button onClick={() => uploadRef.current?.click()} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+					<Upload className='w-4 h-4' />
 					Upload
-				</motion.button>
+				</button>
 
 				<input type='file' ref={uploadRef} multiple className='hidden' onChange={upload} />
 			</div>
 
-			{/* Table remains unchanged below */}
-
 			{/* Table */}
-			<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className='bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden'>
-				<div className='grid grid-cols-4 px-6 py-3 text-xs uppercase tracking-wide text-gray-500 bg-gray-50'>
+			<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden'>
+				<div className='hidden md:grid grid-cols-4 px-6 py-3 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-800'>
 					<div>Name</div>
 					<div>Size</div>
 					<div>Modified</div>
 					<div className='text-right'>Actions</div>
 				</div>
 
-				<AnimatePresence>
-					{filtered.map((file) => (
-						<motion.div key={file.path} layout initial={{ opacity: 0, y: -5 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }} className='border-t border-gray-100 hover:bg-gray-50 transition'>
-							<div className='flex items-center justify-between px-4 py-4 md:grid md:grid-cols-4 md:items-center md:px-6'>
-								{/* Left Side */}
-								<div className='flex items-start gap-3 cursor-pointer flex-1' onClick={() => navigate(file)}>
-									{file.type === 'directory' ? <Folder size={20} className='text-blue-600 mt-0.5 shrink-0' /> : <File size={20} className='text-gray-500 mt-0.5 shrink-0' />}
+				{filtered.map((file) => (
+					<div key={file.path} className='border-t border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition'>
+						<div className='flex md:grid md:grid-cols-4 items-center px-4 md:px-6 py-4 gap-3'>
+							<div className='flex items-start gap-3 cursor-pointer flex-1' onClick={() => navigate(file)}>
+								{file.type === 'directory' ? <Folder className='w-5 h-5 text-indigo-600 dark:text-indigo-400' /> : <File className='w-5 h-5 text-gray-400 dark:text-zinc-500' />}
 
-									<div className='flex flex-col'>
-										<span className='text-sm font-medium truncate'>{file.name}</span>
+								<div className='flex flex-col'>
+									<span className='text-sm font-medium text-gray-900 dark:text-zinc-100 truncate'>{file.name}</span>
 
-										{/* Mobile meta */}
-										<div className='text-xs text-gray-500 md:hidden mt-1 space-x-3'>
-											<span>{formatSize(file.size)}</span>
-											<span>{formatDate(file.modified)}</span>
-										</div>
-									</div>
-								</div>
-
-								{/* Desktop Size */}
-								<div className='hidden md:block text-sm text-gray-500'>{formatSize(file.size)}</div>
-
-								{/* Desktop Modified */}
-								<div className='hidden md:block text-sm text-gray-500'>{formatDate(file.modified)}</div>
-
-								{/* Actions */}
-								<div className='flex justify-end md:justify-end relative'>
-									{/* Desktop Buttons */}
-									<div className='hidden md:flex gap-2'>
-										<button onClick={() => copyToClipboard(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
-											<Copy size={16} />
-										</button>
-										<button onClick={() => download(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
-											<Download size={16} />
-										</button>
-										<button onClick={() => rename(file.path)} className='p-2 hover:bg-gray-100 rounded-lg'>
-											<Pencil size={16} />
-										</button>
-										<button onClick={() => remove(file.path)} className='p-2 hover:bg-gray-100 rounded-lg text-red-500'>
-											<Trash2 size={16} />
-										</button>
-									</div>
-
-									{/* Mobile Dropdown */}
-									<div className='md:hidden relative'>
-										<MobileActions onCopy={() => copyToClipboard(file.path)} onDownload={() => download(file.path)} onRename={() => rename(file.path)} onDelete={() => remove(file.path)} />
+									<div className='text-xs text-gray-500 dark:text-zinc-500 md:hidden mt-1 space-x-3'>
+										<span>{formatSize(file.size)}</span>
+										<span>{formatDate(file.modified)}</span>
 									</div>
 								</div>
 							</div>
-						</motion.div>
-					))}
-				</AnimatePresence>
+
+							<div className='hidden md:block text-sm text-gray-500 dark:text-zinc-400'>{formatSize(file.size)}</div>
+
+							<div className='hidden md:block text-sm text-gray-500 dark:text-zinc-400'>{formatDate(file.modified)}</div>
+
+							<div className='flex justify-end gap-2'>
+								<ActionIcon icon={Copy} onClick={() => copyToClipboard(file.path)} />
+								<ActionIcon icon={Download} onClick={() => download(file.path)} />
+								<ActionIcon icon={Pencil} onClick={() => rename(file.path)} />
+								<ActionIcon icon={Trash2} onClick={() => remove(file.path)} danger />
+							</div>
+						</div>
+					</div>
+				))}
 			</motion.div>
 		</div>
 	);
 }
 
-function MobileActions({ onCopy, onDownload, onRename, onDelete }: { onCopy: () => void; onDownload: () => void; onRename: () => void; onDelete: () => void }) {
-	const [open, setOpen] = useState(false);
-
+function ActionIcon({ icon: Icon, onClick, danger }: { icon: LucideIcon; onClick: () => void; danger?: boolean }) {
 	return (
-		<div className='relative'>
-			<button onClick={() => setOpen(!open)} className='p-2 rounded-lg hover:bg-gray-100'>
-				<MoreVertical size={18} />
-			</button>
-
-			<AnimatePresence>
-				{open && (
-					<motion.div
-						initial={{ opacity: 0, y: -5 }}
-						animate={{ opacity: 1, y: 0 }}
-						exit={{ opacity: 0 }}
-						className='absolute right-0 mt-2 w-40 bg-white border border-gray-200 rounded-xl shadow-lg overflow-hidden z-20'>
-						<button
-							onClick={() => {
-								onCopy();
-								setOpen(false);
-							}}
-							className='flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50'>
-							<Copy size={14} /> Copy path
-						</button>
-
-						<button
-							onClick={() => {
-								onDownload();
-								setOpen(false);
-							}}
-							className='flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50'>
-							<Download size={14} /> Download
-						</button>
-
-						<button
-							onClick={() => {
-								onRename();
-								setOpen(false);
-							}}
-							className='flex items-center gap-2 w-full px-4 py-2 text-sm hover:bg-gray-50'>
-							<Pencil size={14} /> Rename
-						</button>
-
-						<button
-							onClick={() => {
-								onDelete();
-								setOpen(false);
-							}}
-							className='flex items-center gap-2 w-full px-4 py-2 text-sm text-red-500 hover:bg-gray-50'>
-							<Trash2 size={14} /> Delete
-						</button>
-					</motion.div>
-				)}
-			</AnimatePresence>
-		</div>
+		<button
+			onClick={onClick}
+			className={`h-9 w-9 flex items-center justify-center rounded-xl transition ${
+				danger ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
+			}`}>
+			<Icon className='w-4 h-4' />
+		</button>
 	);
 }

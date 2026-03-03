@@ -1,5 +1,4 @@
 /** @format */
-
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -14,6 +13,7 @@ type UserType = {
 	email: string;
 	roleId: string;
 	permissions: string[];
+	password?: string;
 };
 
 type Role = {
@@ -34,6 +34,9 @@ export default function UserSettings() {
 		roleId: '',
 	});
 
+	const [expandedUser, setExpandedUser] = useState<string | null>(null);
+	const [savingUser, setSavingUser] = useState<string | null>(null);
+
 	async function load() {
 		const [uRes, rRes] = await Promise.all([fetch('/api/users'), fetch('/api/settings/roles')]);
 
@@ -53,29 +56,37 @@ export default function UserSettings() {
 	async function createUser() {
 		await fetch('/api/users', {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: JSON.stringify(newUser),
 		});
 
 		setShowModal(false);
-		setNewUser({ name: '', email: '', password: '', roleId: '' });
+		setNewUser({
+			name: '',
+			email: '',
+			password: '',
+			roleId: '',
+		});
 		load();
 	}
 
 	async function deleteUser(id: string) {
-		await fetch(`/api/users?id=${id}`, { method: 'DELETE' });
+		await fetch(`/api/users?id=${id}`, {
+			method: 'DELETE',
+		});
 		load();
 	}
-
-	const [expandedUser, setExpandedUser] = useState<string | null>(null);
-	const [savingUser, setSavingUser] = useState<string | null>(null);
 
 	async function updateUser(user: UserType) {
 		setSavingUser(user.id);
 
 		await fetch('/api/users', {
 			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: JSON.stringify(user),
 		});
 
@@ -93,28 +104,30 @@ export default function UserSettings() {
 		});
 	}
 
+	const card = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
+
+	const input =
+		'h-10 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition';
+
 	return (
-		<div className='max-w-5xl mx-auto py-10 space-y-10'>
+		<div className='space-y-8'>
 			{/* Header */}
 			<div className='flex justify-between items-center'>
 				<div>
-					<h2 className='text-2xl font-semibold flex items-center gap-2'>
-						<User size={20} />
+					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
+						<User className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
 						Users
 					</h2>
-					<p className='text-sm text-gray-500 mt-1'>Manage system access and permissions.</p>
+					<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Manage system access and permissions.</p>
 				</div>
 
-				<motion.button
-					whileTap={{ scale: 0.95 }}
-					onClick={() => setShowModal(true)}
-					className='px-4 py-2 rounded-lg bg-black text-white text-sm font-medium flex items-center gap-2 hover:opacity-90 transition'>
-					<Plus size={16} />
+				<button onClick={() => setShowModal(true)} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 hover:bg-indigo-500 transition'>
+					<Plus className='w-4 h-4' />
 					New User
-				</motion.button>
+				</button>
 			</div>
 
-			{/* User Cards */}
+			{/* Users */}
 			<div className='space-y-4'>
 				<AnimatePresence>
 					{users.map((user) => {
@@ -124,73 +137,120 @@ export default function UserSettings() {
 						return (
 							<motion.div
 								key={user.id}
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -10 }}
-								transition={{ duration: 0.2 }}
-								className='bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden'>
+								initial={{
+									opacity: 0,
+									y: 6,
+								}}
+								animate={{
+									opacity: 1,
+									y: 0,
+								}}
+								exit={{
+									opacity: 0,
+									y: -6,
+								}}
+								className={card}>
 								{/* Header */}
 								<div className='p-6 flex justify-between items-center'>
 									<div>
-										<div className='font-medium text-sm'>{user.name}</div>
-										<div className='text-xs text-gray-500'>{user.email}</div>
+										<div className='text-sm font-medium text-gray-900 dark:text-zinc-100'>{user.name}</div>
+										<div className='text-xs text-gray-500 dark:text-zinc-400'>{user.email}</div>
 
 										{role && (
-											<div className='mt-2 inline-flex items-center gap-1 text-xs bg-gray-100 px-2 py-1 rounded-full'>
-												<ShieldCheck size={12} />
+											<div className='mt-2 inline-flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full'>
+												<ShieldCheck className='w-3 h-3' />
 												{role.name}
 											</div>
 										)}
 									</div>
 
-									<div className='flex items-center gap-4'>
-										<button onClick={() => setExpandedUser(isOpen ? null : user.id)} className='text-gray-500 hover:text-black transition'>
-											{isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+									<div className='flex items-center gap-3'>
+										<button
+											onClick={() => setExpandedUser(isOpen ? null : user.id)}
+											className='h-9 w-9 flex items-center justify-center rounded-xl text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
+											{isOpen ? <ChevronUp className='w-4 h-4' /> : <ChevronDown className='w-4 h-4' />}
 										</button>
 
-										<button onClick={() => deleteUser(user.id)} className='text-red-500 hover:text-red-600 transition'>
-											<Trash2 size={18} />
+										<button onClick={() => deleteUser(user.id)} className='h-9 w-9 flex items-center justify-center rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition'>
+											<Trash2 className='w-4 h-4' />
 										</button>
 									</div>
 								</div>
 
-								{/* Expand Section */}
+								{/* Expanded */}
 								<AnimatePresence>
 									{isOpen && (
 										<motion.div
-											initial={{ height: 0, opacity: 0 }}
-											animate={{ height: 'auto', opacity: 1 }}
-											exit={{ height: 0, opacity: 0 }}
-											transition={{ duration: 0.2 }}
-											className='border-t border-gray-200 px-6 pb-6'>
+											initial={{
+												opacity: 0,
+												y: -4,
+											}}
+											animate={{
+												opacity: 1,
+												y: 0,
+											}}
+											exit={{
+												opacity: 0,
+												y: -4,
+											}}
+											className='border-t border-gray-200 dark:border-zinc-800 px-6 pb-6'>
 											<div className='pt-6 space-y-6'>
-												{/* Editable Info */}
 												<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
 													<input
-														className='rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+														className={input}
 														value={user.name}
-														onChange={(e) => setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, name: e.target.value } : u)))}
-														placeholder='Name'
+														onChange={(e) =>
+															setUsers((prev) =>
+																prev.map((u) =>
+																	u.id === user.id
+																		? {
+																				...u,
+																				name: e.target.value,
+																			}
+																		: u
+																)
+															)
+														}
 													/>
 
 													<input
-														className='rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+														className={input}
 														value={user.email}
-														onChange={(e) => setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, email: e.target.value } : u)))}
-														placeholder='Email'
+														onChange={(e) =>
+															setUsers((prev) =>
+																prev.map((u) =>
+																	u.id === user.id
+																		? {
+																				...u,
+																				email: e.target.value,
+																			}
+																		: u
+																)
+															)
+														}
 													/>
 
 													<input
 														type='password'
-														className='md:col-span-2 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
-														placeholder='New password (leave empty to keep current)'
-														onChange={(e) => setUsers((prev) => prev.map((u) => (u.id === user.id ? { ...u, password: e.target.value } : u)))}
+														className={`${input} md:col-span-2`}
+														placeholder='New password (optional)'
+														onChange={(e) =>
+															setUsers((prev) =>
+																prev.map((u) =>
+																	u.id === user.id
+																		? {
+																				...u,
+																				password: e.target.value,
+																			}
+																		: u
+																)
+															)
+														}
 													/>
 												</div>
 
-												{/* Role Select */}
 												<select
-													className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+													className={input}
 													value={user.roleId}
 													onChange={(e) =>
 														updateUser({
@@ -205,39 +265,29 @@ export default function UserSettings() {
 													))}
 												</select>
 
-												{/* Permissions */}
 												<PermissionMatrix
 													value={user.permissions}
 													compareWith={roles.find((r) => r.id === user.roleId)?.defaultPermissions}
-													onChange={(next) => updateUser({ ...user, permissions: next })}
+													onChange={(next) =>
+														updateUser({
+															...user,
+															permissions: next,
+														})
+													}
 												/>
 
-												<div className='flex justify-between items-center pt-4 border-t border-gray-200'>
-													<div className='flex gap-3'>
-														<button onClick={() => resetToRole(user)} className='text-sm text-gray-500 hover:text-black transition'>
+												<div className='flex justify-between items-center pt-4 border-t border-gray-200 dark:border-zinc-800'>
+													<div className='flex gap-4'>
+														<button onClick={() => resetToRole(user)} className='text-sm text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-200 transition'>
 															Reset to role defaults
 														</button>
 
-														<button
-															onClick={() => {
-																const { id, name, email } = user;
-																const password = (user as unknown as Record<string, string>).password;
-
-																updateUser({
-																	id,
-																	name,
-																	email,
-																	roleId: user.roleId,
-																	permissions: user.permissions,
-																	...(password ? { password } : {}),
-																});
-															}}
-															className='text-sm bg-black text-white px-3 py-1.5 rounded-lg'>
+														<button onClick={() => updateUser(user)} className='h-9 px-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
 															Save changes
 														</button>
 													</div>
 
-													{savingUser === user.id && <span className='text-xs text-gray-500'>Saving...</span>}
+													{savingUser === user.id && <span className='text-xs text-gray-500 dark:text-zinc-400'>Saving…</span>}
 												</div>
 											</div>
 										</motion.div>
@@ -249,31 +299,49 @@ export default function UserSettings() {
 				</AnimatePresence>
 			</div>
 
-			{/* Create User Modal */}
+			{/* Modal */}
 			<AnimatePresence>
 				{showModal && (
 					<>
-						{/* Backdrop */}
-						<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 bg-black/40 backdrop-blur-sm z-40' onClick={() => setShowModal(false)} />
-
-						{/* Modal */}
 						<motion.div
-							initial={{ opacity: 0, scale: 0.95 }}
-							animate={{ opacity: 1, scale: 1 }}
-							exit={{ opacity: 0, scale: 0.95 }}
-							transition={{ duration: 0.2 }}
+							initial={{
+								opacity: 0,
+							}}
+							animate={{
+								opacity: 1,
+							}}
+							exit={{
+								opacity: 0,
+							}}
+							className='fixed inset-0 bg-black/40 backdrop-blur-sm z-40'
+							onClick={() => setShowModal(false)}
+						/>
+
+						<motion.div
+							initial={{
+								opacity: 0,
+								scale: 0.96,
+							}}
+							animate={{
+								opacity: 1,
+								scale: 1,
+							}}
+							exit={{
+								opacity: 0,
+								scale: 0.96,
+							}}
 							className='fixed inset-0 flex items-center justify-center z-50'>
-							<div className='bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6'>
+							<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6'>
 								<div className='flex justify-between items-center'>
-									<h3 className='text-lg font-medium'>Create User</h3>
-									<button onClick={() => setShowModal(false)}>
-										<X size={18} />
+									<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Create User</h3>
+									<button onClick={() => setShowModal(false)} className='h-9 w-9 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
+										<X className='w-4 h-4' />
 									</button>
 								</div>
 
 								<div className='space-y-4'>
 									<input
-										className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+										className={input}
 										placeholder='Name'
 										value={newUser.name}
 										onChange={(e) =>
@@ -285,7 +353,7 @@ export default function UserSettings() {
 									/>
 
 									<input
-										className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+										className={input}
 										placeholder='Email'
 										value={newUser.email}
 										onChange={(e) =>
@@ -298,7 +366,7 @@ export default function UserSettings() {
 
 									<input
 										type='password'
-										className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+										className={input}
 										placeholder='Password'
 										value={newUser.password}
 										onChange={(e) =>
@@ -310,7 +378,7 @@ export default function UserSettings() {
 									/>
 
 									<select
-										className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+										className={input}
 										value={newUser.roleId}
 										onChange={(e) =>
 											setNewUser({
@@ -327,9 +395,9 @@ export default function UserSettings() {
 									</select>
 								</div>
 
-								<motion.button whileTap={{ scale: 0.97 }} onClick={createUser} className='w-full px-4 py-2 rounded-lg bg-black text-white text-sm font-medium hover:opacity-90 transition'>
+								<button onClick={createUser} className='h-10 w-full rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
 									Create User
-								</motion.button>
+								</button>
 							</div>
 						</motion.div>
 					</>

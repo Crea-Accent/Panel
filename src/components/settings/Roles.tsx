@@ -1,5 +1,4 @@
 /** @format */
-
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
@@ -25,6 +24,7 @@ export default function RoleSettings() {
 		const data = await res.json();
 		setRoles(data.roles);
 	}
+
 	useEffect(() => {
 		(() => {
 			load();
@@ -63,24 +63,26 @@ export default function RoleSettings() {
 		load();
 	}
 
+	const card = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
+
+	const input = 'text-base font-medium bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-none transition text-gray-900 dark:text-zinc-100';
+
 	return (
-		<div className='max-w-4xl mx-auto py-8 space-y-10'>
+		<div className='space-y-8'>
+			{/* Header */}
 			<div className='flex justify-between items-center'>
 				<div>
-					<h2 className='text-2xl font-semibold tracking-tight flex items-center gap-2'>
-						<Shield size={20} />
+					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
+						<Shield className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
 						Roles
 					</h2>
-					<p className='text-sm text-gray-500 mt-1'>Define default permission templates.</p>
+					<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Define default permission templates.</p>
 				</div>
 
-				<motion.button
-					whileTap={{ scale: 0.95 }}
-					onClick={() => setShowModal(true)}
-					className='px-4 py-2 rounded-lg bg-black text-white text-sm font-medium flex items-center gap-2 hover:opacity-90 transition'>
-					<Plus size={16} />
+				<button onClick={() => setShowModal(true)} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 hover:bg-indigo-500 transition'>
+					<Plus className='w-4 h-4' />
 					New Role
-				</motion.button>
+				</button>
 			</div>
 
 			{/* Role Cards */}
@@ -92,33 +94,41 @@ export default function RoleSettings() {
 						return (
 							<motion.div
 								key={role.id}
-								initial={{ opacity: 0, y: 10 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, y: -10 }}
-								transition={{ duration: 0.2 }}
-								className='bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden'>
-								{/* Role Header */}
+								initial={{
+									opacity: 0,
+									y: 6,
+								}}
+								animate={{
+									opacity: 1,
+									y: 0,
+								}}
+								exit={{
+									opacity: 0,
+									y: -6,
+								}}
+								className={card}>
+								{/* Header */}
 								<div className='p-6 flex justify-between items-center'>
-									<div className='flex items-center gap-3'>
-										<input
-											className='text-lg font-medium bg-transparent border-none focus:outline-none'
-											value={role.name}
-											onChange={(e) =>
-												saveRole({
-													...role,
-													name: e.target.value,
-												})
-											}
-										/>
-									</div>
+									<input
+										className={input}
+										value={role.name}
+										onChange={(e) =>
+											saveRole({
+												...role,
+												name: e.target.value,
+											})
+										}
+									/>
 
-									<div className='flex items-center gap-4'>
-										<button onClick={() => setExpandedRole(isOpen ? null : role.id)} className='text-gray-500 hover:text-black transition'>
-											{isOpen ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+									<div className='flex items-center gap-3'>
+										<button
+											onClick={() => setExpandedRole(isOpen ? null : role.id)}
+											className='h-9 w-9 flex items-center justify-center rounded-xl text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
+											{isOpen ? <ChevronUp className='w-4 h-4' /> : <ChevronDown className='w-4 h-4' />}
 										</button>
 
-										<button onClick={() => deleteRole(role.id)} className='text-red-500 hover:text-red-600 transition'>
-											<Trash2 size={18} />
+										<button onClick={() => deleteRole(role.id)} className='h-9 w-9 flex items-center justify-center rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition'>
+											<Trash2 className='w-4 h-4' />
 										</button>
 									</div>
 								</div>
@@ -127,13 +137,29 @@ export default function RoleSettings() {
 								<AnimatePresence>
 									{isOpen && (
 										<motion.div
-											initial={{ height: 0, opacity: 0 }}
-											animate={{ height: 'auto', opacity: 1 }}
-											exit={{ height: 0, opacity: 0 }}
-											transition={{ duration: 0.2 }}
-											className='px-6 pb-6 border-t border-gray-200'>
+											initial={{
+												opacity: 0,
+												y: -4,
+											}}
+											animate={{
+												opacity: 1,
+												y: 0,
+											}}
+											exit={{
+												opacity: 0,
+												y: -4,
+											}}
+											className='px-6 pb-6 border-t border-gray-200 dark:border-zinc-800'>
 											<div className='pt-6'>
-												<PermissionMatrix value={role.defaultPermissions} onChange={(next) => saveRole({ ...role, defaultPermissions: next })} />
+												<PermissionMatrix
+													value={role.defaultPermissions}
+													onChange={(next) =>
+														saveRole({
+															...role,
+															defaultPermissions: next,
+														})
+													}
+												/>
 											</div>
 										</motion.div>
 									)}
@@ -142,50 +168,68 @@ export default function RoleSettings() {
 						);
 					})}
 				</AnimatePresence>
-
-				<AnimatePresence>
-					{showModal && (
-						<>
-							{/* Backdrop */}
-							<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 bg-black/40 backdrop-blur-sm z-40' onClick={() => setShowModal(false)} />
-
-							{/* Modal */}
-							<motion.div
-								initial={{ opacity: 0, scale: 0.95 }}
-								animate={{ opacity: 1, scale: 1 }}
-								exit={{ opacity: 0, scale: 0.95 }}
-								transition={{ duration: 0.2 }}
-								className='fixed inset-0 flex items-center justify-center z-50'>
-								<div className='bg-white rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6'>
-									<div className='flex justify-between items-center'>
-										<h3 className='text-lg font-medium'>Create Role</h3>
-										<button onClick={() => setShowModal(false)}>
-											<X size={18} />
-										</button>
-									</div>
-
-									<input
-										className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
-										placeholder='Role name'
-										value={newRoleName}
-										onChange={(e) => setNewRoleName(e.target.value)}
-									/>
-
-									<motion.button
-										whileTap={{ scale: 0.97 }}
-										onClick={async () => {
-											await createRole();
-											setShowModal(false);
-										}}
-										className='w-full px-4 py-2 rounded-lg bg-black text-white text-sm font-medium hover:opacity-90 transition'>
-										Create Role
-									</motion.button>
-								</div>
-							</motion.div>
-						</>
-					)}
-				</AnimatePresence>
 			</div>
+
+			{/* Modal */}
+			<AnimatePresence>
+				{showModal && (
+					<>
+						<motion.div
+							initial={{
+								opacity: 0,
+							}}
+							animate={{
+								opacity: 1,
+							}}
+							exit={{
+								opacity: 0,
+							}}
+							className='fixed inset-0 bg-black/40 backdrop-blur-sm z-40'
+							onClick={() => setShowModal(false)}
+						/>
+
+						<motion.div
+							initial={{
+								opacity: 0,
+								scale: 0.96,
+							}}
+							animate={{
+								opacity: 1,
+								scale: 1,
+							}}
+							exit={{
+								opacity: 0,
+								scale: 0.96,
+							}}
+							className='fixed inset-0 flex items-center justify-center z-50'>
+							<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6'>
+								<div className='flex justify-between items-center'>
+									<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Create Role</h3>
+									<button onClick={() => setShowModal(false)} className='h-9 w-9 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
+										<X className='w-4 h-4' />
+									</button>
+								</div>
+
+								<input
+									className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition'
+									placeholder='Role name'
+									value={newRoleName}
+									onChange={(e) => setNewRoleName(e.target.value)}
+								/>
+
+								<button
+									onClick={async () => {
+										await createRole();
+										setShowModal(false);
+									}}
+									className='h-10 w-full rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+									Create Role
+								</button>
+							</div>
+						</motion.div>
+					</>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }

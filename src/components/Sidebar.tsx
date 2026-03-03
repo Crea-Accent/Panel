@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Folder, FolderKanban, Home, KeyRound, LogIn, LogOut, Package, Settings } from 'lucide-react';
+import { Folder, FolderKanban, Home, KeyRound, LogIn, LogOut, Package, Settings, User } from 'lucide-react';
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -13,115 +13,170 @@ import { useSidebar } from '../providers/SidebarProvider';
 
 export default function Sidebar() {
 	const pathname = usePathname();
-	const { open } = useSidebar();
+	const { open, toggle } = useSidebar();
 	const { data: session } = useSession();
 	const { has, loading } = usePermissions();
 
-	// Wait for permission state
 	if (loading) return null;
 
 	const navItems = [
-		{
-			href: '/',
-			label: 'Home',
-			icon: <Home size={18} />,
-			permission: null, // always visible
-		},
-		{
-			href: '/projects',
-			label: 'Projects',
-			icon: <FolderKanban size={18} />,
-			permission: 'projects.read',
-		},
-		{
-			href: '/files',
-			label: 'Files',
-			icon: <Folder size={18} />,
-			permission: 'files.read',
-		},
-		{
-			href: '/apps',
-			label: 'Apps',
-			icon: <Package size={18} />,
-			permission: 'applications.read',
-		},
-		{
-			href: '/passwords',
-			label: 'Passwords',
-			icon: <KeyRound size={18} />,
-			permission: 'admin.read',
-		},
-		{
-			href: '/settings',
-			label: 'Settings',
-			icon: <Settings size={18} />,
-			permission: 'admin.read',
-		},
+		{ href: '/', label: 'Home', icon: Home, permission: null },
+		{ href: '/projects', label: 'Projects', icon: FolderKanban, permission: 'projects.read' },
+		{ href: '/files', label: 'Files', icon: Folder, permission: 'files.read' },
+		{ href: '/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
+		{ href: '/passwords', label: 'Passwords', icon: KeyRound, permission: 'admin.read' },
+		{ href: '/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
 	];
 
-	const visibleItems = navItems.filter((item) => {
-		if (!item.permission) return true;
-		return has(item.permission);
-	});
+	const visibleItems = navItems.filter((item) => (!item.permission ? true : has(item.permission)));
 
 	return (
 		<AnimatePresence>
 			{open && (
-				<motion.aside
-					initial={{ x: -SIDEBAR_WIDTH }}
-					animate={{ x: 0 }}
-					exit={{ x: -SIDEBAR_WIDTH }}
-					transition={{ type: 'tween', duration: 0.25 }}
-					style={{
-						width: SIDEBAR_WIDTH,
-						position: 'fixed',
-						left: 0,
-						top: HEADER_HEIGHT,
-						height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
-					}}
-					className='bg-white border-r border-zinc-200 p-4 flex flex-col z-40'>
-					{/* Top navigation */}
-					<nav>
-						<ul className='space-y-2'>
-							{visibleItems.map((item) => (
-								<NavItem key={item.href} href={item.href} icon={item.icon} label={item.label} currentPath={pathname} />
-							))}
-						</ul>
-					</nav>
+				<>
+					{/* Mobile Overlay */}
+					<motion.div
+						initial={{ opacity: 0 }}
+						animate={{ opacity: 1 }}
+						exit={{ opacity: 0 }}
+						transition={{ duration: 0.2 }}
+						onClick={toggle}
+						style={{ top: HEADER_HEIGHT }}
+						className='
+							fixed left-0 right-0 bottom-0
+							bg-black/20
+							backdrop-blur-sm
+							z-40
+							md:hidden
+						'
+					/>
 
-					<div className='flex-1' />
+					{/* Sidebar */}
+					<motion.aside
+						initial={{ x: -SIDEBAR_WIDTH }}
+						animate={{ x: 0 }}
+						exit={{ x: -SIDEBAR_WIDTH }}
+						transition={{ duration: 0.25 }}
+						style={{
+							width: SIDEBAR_WIDTH,
+							top: HEADER_HEIGHT,
+							height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
+						}}
+						className='
+							fixed left-0
+							bg-white dark:bg-zinc-950
+							border-r border-gray-200 dark:border-zinc-800
+							p-4
+							flex flex-col
+							z-50
+						'>
+						{/* Navigation */}
+						<nav>
+							<ul className='space-y-1'>
+								{visibleItems.map((item) => (
+									<NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} currentPath={pathname} />
+								))}
+							</ul>
+						</nav>
 
-					{/* Bottom auth section */}
-					<div className='border-t border-zinc-200 pt-3 space-y-2'>
-						{session ? (
-							<>
-								<div className='text-xs text-zinc-500 break-all'>{session.user?.email}</div>
+						<div className='flex-1' />
 
-								<button onClick={() => signOut()} className='w-full flex items-center gap-2 px-3 py-2 border border-zinc-200 rounded-lg text-sm hover:bg-zinc-50 transition'>
-									<LogOut size={16} />
-									Logout
+						{/* Account Section */}
+						<div className='border-t border-gray-200 dark:border-zinc-800 pt-4 space-y-3'>
+							{session ? (
+								<>
+									{/* User Info */}
+									<div className='flex items-center gap-3 px-2'>
+										<div className='w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-sm font-semibold'>
+											{session.user?.name?.[0] ?? session.user?.email?.[0]}
+										</div>
+
+										<div className='flex-1 min-w-0'>
+											<p className='text-sm font-medium text-gray-900 dark:text-zinc-100 truncate'>{session.user?.name ?? 'Account'}</p>
+											<p className='text-xs text-gray-500 dark:text-zinc-400 truncate'>{session.user?.email}</p>
+										</div>
+									</div>
+
+									{/* Account Button */}
+									<Link
+										href='/account'
+										className='
+											h-9 px-3 rounded-xl
+											flex items-center gap-2
+											text-sm
+											text-gray-600 dark:text-zinc-300
+											hover:bg-gray-100 dark:hover:bg-zinc-800
+											transition
+										'>
+										<User className='w-4 h-4' strokeWidth={1.8} />
+										Account
+									</Link>
+
+									{/* Logout */}
+									<button
+										onClick={() => signOut()}
+										className='
+											h-9 px-3 rounded-xl
+											flex items-center gap-2
+											text-sm
+											text-red-600
+											hover:bg-red-50 dark:hover:bg-red-900/20
+											transition
+										'>
+										<LogOut className='w-4 h-4' strokeWidth={1.8} />
+										Log out
+									</button>
+								</>
+							) : (
+								<button
+									onClick={() => signIn()}
+									className='
+										w-full
+										h-10
+										flex items-center gap-2
+										px-3
+										rounded-xl
+										bg-indigo-600 text-white
+										text-sm font-medium
+										hover:bg-indigo-500
+										transition-colors
+									'>
+									<LogIn className='w-4 h-4' strokeWidth={1.8} />
+									Login
 								</button>
-							</>
-						) : (
-							<button onClick={() => signIn()} className='w-full flex items-center gap-2 px-3 py-2 border border-zinc-200 rounded-lg text-sm hover:bg-zinc-50 transition'>
-								<LogIn size={16} />
-								Login
-							</button>
-						)}
-					</div>
-				</motion.aside>
+							)}
+						</div>
+					</motion.aside>
+				</>
 			)}
 		</AnimatePresence>
 	);
 }
 
-function NavItem({ href, icon, label, currentPath }: { href: string; icon: React.ReactNode; label: string; currentPath: string }) {
+function NavItem({ href, label, Icon, currentPath }: { href: string; label: string; Icon: React.ElementType; currentPath: string }) {
 	const isActive = href === '/' ? currentPath === '/' : currentPath.startsWith(href);
 
 	return (
 		<li>
-			<Link href={href} className={`flex items-center gap-3 px-3 py-2 rounded-lg transition ${isActive ? 'bg-blue-50 text-blue-700 font-medium' : 'text-zinc-900 hover:bg-zinc-100'}`}>
-				<span className={isActive ? 'text-blue-600' : 'text-zinc-600'}>{icon}</span>
+			<Link
+				href={href}
+				className={`
+					group
+					flex items-center gap-3
+					h-10
+					px-3
+					rounded-xl
+					text-sm font-medium
+					transition-colors
+					${isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'}
+				`}>
+				<Icon
+					className={`
+						w-4 h-4
+						${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 group-hover:text-gray-600 dark:text-zinc-500'}
+					`}
+					strokeWidth={1.8}
+				/>
 				{label}
 			</Link>
 		</li>

@@ -28,6 +28,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(true);
 	const [activeUploadFolder, setActiveUploadFolder] = useState<string | undefined>(undefined);
+
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
 	const load = async () => {
@@ -42,16 +43,13 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 
 		const grouped: Record<string, FileEntry[]> = {};
 
-		// 1️⃣ Create group entries from real folders
 		for (const dir of directories) {
 			grouped[dir.name] = [];
 		}
 
-		// 2️⃣ Assign images to folders (robust version)
 		for (const file of imageFiles) {
 			const normalized = file.path.replace(/\\/g, '/');
 			const parts = normalized.split('/');
-
 			const picturesIndex = parts.lastIndexOf('pictures');
 
 			let folder = 'Ungrouped';
@@ -64,10 +62,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 			grouped[folder].push(file);
 		}
 
-		// 3️⃣ Ensure Ungrouped exists only if needed
-		if (!grouped['Ungrouped'] || grouped['Ungrouped'].length === 0) {
-			delete grouped['Ungrouped'];
-		}
+		if (!grouped['Ungrouped']?.length) delete grouped['Ungrouped'];
 
 		const result: FolderGroup[] = Object.entries(grouped).map(([name, images]) => ({
 			name,
@@ -98,10 +93,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 		await fetch('/api/files', {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				dir,
-				name,
-			}),
+			body: JSON.stringify({ dir, name }),
 		});
 
 		await load();
@@ -118,10 +110,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 			if (success) successCount++;
 		}
 
-		if (successCount > 0) {
-			await load();
-		}
-
+		if (successCount > 0) await load();
 		setActiveUploadFolder(undefined);
 	};
 
@@ -152,32 +141,39 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 
 	const totalImages = groups.reduce((acc, g) => acc + g.images.length, 0);
 
+	const section = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
+
 	return (
-		<section className='space-y-4'>
+		<section className='space-y-6'>
+			{/* Header */}
 			<header className='flex items-center gap-3'>
-				<div className='w-10 h-10 rounded-xl bg-emerald-100 flex items-center justify-center text-emerald-600'>
-					<ImageIcon size={20} />
+				<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
+					<ImageIcon className='w-5 h-5 text-indigo-600 dark:text-indigo-400' />
 				</div>
 				<div>
-					<h2 className='text-xl font-semibold'>Foto’s</h2>
-					<p className='text-sm text-zinc-500'>Site images and documentation</p>
+					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Pictures</h2>
+					<p className='text-sm text-gray-500 dark:text-zinc-400'>Site images and documentation</p>
 				</div>
 			</header>
 
 			<input ref={inputRef} type='file' accept='image/*' multiple className='hidden' onChange={(e) => e.target.files && upload(e.target.files)} />
 
-			<div className='bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden'>
-				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center p-5'>
-					<span className='font-medium'>Images ({totalImages})</span>
-					{open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+			<div className={section}>
+				{/* Toggle */}
+				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center px-5 py-4 text-sm font-medium text-gray-900 dark:text-zinc-100'>
+					<span>Images ({totalImages})</span>
+					{open ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
 				</button>
 
 				<AnimatePresence>
 					{open && (
-						<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} transition={{ duration: 0.2 }} className='px-5 pb-5 space-y-6'>
-							<div className='flex justify-between'>
-								<button onClick={createGroup} className='flex items-center gap-2 px-4 py-2 rounded-xl border border-zinc-300 text-sm font-medium hover:bg-zinc-50 transition'>
-									<FolderPlus size={14} />
+						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className='px-5 pb-6 space-y-6'>
+							{/* Actions */}
+							<div className='flex justify-between items-center'>
+								<button
+									onClick={createGroup}
+									className='h-10 px-4 flex items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition'>
+									<FolderPlus className='w-4 h-4' />
 									New Group
 								</button>
 
@@ -187,19 +183,19 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 										inputRef.current?.click();
 									}}
 									disabled={uploading}
-									className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
-										uploading ? 'bg-emerald-400 opacity-70 cursor-not-allowed text-white' : 'bg-emerald-600 hover:opacity-90 text-white'
-									}`}>
-									<Upload size={14} />
+									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
+										${uploading ? 'bg-indigo-400 text-white cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}>
+									<Upload className='w-4 h-4' />
 									Upload
 								</button>
 							</div>
 
-							{loading && <div className='text-sm text-zinc-500'>Loading images…</div>}
+							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading images…</div>}
 
+							{/* Groups */}
 							{!loading &&
 								groups.map((group) => (
-									<div key={group.name} className='border border-zinc-200 rounded-xl overflow-hidden'>
+									<div key={group.name} className='border border-gray-200 dark:border-zinc-700 rounded-2xl overflow-hidden'>
 										<button
 											onClick={() =>
 												setOpenFolders((prev) => ({
@@ -207,54 +203,37 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 													[group.name]: !prev[group.name],
 												}))
 											}
-											className='w-full flex justify-between items-center px-4 py-3 bg-zinc-50 hover:bg-zinc-100 transition'>
-											<span className='text-sm font-medium'>
+											className='w-full flex justify-between items-center px-4 py-3 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 transition text-sm font-medium text-gray-900 dark:text-zinc-100'>
+											<span>
 												{group.name} ({group.images.length})
 											</span>
-											{openFolders[group.name] ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+											{openFolders[group.name] ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
 										</button>
 
 										<AnimatePresence>
 											{openFolders[group.name] && (
-												<motion.div
-													initial={{
-														height: 0,
-														opacity: 0,
-													}}
-													animate={{
-														height: 'auto',
-														opacity: 1,
-													}}
-													exit={{
-														height: 0,
-														opacity: 0,
-													}}
-													transition={{
-														duration: 0.2,
-													}}
-													className='p-4 space-y-4'>
+												<motion.div className='p-4 space-y-4'>
 													<div className='flex justify-end'>
 														<button
 															onClick={() => {
 																setActiveUploadFolder(group.name);
 																inputRef.current?.click();
 															}}
-															disabled={uploading}
-															className={`text-xs px-3 py-1 rounded-lg transition ${uploading ? 'bg-zinc-200 cursor-not-allowed opacity-70' : 'bg-zinc-100 hover:bg-zinc-200'}`}>
+															className='text-xs px-3 py-1 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 transition'>
 															Upload to {group.name}
 														</button>
 													</div>
 
 													<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
 														{group.images.map((img) => (
-															<div key={img.path} className='group relative rounded-2xl overflow-hidden border border-zinc-200 bg-zinc-50'>
+															<div key={img.path} className='group relative rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800'>
 																<img src={`/api/files/download?path=${encodeURIComponent(img.path)}`} alt={img.name} className='w-full h-40 object-cover' />
 
-																<div className='absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex flex-col justify-end p-2 gap-2'>
+																<div className='absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col justify-end p-2 gap-2'>
 																	<span className='text-xs text-white truncate'>{img.name}</span>
 
 																	<div className='flex justify-between items-center gap-2'>
-																		<select onChange={(e) => moveImage(img.path, e.target.value)} className='text-xs rounded' defaultValue=''>
+																		<select onChange={(e) => moveImage(img.path, e.target.value)} className='text-xs rounded bg-white/90' defaultValue=''>
 																			<option value='' disabled>
 																				Move
 																			</option>
@@ -267,8 +246,8 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 																				))}
 																		</select>
 
-																		<button onClick={() => download(img.path)} className='text-white'>
-																			<Download size={14} />
+																		<button onClick={() => download(img.path)} className='text-white hover:text-indigo-200 transition'>
+																			<Download className='w-4 h-4' />
 																		</button>
 																	</div>
 																</div>

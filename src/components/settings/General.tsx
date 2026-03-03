@@ -23,10 +23,12 @@ export default function GeneralSettings() {
 	const [updating, setUpdating] = useState(false);
 	const [logs, setLogs] = useState<string[]>([]);
 
-	const [filesSettings, setFilesSettings] = useState<FilesSettings>({ path: '' });
+	const [filesSettings, setFilesSettings] = useState<FilesSettings>({
+		path: '',
+	});
 	const [savingPath, setSavingPath] = useState(false);
 
-	/* ---------------- VERSION CHECK ---------------- */
+	/* ---------------- VERSION ---------------- */
 
 	async function checkVersion() {
 		setLoading(true);
@@ -71,28 +73,28 @@ export default function GeneralSettings() {
 
 		if (lower.includes('error')) {
 			return {
-				icon: <AlertCircle size={14} />,
-				className: 'bg-red-50 text-red-700 border-red-200',
+				icon: AlertCircle,
+				className: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/40',
 			};
 		}
 
 		if (lower.includes('warning') || lower.includes('warn')) {
 			return {
-				icon: <AlertTriangle size={14} />,
-				className: 'bg-yellow-50 text-yellow-700 border-yellow-200',
+				icon: AlertTriangle,
+				className: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40',
 			};
 		}
 
 		if (lower.includes('complete') || lower.includes('success')) {
 			return {
-				icon: <CheckCircle size={14} />,
-				className: 'bg-green-50 text-green-700 border-green-200',
+				icon: CheckCircle,
+				className: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/40',
 			};
 		}
 
 		return {
-			icon: <Info size={14} />,
-			className: 'bg-blue-50 text-blue-700 border-blue-200',
+			icon: Info,
+			className: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/40',
 		};
 	}
 
@@ -101,10 +103,7 @@ export default function GeneralSettings() {
 	async function loadFilesSettings() {
 		const res = await fetch('/api/settings/files');
 		const data = await res.json();
-		setFilesSettings({
-			path: '',
-			...data,
-		});
+		setFilesSettings({ path: '', ...data });
 	}
 
 	async function saveFilesPath() {
@@ -119,8 +118,6 @@ export default function GeneralSettings() {
 		setTimeout(() => setSavingPath(false), 600);
 	}
 
-	/* ---------------- INIT ---------------- */
-
 	useEffect(() => {
 		(() => {
 			checkVersion();
@@ -129,51 +126,53 @@ export default function GeneralSettings() {
 	}, []);
 
 	return (
-		<div className='space-y-10'>
-			{/* HEADER */}
+		<div className='space-y-8'>
+			{/* Header */}
 			<div>
-				<h2 className='text-xl font-semibold'>General</h2>
-				<p className='text-sm text-gray-500 mt-1'>System information, application updates and root configuration.</p>
+				<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>General</h2>
+				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>System information, application updates and root configuration.</p>
 			</div>
 
 			{/* VERSION CARD */}
-			<div className='bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6'>
+			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6'>
 				<div className='flex justify-between items-center'>
-					<h3 className='text-lg font-medium'>Application Version</h3>
+					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Application Version</h3>
 
-					<button onClick={checkVersion} className='text-sm text-gray-500 hover:text-black transition flex items-center gap-2'>
-						<RefreshCw size={14} />
+					<button
+						onClick={checkVersion}
+						className='h-9 px-3 flex items-center gap-2 rounded-xl text-sm font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
+						<RefreshCw className='w-4 h-4' />
 						Refresh
 					</button>
 				</div>
 
 				{loading ? (
-					<div className='flex items-center gap-2 text-sm text-gray-500'>
-						<Loader2 size={16} className='animate-spin' />
-						Checking version...
+					<div className='flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400'>
+						<Loader2 className='w-4 h-4 animate-spin' />
+						Checking version…
 					</div>
 				) : info?.error ? (
-					<div className='text-sm text-red-500'>{info.error}</div>
+					<div className='text-sm text-red-600 dark:text-red-400'>{info.error}</div>
 				) : (
 					<>
-						<div className='text-sm space-y-1'>
+						<div className='text-sm space-y-1 text-gray-700 dark:text-zinc-400'>
 							<div>
-								Current version: <strong>{info?.localVersion}</strong>
+								Current version: <span className='font-medium text-gray-900 dark:text-zinc-100'>{info?.localVersion}</span>
 							</div>
 							<div>
-								Latest version: <strong>{info?.remoteVersion}</strong>
+								Latest version: <span className='font-medium text-gray-900 dark:text-zinc-100'>{info?.remoteVersion}</span>
 							</div>
 						</div>
 
 						{info?.upToDate ? (
-							<div className='flex items-center gap-2 text-green-600 text-sm'>
-								<CheckCircle size={16} />
+							<div className='flex items-center gap-2 text-green-600 dark:text-green-400 text-sm'>
+								<CheckCircle className='w-4 h-4' />
 								Application is up to date
 							</div>
 						) : (
 							<div className='space-y-4'>
-								<div className='flex items-center gap-2 text-yellow-600 text-sm'>
-									<AlertCircle size={16} />
+								<div className='flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-sm'>
+									<AlertCircle className='w-4 h-4' />
 									Update available
 								</div>
 
@@ -181,28 +180,30 @@ export default function GeneralSettings() {
 									whileTap={{ scale: 0.97 }}
 									onClick={runUpdate}
 									disabled={updating}
-									className='px-4 py-2 rounded-lg bg-black text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50'>
+									className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-500 transition'>
 									{updating ? (
 										<>
-											<Loader2 size={16} className='animate-spin' />
-											Updating...
+											<Loader2 className='w-4 h-4 animate-spin' />
+											Updating…
 										</>
 									) : (
 										<>
-											<RefreshCw size={16} />
+											<RefreshCw className='w-4 h-4' />
 											Update Now
 										</>
 									)}
 								</motion.button>
 
 								{updating && logs.length > 0 && (
-									<div className='mt-4 space-y-2 max-h-56 overflow-y-auto'>
+									<div className='space-y-2 max-h-56 overflow-y-auto'>
 										{logs.map((log, i) => {
 											const meta = getMessageMeta(log);
+											const Icon = meta.icon;
+
 											return (
-												<div key={i} className={`flex items-start gap-2 text-xs font-mono p-2 rounded-md border ${meta.className}`}>
-													<div className='mt-[2px]'>{meta.icon}</div>
-													<div className='whitespace-pre-wrap break-words'>{log}</div>
+												<div key={i} className={`flex items-start gap-2 text-xs font-mono p-2 rounded-lg border ${meta.className}`}>
+													<Icon className='w-3.5 h-3.5 mt-[2px]' />
+													<span className='whitespace-pre-wrap break-words'>{log}</span>
 												</div>
 											);
 										})}
@@ -215,14 +216,16 @@ export default function GeneralSettings() {
 			</div>
 
 			{/* FILES ROOT PATH */}
-			<div className='bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-4'>
-				<div className='flex items-center gap-2'>
-					<HardDrive size={18} />
-					<h3 className='text-lg font-medium'>Files Root Path</h3>
+			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-4'>
+				<div className='flex items-center gap-3'>
+					<div className='h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center'>
+						<HardDrive className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					</div>
+					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Files Root Path</h3>
 				</div>
 
 				<input
-					className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+					className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition'
 					placeholder='D:\\Shared'
 					value={filesSettings.path || ''}
 					onChange={(e) =>
@@ -233,12 +236,15 @@ export default function GeneralSettings() {
 					}
 				/>
 
-				<p className='text-xs text-gray-500'>This directory is used as the root for the file explorer module.</p>
+				<p className='text-xs text-gray-500 dark:text-zinc-500'>This directory is used as the root for the file explorer module.</p>
 
-				<div className='pt-4 border-t border-gray-200'>
-					<button onClick={saveFilesPath} className='px-5 py-2 rounded-lg bg-black text-white text-sm font-medium flex items-center gap-2'>
-						<Save size={14} />
-						{savingPath ? 'Saving...' : 'Save Path'}
+				<div className='pt-2'>
+					<button
+						onClick={saveFilesPath}
+						className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 hover:bg-indigo-500 transition disabled:opacity-60'
+						disabled={savingPath}>
+						<Save className='w-4 h-4' />
+						{savingPath ? 'Saving…' : 'Save Path'}
 					</button>
 				</div>
 			</div>

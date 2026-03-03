@@ -54,7 +54,6 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 
 		const progPath = `${basePath}/${client}/programmation`;
 		const res = await fetch(`/api/files?view=${encodeURIComponent(progPath)}`);
-
 		const data: FileEntry[] = await res.json();
 
 		const sorted = data.sort((a, b) => parseDateFromFolderName(b.name) - parseDateFromFolderName(a.name));
@@ -71,12 +70,8 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 
 	const upload = async (file: File) => {
 		const progPath = `${basePath}/${client}/programmation`;
-
 		const success = await uploadFile(file, progPath);
-
-		if (success) {
-			await load();
-		}
+		if (success) await load();
 	};
 
 	const download = (path: string) => {
@@ -96,79 +91,80 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		Siemens: items.filter((i) => detectProgrammationType(i) === 'Siemens'),
 	};
 
-	const sectionBase = 'bg-white border border-zinc-200 rounded-2xl shadow-sm overflow-hidden';
+	const section = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
 
 	return (
-		<section className='space-y-4'>
+		<section className='space-y-6'>
+			{/* Header */}
 			<header className='flex items-center gap-3'>
-				<div className='w-10 h-10 rounded-xl bg-violet-100 flex items-center justify-center text-violet-600'>
-					<Code size={20} />
+				<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
+					<Code className='w-5 h-5 text-indigo-600 dark:text-indigo-400' />
 				</div>
 				<div>
-					<h2 className='text-xl font-semibold'>Programmatie</h2>
-					<p className='text-sm text-zinc-500'>DuoTecno, DALI and Loxone projects</p>
+					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Programmation</h2>
+					<p className='text-sm text-gray-500 dark:text-zinc-400'>DuoTecno, DALI, Loxone, Niko, Siemens</p>
 				</div>
 			</header>
 
 			<input ref={inputRef} type='file' accept='.zip,.dnc,.loxone,.nhc2,.lsc' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
 
-			<div className={sectionBase}>
-				{/* Section Header */}
-				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center p-5'>
-					<span className='font-medium'>Projects ({items.length})</span>
-					{open ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+			<div className={section}>
+				{/* Section Toggle */}
+				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center px-5 py-4 text-sm font-medium text-gray-900 dark:text-zinc-100'>
+					<span>Projects ({items.length})</span>
+					{open ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
 				</button>
 
 				<AnimatePresence>
 					{open && (
-						<motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }} className='px-5 pb-5 space-y-6'>
+						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className='px-5 pb-6 space-y-6'>
 							{/* Upload */}
 							<div className='flex justify-end'>
 								<button
 									onClick={() => inputRef.current?.click()}
 									disabled={uploading}
-									className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium transition ${
-										uploading ? 'bg-violet-400 cursor-not-allowed opacity-70 text-white' : 'bg-violet-600 hover:opacity-90 text-white'
-									}`}>
-									<Upload size={14} />
+									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
+										${uploading ? 'bg-indigo-400 text-white cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}>
+									<Upload className='w-4 h-4' />
 									{uploading ? 'Uploading…' : 'Upload'}
 								</button>
 							</div>
 
 							{/* Loading */}
-							{loading && <div className='text-sm text-zinc-500'>Loading projects…</div>}
+							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading projects…</div>}
 
 							{/* Groups */}
 							{!loading &&
 								Object.entries(grouped).map(([type, entries]) => {
-									if (entries.length === 0) return null;
+									if (!entries.length) return null;
 
 									const latest = entries[0];
 									const older = entries.slice(1);
-
 									const isExpanded = expandedGroups.includes(type);
 
 									return (
 										<div key={type} className='space-y-3'>
-											<h3 className='text-xs uppercase tracking-wide text-zinc-500'>{type}</h3>
+											<h3 className='text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-500'>{type}</h3>
 
 											{/* Latest */}
-											<div className='p-4 rounded-xl border border-violet-200 bg-violet-50 flex justify-between items-center'>
-												<span className='font-medium text-sm truncate'>{latest.name}</span>
+											<div className='h-12 px-4 flex items-center justify-between rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30'>
+												<span className='text-sm font-medium truncate text-gray-900 dark:text-zinc-100'>{latest.name}</span>
 
-												<button onClick={() => download(latest.path)} className='text-sm flex items-center gap-1 text-violet-700 hover:text-violet-900'>
-													<Download size={14} />
+												<button
+													onClick={() => download(latest.path)}
+													className='flex items-center gap-1 text-sm font-medium text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition'>
+													<Download className='w-4 h-4' />
 													Download
 												</button>
 											</div>
 
-											{/* Older toggle */}
+											{/* Older Toggle */}
 											{older.length > 0 && (
 												<>
 													<button
 														onClick={() => setExpandedGroups((prev) => (prev.includes(type) ? prev.filter((g) => g !== type) : [...prev, type]))}
-														className='text-xs text-zinc-500 hover:text-black flex items-center gap-1'>
-														{isExpanded ? <ChevronUp size={14} /> : <ChevronDown size={14} />}
+														className='text-xs text-gray-500 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition'>
+														{isExpanded ? <ChevronUp className='w-3.5 h-3.5' /> : <ChevronDown className='w-3.5 h-3.5' />}
 														{isExpanded ? 'Hide older' : `Show older (${older.length})`}
 													</button>
 
@@ -176,16 +172,16 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 														{isExpanded && (
 															<motion.div
 																initial={{
-																	height: 0,
 																	opacity: 0,
+																	y: -4,
 																}}
 																animate={{
-																	height: 'auto',
 																	opacity: 1,
+																	y: 0,
 																}}
 																exit={{
-																	height: 0,
 																	opacity: 0,
+																	y: -4,
 																}}
 																className='space-y-2'>
 																{older.map((item, index) => (
@@ -193,7 +189,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 																		key={item.path}
 																		initial={{
 																			opacity: 0,
-																			y: 5,
+																			y: 4,
 																		}}
 																		animate={{
 																			opacity: 1,
@@ -202,11 +198,13 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 																		transition={{
 																			delay: index * 0.03,
 																		}}
-																		className='flex justify-between items-center p-3 rounded-xl border border-zinc-200 bg-zinc-50 hover:bg-white hover:shadow-sm transition'>
-																		<span className='text-sm truncate'>{item.name}</span>
+																		className='h-12 px-4 flex items-center justify-between rounded-2xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-white dark:hover:bg-zinc-700 hover:shadow-sm transition'>
+																		<span className='text-sm truncate text-gray-800 dark:text-zinc-100'>{item.name}</span>
 
-																		<button onClick={() => download(item.path)} className='text-sm flex items-center gap-1 text-zinc-600 hover:text-violet-600'>
-																			<Download size={14} />
+																		<button
+																			onClick={() => download(item.path)}
+																			className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition'>
+																			<Download className='w-4 h-4' />
 																			Download
 																		</button>
 																	</motion.div>
@@ -222,7 +220,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 
 							{/* Empty */}
 							{!loading && Object.values(grouped).every((arr) => arr.length === 0) && (
-								<div className='text-sm text-zinc-500 border border-dashed border-zinc-300 rounded-xl p-6 text-center'>No programmation files found.</div>
+								<div className='text-sm text-gray-500 dark:text-zinc-400 border border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-6 text-center'>No programmation files found.</div>
 							)}
 						</motion.div>
 					)}

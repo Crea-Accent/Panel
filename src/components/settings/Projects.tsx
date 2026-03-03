@@ -25,7 +25,6 @@ export default function ProjectsSettings() {
 	const [dateParts, setDateParts] = useState<string[]>(['DD', 'MM', 'YYYY']);
 	const [dragIndex, setDragIndex] = useState<number | null>(null);
 
-	// ---------------- LOAD ----------------
 	useEffect(() => {
 		async function load() {
 			const res = await fetch('/api/settings/projects');
@@ -40,10 +39,8 @@ export default function ProjectsSettings() {
 
 			setSettings(merged);
 
-			// derive draggable parts from stored format
 			if (merged.dateFormat) {
 				const parts = ['DD', 'MM', 'YYYY'].sort((a, b) => merged.dateFormat!.indexOf(a) - merged.dateFormat!.indexOf(b));
-
 				setDateParts(parts);
 			}
 
@@ -53,7 +50,6 @@ export default function ProjectsSettings() {
 		load();
 	}, []);
 
-	// ---------------- DRAG ----------------
 	function handleDrop(index: number) {
 		if (dragIndex === null) return;
 
@@ -65,7 +61,6 @@ export default function ProjectsSettings() {
 		setDragIndex(null);
 	}
 
-	// ---------------- SAVE ----------------
 	async function save() {
 		setSaving(true);
 
@@ -110,28 +105,35 @@ export default function ProjectsSettings() {
 		return parts.join('').replace('DD', DD).replace('MM', MM).replace('YYYY', String(YYYY));
 	}
 
-	if (loading) return <div className='p-8'>Loading...</div>;
+	if (loading) return <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading…</div>;
+
+	const card = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6';
+
+	const input =
+		'h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition';
 
 	return (
-		<motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className='max-w-4xl mx-auto py-10 space-y-12'>
+		<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className='space-y-8'>
 			{/* Header */}
 			<div>
-				<h2 className='text-2xl font-semibold flex items-center gap-2'>
-					<Folder size={20} />
+				<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
+					<Folder className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
 					Projects
 				</h2>
-				<p className='text-sm text-gray-500 mt-1'>Configure project storage and default structure.</p>
+				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Configure project storage and default structure.</p>
 			</div>
 
 			{/* Base Path */}
-			<div className='bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-4'>
-				<div className='flex items-center gap-2'>
-					<HardDrive size={18} />
-					<h3 className='text-lg font-medium'>Location</h3>
+			<div className={card}>
+				<div className='flex items-center gap-3'>
+					<div className='h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center'>
+						<HardDrive className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					</div>
+					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Location</h3>
 				</div>
 
 				<input
-					className='w-full rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
+					className={input}
 					placeholder='/sim'
 					value={settings.path || ''}
 					onChange={(e) =>
@@ -142,30 +144,35 @@ export default function ProjectsSettings() {
 					}
 				/>
 
-				<p className='text-xs text-gray-500'>Relative to application root.</p>
+				<p className='text-xs text-gray-500 dark:text-zinc-500'>Relative to application root.</p>
 			</div>
 
 			{/* Required Folders */}
-			<div className='bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6'>
-				<div className='flex items-center gap-2'>
-					<Folder size={18} />
-					<h3 className='text-lg font-medium'>Required Folders</h3>
-				</div>
+			<div className={card}>
+				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Required Folders</h3>
 
-				<div className='space-y-3'>
+				<div className='space-y-2'>
 					<AnimatePresence>
 						{settings.requiredFolders?.map((folder) => (
 							<motion.div
 								key={folder}
-								initial={{ opacity: 0, y: -5 }}
-								animate={{ opacity: 1, y: 0 }}
-								exit={{ opacity: 0, x: 10 }}
-								transition={{ duration: 0.15 }}
-								className='flex items-center justify-between rounded-xl border border-gray-200 px-4 py-3 bg-gray-50'>
-								<span className='text-sm font-medium'>{folder}</span>
+								initial={{
+									opacity: 0,
+									y: -4,
+								}}
+								animate={{
+									opacity: 1,
+									y: 0,
+								}}
+								exit={{
+									opacity: 0,
+									x: 10,
+								}}
+								className='flex items-center justify-between rounded-xl border border-gray-200 dark:border-zinc-700 px-4 py-3 bg-gray-50 dark:bg-zinc-800'>
+								<span className='text-sm font-medium text-gray-900 dark:text-zinc-100'>{folder}</span>
 
-								<button onClick={() => removeFolder(folder)} className='text-red-500'>
-									<Trash2 size={16} />
+								<button onClick={() => removeFolder(folder)} className='h-8 w-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition'>
+									<Trash2 className='w-4 h-4' />
 								</button>
 							</motion.div>
 						))}
@@ -173,24 +180,19 @@ export default function ProjectsSettings() {
 				</div>
 
 				<div className='flex gap-3'>
-					<input
-						className='flex-1 rounded-lg border border-gray-300 px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black transition'
-						placeholder='New folder name'
-						value={newFolder}
-						onChange={(e) => setNewFolder(e.target.value)}
-					/>
+					<input className={input} placeholder='New folder name' value={newFolder} onChange={(e) => setNewFolder(e.target.value)} />
 
-					<button onClick={addFolder} className='px-4 py-2 rounded-lg bg-black text-white text-sm font-medium'>
+					<button onClick={addFolder} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
 						Add
 					</button>
 				</div>
 			</div>
 
 			{/* Date Format */}
-			<div className='bg-white border border-gray-200 rounded-2xl p-6 shadow-sm space-y-6'>
-				<h3 className='text-lg font-medium'>Date Format</h3>
+			<div className={card}>
+				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Date Format</h3>
 
-				<p className='text-sm text-gray-500'>Drag to reorder how dates are saved in project uploads.</p>
+				<p className='text-sm text-gray-500 dark:text-zinc-400'>Drag to reorder how dates are saved in project uploads.</p>
 
 				<div className='flex gap-3'>
 					{dateParts.map((part, index) => (
@@ -200,21 +202,21 @@ export default function ProjectsSettings() {
 							onDragStart={() => setDragIndex(index)}
 							onDragOver={(e) => e.preventDefault()}
 							onDrop={() => handleDrop(index)}
-							className='px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg cursor-move text-sm font-medium'>
+							className='h-10 px-4 flex items-center bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl cursor-move text-sm font-medium text-gray-900 dark:text-zinc-100'>
 							{part}
 						</div>
 					))}
 				</div>
 
-				<div className='text-sm text-gray-600'>
-					Preview: <b>{formatPreview(dateParts)}</b>
+				<div className='text-sm text-gray-600 dark:text-zinc-400'>
+					Preview: <span className='font-medium text-gray-900 dark:text-zinc-100'>{formatPreview(dateParts)}</span>
 				</div>
 			</div>
 
 			{/* Save */}
 			<div>
-				<button onClick={save} className='px-5 py-2 rounded-lg bg-black text-white text-sm font-medium'>
-					{saving ? 'Saving...' : 'Save Changes'}
+				<button onClick={save} className='h-10 px-5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition disabled:opacity-60' disabled={saving}>
+					{saving ? 'Saving…' : 'Save Changes'}
 				</button>
 			</div>
 		</motion.div>

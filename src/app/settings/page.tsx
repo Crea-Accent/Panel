@@ -22,92 +22,113 @@ export default function SettingsPage() {
 
 	if (!hasAll(['admin.read', 'admin.write'])) {
 		return (
-			<div className='min-h-screen flex items-center justify-center bg-gray-50 px-6'>
-				<div className='text-center space-y-2'>
-					<h1 className='text-xl font-semibold'>Access denied</h1>
-					<p className='text-sm text-gray-500'>You do not have permission to view/edit settings.</p>
+			<div className='p-6'>
+				<div className='bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-900/40 rounded-2xl p-6 text-center'>
+					<h1 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Access denied</h1>
+					<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>You do not have permission to view or edit settings.</p>
 				</div>
 			</div>
 		);
 	}
 
 	const tabs = [
-		{ key: 'general', label: 'General', icon: <Settings size={16} /> },
-		{ key: 'apps', label: 'Apps', icon: <Package size={16} /> },
-		{ key: 'projects', label: 'Projects', icon: <Folder size={16} /> },
-		{ key: 'users', label: 'Users', icon: <Users size={16} /> },
-		{ key: 'roles', label: 'Roles', icon: <Shield size={16} /> },
+		{ key: 'general', label: 'General', icon: Settings },
+		{ key: 'apps', label: 'Apps', icon: Package },
+		{ key: 'projects', label: 'Projects', icon: Folder },
+		{ key: 'users', label: 'Users', icon: Users },
+		{ key: 'roles', label: 'Roles', icon: Shield },
 	] as const;
 
 	return (
-		<div className='min-h-screen'>
-			<div className='max-w-6xl mx-auto py-10 sm:py-12 px-4 sm:px-6 space-y-8 sm:space-y-12'>
-				{/* Header */}
-				<div>
-					<h1 className='text-2xl sm:text-3xl font-semibold tracking-tight'>Settings</h1>
-					<p className='text-sm text-gray-500 mt-2'>Manage project configuration and access control.</p>
-				</div>
-
-				{/* Mobile Dropdown */}
-				<div className='sm:hidden'>
-					<div className='relative'>
-						<select
-							value={tab}
-							onChange={(e) => setTab(e.target.value as Tab)}
-							className='w-full appearance-none bg-white border border-gray-200 rounded-lg px-4 py-2 text-sm font-medium shadow-sm focus:outline-none focus:ring-2 focus:ring-black/10'>
-							{tabs.map((t) => (
-								<option key={t.key} value={t.key}>
-									{t.label}
-								</option>
-							))}
-						</select>
-
-						<ChevronDown size={16} className='absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none' />
-					</div>
-				</div>
-
-				{/* Desktop Tabs */}
-				<div className='hidden sm:block relative z-10'>
-					<div className='flex gap-2 bg-gray-100 p-1 rounded-xl w-fit'>
-						{tabs.map((t) => {
-							const active = tab === t.key;
-
-							return (
-								<button
-									key={t.key}
-									onClick={() => setTab(t.key)}
-									className={`relative px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition ${active ? 'text-black' : 'text-gray-500 hover:text-black'}`}>
-									{active && (
-										<motion.div
-											layoutId='settings-tab'
-											className='absolute inset-0 bg-white rounded-lg shadow-sm z-0'
-											transition={{
-												type: 'spring',
-												stiffness: 300,
-												damping: 30,
-											}}
-										/>
-									)}
-
-									<span className='relative z-10 flex items-center gap-2'>
-										{t.icon}
-										{t.label}
-									</span>
-								</button>
-							);
-						})}
-					</div>
-				</div>
-
-				{/* Content */}
-				<motion.div key={tab} className='relative z-0' initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-					{tab === 'general' && <GeneralSettings />}
-					{tab === 'projects' && <ProjectSettings />}
-					{tab === 'users' && <UserSettings />}
-					{tab === 'roles' && <RoleSettings />}
-					{tab === 'apps' && <AppsSettings />}
-				</motion.div>
+		<div className='space-y-6'>
+			{/* Header */}
+			<div>
+				<h1 className='text-2xl font-semibold text-gray-900 dark:text-zinc-100'>Settings</h1>
+				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Manage project configuration and access control.</p>
 			</div>
+
+			{/* Mobile Select */}
+			<div className='sm:hidden w-full'>
+				<div className='relative'>
+					<select
+						value={tab}
+						onChange={(e) => setTab(e.target.value as Tab)}
+						className='
+							w-full h-10
+							appearance-none
+							bg-white dark:bg-zinc-900
+							border border-gray-200 dark:border-zinc-700
+							rounded-xl
+							px-4 pr-10
+							text-sm font-medium
+							text-gray-900 dark:text-zinc-100
+							focus:outline-none
+							focus:ring-2 focus:ring-indigo-500/20
+							focus:border-indigo-500
+							transition
+						'>
+						{tabs.map((t) => (
+							<option key={t.key} value={t.key}>
+								{t.label}
+							</option>
+						))}
+					</select>
+
+					<ChevronDown className='absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500 pointer-events-none' strokeWidth={1.8} />
+				</div>
+			</div>
+
+			{/* Desktop Tabs */}
+			<div className='hidden sm:block'>
+				<div className='flex gap-1 bg-gray-100 dark:bg-zinc-800 p-1 rounded-2xl w-fit'>
+					{tabs.map((t) => {
+						const active = tab === t.key;
+						const Icon = t.icon;
+
+						return (
+							<button
+								key={t.key}
+								onClick={() => setTab(t.key)}
+								className={`
+									relative
+									h-10
+									px-4
+									rounded-xl
+									text-sm font-medium
+									flex items-center gap-2
+									transition-colors
+									${active ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100'}
+								`}>
+								{active && (
+									<motion.div
+										layoutId='settings-tab'
+										className='absolute inset-0 bg-white dark:bg-zinc-900 rounded-xl shadow-sm'
+										transition={{
+											type: 'spring',
+											stiffness: 350,
+											damping: 30,
+										}}
+									/>
+								)}
+
+								<span className='relative z-10 flex items-center gap-2'>
+									<Icon className='w-4 h-4' strokeWidth={1.8} />
+									{t.label}
+								</span>
+							</button>
+						);
+					})}
+				</div>
+			</div>
+
+			{/* Content */}
+			<motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+				{tab === 'general' && <GeneralSettings />}
+				{tab === 'projects' && <ProjectSettings />}
+				{tab === 'users' && <UserSettings />}
+				{tab === 'roles' && <RoleSettings />}
+				{tab === 'apps' && <AppsSettings />}
+			</motion.div>
 		</div>
 	);
 }
