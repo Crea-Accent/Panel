@@ -1,5 +1,4 @@
 /** @format */
-
 'use client';
 
 import { createContext, useContext, useEffect, useState } from 'react';
@@ -18,17 +17,27 @@ function getSystemTheme(): 'light' | 'dark' {
 	return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
 }
 
-function applyTheme(resolved: 'light' | 'dark') {
+function applyTheme(theme: Theme) {
 	const root = document.documentElement;
-	root.classList.remove('light', 'dark');
-	root.classList.add(resolved);
+
+	if (theme === 'dark') {
+		root.classList.add('dark');
+		return;
+	}
+
+	if (theme === 'light') {
+		root.classList.remove('dark');
+		return;
+	}
+
+	// system
+	const prefersDark = getSystemTheme();
+	root.classList.toggle('dark', prefersDark === 'dark');
 }
 
 export function ThemeProvider({ children, sessionTheme }: { children: React.ReactNode; sessionTheme?: Theme }) {
-	/* ---------------- INITIALIZE FROM LOCALSTORAGE ---------------- */
-
 	const [theme, setTheme] = useState<Theme>(() => {
-		if (typeof window === 'undefined') return 'light';
+		if (typeof window === 'undefined') return 'system';
 
 		const stored = localStorage.getItem('theme') as Theme | null;
 
@@ -36,29 +45,28 @@ export function ThemeProvider({ children, sessionTheme }: { children: React.Reac
 			return stored;
 		}
 
-		return 'light';
+		return sessionTheme ?? 'system';
 	});
 
 	const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
 
-	/* ---------------- APPLY THEME ---------------- */
+	/* ---------- APPLY THEME ---------- */
 
 	useEffect(() => {
 		(() => {
 			const resolved = theme === 'system' ? getSystemTheme() : theme;
 
 			setResolvedTheme(resolved);
-			applyTheme(resolved);
+			applyTheme(theme);
 		})();
 	}, [theme]);
 
-	/* ---------------- SYNC USERS.JSON → LOCALSTORAGE ---------------- */
+	/* ---------- SYNC SESSION THEME ---------- */
 
 	useEffect(() => {
 		(() => {
 			if (!sessionTheme) return;
 
-			// Only update if different
 			if (sessionTheme !== theme) {
 				localStorage.setItem('theme', sessionTheme);
 				setTheme(sessionTheme);
@@ -66,7 +74,7 @@ export function ThemeProvider({ children, sessionTheme }: { children: React.Reac
 		})();
 	}, [sessionTheme]);
 
-	/* ---------------- USER TRIGGERED ---------------- */
+	/* ---------- USER CHANGE ---------- */
 
 	async function updateTheme(next: Theme) {
 		localStorage.setItem('theme', next);
@@ -79,17 +87,17 @@ export function ThemeProvider({ children, sessionTheme }: { children: React.Reac
 		});
 	}
 
-	/* ---------------- SYSTEM LISTENER ---------------- */
+	/* ---------- SYSTEM LISTENER ---------- */
 
 	useEffect(() => {
-		if (theme !== 'light') return;
-
 		const media = window.matchMedia('(prefers-color-scheme: dark)');
 
 		const handler = () => {
+			if (theme !== 'system') return;
+
 			const resolved = getSystemTheme();
 			setResolvedTheme(resolved);
-			applyTheme(resolved);
+			document.documentElement.classList.toggle('dark', resolved === 'dark');
 		};
 
 		media.addEventListener('change', handler);
