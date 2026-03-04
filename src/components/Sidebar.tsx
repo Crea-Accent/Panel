@@ -98,25 +98,26 @@ export default function Sidebar() {
 									</div>
 
 									{/* Account Button */}
-									<Link
-										href='/account'
-										className='
-											h-9 px-3 rounded-xl
-											flex items-center gap-2
-											text-sm
-											text-gray-600 dark:text-zinc-300
-											hover:bg-gray-100 dark:hover:bg-zinc-800
-											transition
+									<Link href='/account'>
+										<button
+											className='
+										w-full h-9 px-3 rounded-xl
+										flex items-center gap-2
+										text-sm
+										text-gray-600 dark:text-zinc-300
+										hover:bg-gray-100 dark:hover:bg-zinc-800
+										transition
 										'>
-										<User className='w-4 h-4' strokeWidth={1.8} />
-										Account
+											<User className='w-4 h-4' strokeWidth={1.8} />
+											Account
+										</button>
 									</Link>
 
 									{/* Logout */}
 									<button
 										onClick={() => signOut()}
 										className='
-											h-9 px-3 rounded-xl
+											w-full h-9 px-3 rounded-xl
 											flex items-center gap-2
 											text-sm
 											text-red-600

@@ -3,7 +3,7 @@
 'use client';
 
 import { HEADER_HEIGHT } from '@/lib/layout';
-import Image from 'next/image';
+import Icon from '@/../public/favicon.svg';
 import { Menu } from 'lucide-react';
 import { useSidebar } from '../providers/SidebarProvider';
 
@@ -40,11 +40,12 @@ export default function Header() {
 				{/* Logo */}
 				<div
 					className='
-						absolute left-1/2 -translate-x-1/2
-						md:static md:translate-x-0
-						md:ml-4
-					'>
-					<Image src='/Crea-Accent-Logo.png' alt='Crea Accent Logo' width={110} height={40} className='object-contain p-4' priority />
+		pointer-events-none
+		absolute inset-0
+		flex items-center justify-center
+		md:relative md:inset-auto md:justify-start md:ml-4
+	'>
+					<Icon className='h-10 w-auto fill-current text-zinc-900 dark:text-zinc-100' />
 				</div>
 
 				{/* Spacer for desktop alignment */}

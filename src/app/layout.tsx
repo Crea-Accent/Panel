@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 	title: 'Crea-Accent',
 	description: '',
 	icons: {
-		icon: '/Crea-Accent-logo.png',
+		icon: '/favicon.svg',
 	},
 };
 
