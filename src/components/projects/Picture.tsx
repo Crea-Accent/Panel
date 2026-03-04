@@ -34,7 +34,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 	const load = async () => {
 		setLoading(true);
 
-		const picsPath = `${basePath}/${client}/pictures`;
+		const picsPath = `${basePath}/${client}/picture`;
 		const res = await fetch(`/api/files?view=${encodeURIComponent(picsPath)}&recursive=1`);
 		const data: FileEntry[] = await res.json();
 

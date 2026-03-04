@@ -25,7 +25,7 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 	const load = async () => {
 		setLoading(true);
 
-		const schemasPath = `${basePath}/${client}/schemas`;
+		const schemasPath = `${basePath}/${client}/schema`;
 		const res = await fetch(`/api/files?view=${encodeURIComponent(schemasPath)}`);
 		const data: FileEntry[] = await res.json();
 
