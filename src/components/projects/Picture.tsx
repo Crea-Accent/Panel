@@ -1,10 +1,15 @@
 /** @format */
+
+// eslint-disable @typescript-eslint/no-explicit-any
+
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp, Download, FolderPlus, Image as ImageIcon, Upload } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Download, Eye, Image as ImageIcon, Pencil, Trash2, Upload, X } from 'lucide-react';
+import { DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
 import { useEffect, useRef, useState } from 'react';
 
+import Image from 'next/image';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -20,60 +25,117 @@ type FolderGroup = {
 
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 
+/* ---------------- Draggable ---------------- */
+
+function DraggableImage({ img, children, enabled }: { img: FileEntry; children: React.ReactNode; enabled: boolean }) {
+	const { attributes, listeners, setNodeRef } = useDraggable({
+		id: img.path,
+		disabled: !enabled,
+	});
+
+	if (!enabled) return <>{children}</>;
+
+	return (
+		<div ref={setNodeRef}>
+			<div {...listeners} {...attributes}>
+				{children}
+			</div>
+		</div>
+	);
+}
+
+/* ---------------- Droppable Folder ---------------- */
+
+function DroppableFolder({ id, children, enabled }: { id: string; children: React.ReactNode; enabled: boolean }) {
+	const { setNodeRef, isOver } = useDroppable({
+		id,
+		disabled: !enabled,
+	});
+
+	if (!enabled) return <div className='space-y-4'>{children}</div>;
+
+	return (
+		<div
+			ref={setNodeRef}
+			className={`
+			space-y-4
+			transition
+			${isOver ? 'ring-2 ring-indigo-500 rounded-xl p-2' : ''}
+		`}>
+			{children}
+		</div>
+	);
+}
+
 export default function Pictures({ basePath, client }: { basePath: string; client: string }) {
 	const { uploading, uploadFile } = useUpload();
 
 	const [groups, setGroups] = useState<FolderGroup[]>([]);
-	const [openFolders, setOpenFolders] = useState<Record<string, boolean>>({});
 	const [loading, setLoading] = useState(true);
-	const [open, setOpen] = useState(true);
-	const [activeUploadFolder, setActiveUploadFolder] = useState<string | undefined>(undefined);
+
+	const [viewerImages, setViewerImages] = useState<FileEntry[]>([]);
+	const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+
+	const [draggingImage, setDraggingImage] = useState<FileEntry | null>(null);
+
+	const [isMobile, setIsMobile] = useState(false);
 
 	const inputRef = useRef<HTMLInputElement | null>(null);
+
+	const baseDir = `${basePath}/${client}/pictures`;
+
+	/* ---------------- Detect mobile ---------------- */
+
+	useEffect(() => {
+		(() => {
+			const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+
+			setIsMobile(touch);
+		})();
+	}, []);
+
+	const dragEnabled = !isMobile;
+
+	/* ---------------- Load ---------------- */
 
 	const load = async () => {
 		setLoading(true);
 
-		const picsPath = `${basePath}/${client}/picture`;
-		const res = await fetch(`/api/files?view=${encodeURIComponent(picsPath)}&recursive=1`);
+		const res = await fetch(`/api/files?view=${encodeURIComponent(baseDir)}&recursive=1`);
 		const data: FileEntry[] = await res.json();
 
 		const directories = data.filter((f) => f.type === 'directory');
+
 		const imageFiles = data.filter((f) => f.type === 'file' && IMAGE_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext)));
 
 		const grouped: Record<string, FileEntry[]> = {};
 
-		for (const dir of directories) {
-			grouped[dir.name] = [];
-		}
+		for (const dir of directories) grouped[dir.name] = [];
 
 		for (const file of imageFiles) {
 			const normalized = file.path.replace(/\\/g, '/');
 			const parts = normalized.split('/');
-			const picturesIndex = parts.lastIndexOf('pictures');
+			const idx = parts.lastIndexOf('pictures');
 
 			let folder = 'Ungrouped';
 
-			if (picturesIndex !== -1 && parts.length > picturesIndex + 2) {
-				folder = parts[picturesIndex + 1];
+			if (idx !== -1 && parts.length > idx + 2) {
+				folder = parts[idx + 1];
 			}
 
 			if (!grouped[folder]) grouped[folder] = [];
+
 			grouped[folder].push(file);
 		}
 
 		if (!grouped['Ungrouped']?.length) delete grouped['Ungrouped'];
 
-		const result: FolderGroup[] = Object.entries(grouped).map(([name, images]) => ({
-			name,
-			images,
-		}));
-
-		setGroups(result);
-
-		const initialOpen: Record<string, boolean> = {};
-		result.forEach((g) => (initialOpen[g.name] = true));
-		setOpenFolders(initialOpen);
+		setGroups(
+			Object.entries(grouped).map(([name, images]) => ({
+				name,
+				images,
+			}))
+		);
 
 		setLoading(false);
 	};
@@ -84,185 +146,269 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 		})();
 	}, [basePath, client]);
 
-	const createGroup = async () => {
-		const name = prompt('Group name');
-		if (!name) return;
-
-		const dir = `${basePath}/${client}/pictures`;
-
-		await fetch('/api/files', {
-			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ dir, name }),
-		});
-
-		await load();
-	};
+	/* ---------------- Upload ---------------- */
 
 	const upload = async (files: FileList) => {
-		const baseDir = `${basePath}/${client}/pictures`;
-		const targetDir = activeUploadFolder ? `${baseDir}/${activeUploadFolder}` : baseDir;
-
-		let successCount = 0;
-
 		for (const file of Array.from(files)) {
-			const success = await uploadFile(file, targetDir);
-			if (success) successCount++;
+			await uploadFile(file, baseDir);
 		}
 
-		if (successCount > 0) await load();
-		setActiveUploadFolder(undefined);
+		load();
 	};
 
-	const moveImage = async (imagePath: string, targetFolder: string) => {
-		const baseDir = `${basePath}/${client}/pictures`;
-		const newDir = `${baseDir}/${targetFolder}`;
+	/* ---------------- Image Actions ---------------- */
+
+	const renameFolder = async (name: string) => {
+		const newName = prompt('New folder name', name);
+		if (!newName || newName === name) return;
 
 		await fetch('/api/files', {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				oldPath: imagePath,
-				newDir,
+				oldPath: `${baseDir}/${name}`,
+				newName,
 			}),
 		});
 
-		await load();
+		load();
+	};
+
+	const deleteFolder = async (name: string) => {
+		if (!confirm(`Delete folder "${name}" and all images?`)) return;
+
+		await fetch(`/api/files?path=${encodeURIComponent(`${baseDir}/${name}`)}`, {
+			method: 'DELETE',
+		});
+
+		load();
 	};
 
 	const download = (path: string) => {
 		const url = `/api/files/download?path=${encodeURIComponent(path)}`;
+
 		const a = document.createElement('a');
 		a.href = url;
+		a.download = path.split('/').pop() || 'file';
+
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
 	};
 
-	const totalImages = groups.reduce((acc, g) => acc + g.images.length, 0);
+	const deleteImage = async (path: string) => {
+		if (!confirm('Delete image?')) return;
 
-	const section = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
+		await fetch(`/api/files?path=${encodeURIComponent(path)}`, {
+			method: 'DELETE',
+		});
+
+		load();
+	};
+
+	const renameImage = async (path: string, name: string) => {
+		const newName = prompt('New file name', name);
+		if (!newName) return;
+
+		await fetch('/api/files', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				oldPath: path,
+				newName,
+			}),
+		});
+
+		load();
+	};
+
+	const moveImage = async (path: string, folder: string) => {
+		await fetch('/api/files', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				oldPath: path,
+				newDir: `${baseDir}/${folder}`,
+			}),
+		});
+
+		load();
+	};
+
+	/* ---------------- Drag ---------------- */
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const handleDragStart = (event: any) => {
+		const path = event.active.id;
+
+		const img = groups.flatMap((g) => g.images).find((i) => i.path === path);
+
+		if (img) setDraggingImage(img);
+	};
+
+	// eslint-disable-next-line @typescript-eslint/no-explicit-any
+	const handleDragEnd = (event: any) => {
+		if (!dragEnabled) return;
+
+		const { active, over } = event;
+
+		setDraggingImage(null);
+
+		if (!over) return;
+
+		const img = groups.flatMap((g) => g.images).find((i) => i.path === active.id);
+		if (!img) return;
+
+		const parts = img.path.replace(/\\/g, '/').split('/');
+		const currentFolder = parts[parts.length - 2];
+
+		if (currentFolder === over.id) return;
+
+		moveImage(active.id, over.id);
+	};
+
+	/* ---------------- Viewer ---------------- */
+
+	const openViewer = (images: FileEntry[], index: number) => {
+		setViewerImages(images);
+		setViewerIndex(index);
+	};
+
+	const closeViewer = () => setViewerIndex(null);
+
+	const next = () => viewerIndex !== null && setViewerIndex((viewerIndex + 1) % viewerImages.length);
+
+	const prev = () => viewerIndex !== null && setViewerIndex((viewerIndex - 1 + viewerImages.length) % viewerImages.length);
+
+	/* ---------------- UI ---------------- */
+
+	const Content = (
+		<>
+			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6'>
+				<div className='flex justify-between'>
+					<button onClick={() => inputRef.current?.click()} disabled={uploading} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-indigo-600 text-white'>
+						<Upload className='w-4 h-4' />
+						Upload
+					</button>
+				</div>
+
+				{loading && <div className='text-sm text-gray-500'>Loading images...</div>}
+
+				{groups.map((group) => (
+					<DroppableFolder key={group.name} id={group.name} enabled={dragEnabled}>
+						<div className='space-y-4'>
+							<div className='flex items-center justify-between'>
+								<h3 className='text-sm font-medium'>
+									{group.name} ({group.images.length})
+								</h3>
+
+								<div className='flex items-center gap-2'>
+									<button onClick={() => renameFolder(group.name)} className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'>
+										<Pencil size={14} />
+									</button>
+
+									<button onClick={() => deleteFolder(group.name)} className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'>
+										<Trash2 size={14} />
+									</button>
+								</div>
+							</div>
+
+							<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
+								{group.images.map((img, i) => (
+									<div key={img.path} className='bg-zinc-50 dark:bg-zinc-800 rounded-xl overflow-hidden shadow-sm'>
+										<DraggableImage img={img} enabled={dragEnabled}>
+											<div className='relative h-40 cursor-pointer' onClick={() => openViewer(group.images, i)}>
+												<Image src={`/api/files/download?path=${encodeURIComponent(img.path)}`} alt={img.name} fill className='object-cover' />
+											</div>
+										</DraggableImage>
+
+										<div className='flex items-center justify-between px-3 py-2 text-xs'>
+											<span className='truncate'>{img.name}</span>
+
+											<div className='flex gap-2'>
+												<button onClick={() => openViewer(group.images, i)}>
+													<Eye size={14} />
+												</button>
+
+												<button onClick={() => download(img.path)}>
+													<Download size={14} />
+												</button>
+
+												<button onClick={() => renameImage(img.path, img.name)}>
+													<Pencil size={14} />
+												</button>
+
+												<button onClick={() => deleteImage(img.path)}>
+													<Trash2 size={14} />
+												</button>
+											</div>
+										</div>
+									</div>
+								))}
+							</div>
+						</div>
+					</DroppableFolder>
+				))}
+			</div>
+
+			{dragEnabled && (
+				<DragOverlay>
+					{draggingImage && (
+						<div className='w-40 h-40 rounded-xl overflow-hidden shadow-xl relative'>
+							<Image src={`/api/files/download?path=${encodeURIComponent(draggingImage.path)}`} alt={draggingImage.name} fill className='object-cover' />
+						</div>
+					)}
+				</DragOverlay>
+			)}
+		</>
+	);
 
 	return (
 		<section className='space-y-6'>
-			{/* Header */}
 			<header className='flex items-center gap-3'>
 				<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
 					<ImageIcon className='w-5 h-5 text-indigo-600 dark:text-indigo-400' />
 				</div>
+
 				<div>
-					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Pictures</h2>
+					<h2 className='text-lg font-semibold'>Pictures</h2>
 					<p className='text-sm text-gray-500 dark:text-zinc-400'>Site images and documentation</p>
 				</div>
 			</header>
 
 			<input ref={inputRef} type='file' accept='image/*' multiple className='hidden' onChange={(e) => e.target.files && upload(e.target.files)} />
 
-			<div className={section}>
-				{/* Toggle */}
-				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center px-5 py-4 text-sm font-medium text-gray-900 dark:text-zinc-100'>
-					<span>Images ({totalImages})</span>
-					{open ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
-				</button>
+			{dragEnabled ? (
+				<DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+					{Content}
+				</DndContext>
+			) : (
+				Content
+			)}
 
-				<AnimatePresence>
-					{open && (
-						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} className='px-5 pb-6 space-y-6'>
-							{/* Actions */}
-							<div className='flex justify-between items-center'>
-								<button
-									onClick={createGroup}
-									className='h-10 px-4 flex items-center gap-2 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm font-medium hover:bg-gray-50 dark:hover:bg-zinc-700 transition'>
-									<FolderPlus className='w-4 h-4' />
-									New Group
-								</button>
+			<AnimatePresence>
+				{viewerIndex !== null && viewerImages[viewerIndex] && (
+					<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 bg-black/90 z-50 flex items-center justify-center'>
+						<div className='relative w-[90vw] h-[90vh] flex items-center justify-center'>
+							<button onClick={() => setViewerIndex(null)} className='absolute top-6 right-6 text-white z-10'>
+								<X />
+							</button>
 
-								<button
-									onClick={() => {
-										setActiveUploadFolder(undefined);
-										inputRef.current?.click();
-									}}
-									disabled={uploading}
-									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
-										${uploading ? 'bg-indigo-400 text-white cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}>
-									<Upload className='w-4 h-4' />
-									Upload
-								</button>
+							<button onClick={() => setViewerIndex((viewerIndex - 1 + viewerImages.length) % viewerImages.length)} className='absolute left-4 text-white z-10'>
+								<ChevronLeft size={40} />
+							</button>
+
+							<div className='relative w-full h-full'>
+								<Image src={`/api/files/download?path=${encodeURIComponent(viewerImages[viewerIndex].path)}`} alt={viewerImages[viewerIndex].name} fill className='object-contain' priority />
 							</div>
 
-							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading images…</div>}
-
-							{/* Groups */}
-							{!loading &&
-								groups.map((group) => (
-									<div key={group.name} className='border border-gray-200 dark:border-zinc-700 rounded-2xl overflow-hidden'>
-										<button
-											onClick={() =>
-												setOpenFolders((prev) => ({
-													...prev,
-													[group.name]: !prev[group.name],
-												}))
-											}
-											className='w-full flex justify-between items-center px-4 py-3 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 transition text-sm font-medium text-gray-900 dark:text-zinc-100'>
-											<span>
-												{group.name} ({group.images.length})
-											</span>
-											{openFolders[group.name] ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
-										</button>
-
-										<AnimatePresence>
-											{openFolders[group.name] && (
-												<motion.div className='p-4 space-y-4'>
-													<div className='flex justify-end'>
-														<button
-															onClick={() => {
-																setActiveUploadFolder(group.name);
-																inputRef.current?.click();
-															}}
-															className='text-xs px-3 py-1 rounded-lg border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-gray-100 dark:hover:bg-zinc-700 transition'>
-															Upload to {group.name}
-														</button>
-													</div>
-
-													<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
-														{group.images.map((img) => (
-															<div key={img.path} className='group relative rounded-2xl overflow-hidden border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800'>
-																<img src={`/api/files/download?path=${encodeURIComponent(img.path)}`} alt={img.name} className='w-full h-40 object-cover' />
-
-																<div className='absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition flex flex-col justify-end p-2 gap-2'>
-																	<span className='text-xs text-white truncate'>{img.name}</span>
-
-																	<div className='flex justify-between items-center gap-2'>
-																		<select onChange={(e) => moveImage(img.path, e.target.value)} className='text-xs rounded bg-white/90' defaultValue=''>
-																			<option value='' disabled>
-																				Move
-																			</option>
-																			{groups
-																				.filter((g) => g.name !== group.name)
-																				.map((g) => (
-																					<option key={g.name} value={g.name}>
-																						{g.name}
-																					</option>
-																				))}
-																		</select>
-
-																		<button onClick={() => download(img.path)} className='text-white hover:text-indigo-200 transition'>
-																			<Download className='w-4 h-4' />
-																		</button>
-																	</div>
-																</div>
-															</div>
-														))}
-													</div>
-												</motion.div>
-											)}
-										</AnimatePresence>
-									</div>
-								))}
-						</motion.div>
-					)}
-				</AnimatePresence>
-			</div>
+							<button onClick={() => setViewerIndex((viewerIndex + 1) % viewerImages.length)} className='absolute right-4 text-white z-10'>
+								<ChevronRight size={40} />
+							</button>
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</section>
 	);
 }
