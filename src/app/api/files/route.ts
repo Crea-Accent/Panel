@@ -72,10 +72,19 @@ export async function GET(request: NextRequest) {
 
 	const url = new URL(request.url);
 	const rawView = url.searchParams.get('view');
+	const ensure = url.searchParams.get('ensure') === '1';
 	const recursive = url.searchParams.get('recursive') === '1';
 
 	if (!rawView) {
 		return NextResponse.json({ error: 'Missing view parameter' }, { status: 400 });
+	}
+
+	if (ensure) {
+		try {
+			projects?.requiredFolders.map((folder) => {
+				fs.mkdirSync(path.join(rawView, folder));
+			});
+		} catch {}
 	}
 
 	let resolved: string;

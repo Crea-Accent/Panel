@@ -26,7 +26,7 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 		setLoading(true);
 
 		const docsPath = `${basePath}/${client}/documents`;
-		const res = await fetch(`/api/files?view=${encodeURIComponent(docsPath)}`);
+		const res = await fetch(`/api/files?view=${encodeURIComponent(docsPath)}&ensure=1`);
 		const data: FileEntry[] = await res.json();
 
 		const filtered = data.filter((f) => f.type === 'file' && DOCUMENT_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext)));
