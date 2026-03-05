@@ -41,6 +41,16 @@ export const PERMISSIONS = [
 		label: 'Applications - Write',
 		group: 'Applications',
 	},
+	{
+		key: 'passwords.read',
+		label: 'Passwords - Read',
+		group: 'Passwords',
+	},
+	{
+		key: 'passwords.write',
+		label: 'Passwords - Write',
+		group: 'Passwords',
+	},
 ];
 
 export function groupPermissions() {

@@ -16,9 +16,10 @@ export default function Header() {
 			className='
 				sticky top-0 z-40
 				bg-white dark:bg-zinc-950
-				border-b border-gray-200 dark:border-zinc-800
-				backdrop-blur supports-[backdrop-filter]:bg-white/80
-				dark:supports-[backdrop-filter]:bg-zinc-950/80
+				border-b border-zinc-200 dark:border-zinc-800
+				backdrop-blur supports-[backdrop-filter]:bg-white/70
+				dark:supports-[backdrop-filter]:bg-zinc-950/70
+				transition-colors
 			'>
 			<div className='flex items-center h-full px-4 md:px-6 relative'>
 				{/* Sidebar Toggle */}
@@ -27,25 +28,26 @@ export default function Header() {
 					className='
 						h-10 w-10
 						flex items-center justify-center
-						rounded-xl
-						border border-gray-200 dark:border-zinc-700
+						rounded-lg
+						border border-zinc-200 dark:border-zinc-800
 						bg-white dark:bg-zinc-900
-						text-gray-600 dark:text-zinc-300
-						hover:bg-gray-50 dark:hover:bg-zinc-800
-						transition-colors
+						text-zinc-600 dark:text-zinc-300
+						hover:bg-zinc-50 dark:hover:bg-zinc-800
+						active:scale-[0.97]
+						transition-all
 					'>
-					<Menu className='w-5 h-5' strokeWidth={1.8} />
+					<Menu size={18} strokeWidth={1.8} />
 				</button>
 
 				{/* Logo */}
 				<div
 					className='
-		pointer-events-none
-		absolute inset-0
-		flex items-center justify-center
-		md:relative md:inset-auto md:justify-start md:ml-4
-	'>
-					<Icon className='h-10 w-auto fill-current text-zinc-900 dark:text-zinc-100' />
+						pointer-events-none
+						absolute inset-0
+						flex items-center justify-center
+						md:relative md:inset-auto md:justify-start md:ml-4
+					'>
+					<Icon className='h-9 w-auto fill-current text-zinc-900 dark:text-zinc-100' />
 				</div>
 
 				{/* Spacer for desktop alignment */}

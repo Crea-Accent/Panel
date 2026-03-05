@@ -20,15 +20,15 @@ export default function Sidebar() {
 	if (loading) return null;
 
 	const navItems = [
-		{ href: '/', label: 'Home', icon: Home, permission: null },
+		{ href: '/', label: 'Home', icon: Home },
 		{ href: '/projects', label: 'Projects', icon: FolderKanban, permission: 'projects.read' },
 		{ href: '/files', label: 'Files', icon: Folder, permission: 'files.read' },
 		{ href: '/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
-		{ href: '/passwords', label: 'Passwords', icon: KeyRound, permission: 'admin.read' },
+		{ href: '/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
 		{ href: '/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
 	];
 
-	const visibleItems = navItems.filter((item) => (!item.permission ? true : has(item.permission)));
+	const visibleItems = navItems.filter((item) => !item.permission || has(item.permission));
 
 	return (
 		<AnimatePresence>
@@ -42,13 +42,7 @@ export default function Sidebar() {
 						transition={{ duration: 0.2 }}
 						onClick={toggle}
 						style={{ top: HEADER_HEIGHT }}
-						className='
-							fixed left-0 right-0 bottom-0
-							bg-black/20
-							backdrop-blur-sm
-							z-40
-							md:hidden
-						'
+						className='fixed left-0 right-0 bottom-0 bg-black/25 backdrop-blur-sm z-40 md:hidden'
 					/>
 
 					{/* Sidebar */}
@@ -63,16 +57,15 @@ export default function Sidebar() {
 							height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
 						}}
 						className='
-							fixed left-0
+							fixed left-0 z-50
 							bg-white dark:bg-zinc-950
-							border-r border-gray-200 dark:border-zinc-800
+							border-r border-zinc-200 dark:border-zinc-800
 							p-4
 							flex flex-col
-							z-50
 						'>
 						{/* Navigation */}
 						<nav>
-							<ul className='space-y-1'>
+							<ul className='space-y-1.5'>
 								{visibleItems.map((item) => (
 									<NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} currentPath={pathname} />
 								))}
@@ -82,7 +75,7 @@ export default function Sidebar() {
 						<div className='flex-1' />
 
 						{/* Account Section */}
-						<div className='border-t border-gray-200 dark:border-zinc-800 pt-4 space-y-3'>
+						<div className='border-t border-zinc-200 dark:border-zinc-800 pt-4 space-y-3'>
 							{session ? (
 								<>
 									{/* User Info */}
@@ -92,8 +85,8 @@ export default function Sidebar() {
 										</div>
 
 										<div className='flex-1 min-w-0'>
-											<p className='text-sm font-medium text-gray-900 dark:text-zinc-100 truncate'>{session.user?.name ?? 'Account'}</p>
-											<p className='text-xs text-gray-500 dark:text-zinc-400 truncate'>{session.user?.email}</p>
+											<p className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{session.user?.name ?? 'Account'}</p>
+											<p className='text-xs text-zinc-500 dark:text-zinc-400 truncate'>{session.user?.email}</p>
 										</div>
 									</div>
 
@@ -101,14 +94,14 @@ export default function Sidebar() {
 									<Link href='/account'>
 										<button
 											className='
-										w-full h-9 px-3 rounded-xl
-										flex items-center gap-2
-										text-sm
-										text-gray-600 dark:text-zinc-300
-										hover:bg-gray-100 dark:hover:bg-zinc-800
-										transition
-										'>
-											<User className='w-4 h-4' strokeWidth={1.8} />
+												w-full h-9 px-3 rounded-lg
+												flex items-center gap-2
+												text-sm
+												text-zinc-600 dark:text-zinc-300
+												hover:bg-zinc-100 dark:hover:bg-zinc-800
+												transition-colors
+											'>
+											<User size={16} strokeWidth={1.8} />
 											Account
 										</button>
 									</Link>
@@ -117,14 +110,14 @@ export default function Sidebar() {
 									<button
 										onClick={() => signOut()}
 										className='
-											w-full h-9 px-3 rounded-xl
+											w-full h-9 px-3 rounded-lg
 											flex items-center gap-2
 											text-sm
 											text-red-600
 											hover:bg-red-50 dark:hover:bg-red-900/20
-											transition
+											transition-colors
 										'>
-										<LogOut className='w-4 h-4' strokeWidth={1.8} />
+										<LogOut size={16} strokeWidth={1.8} />
 										Log out
 									</button>
 								</>
@@ -132,17 +125,16 @@ export default function Sidebar() {
 								<button
 									onClick={() => signIn()}
 									className='
-										w-full
-										h-10
+										w-full h-9
 										flex items-center gap-2
-										px-3
-										rounded-xl
+										px-3 rounded-lg
 										bg-indigo-600 text-white
 										text-sm font-medium
 										hover:bg-indigo-500
-										transition-colors
+										active:scale-[0.98]
+										transition-all
 									'>
-									<LogIn className='w-4 h-4' strokeWidth={1.8} />
+									<LogIn size={16} strokeWidth={1.8} />
 									Login
 								</button>
 							)}
@@ -162,21 +154,18 @@ function NavItem({ href, label, Icon, currentPath }: { href: string; label: stri
 			<Link
 				href={href}
 				className={`
-					group
-					flex items-center gap-3
-					h-10
-					px-3
-					rounded-xl
+					group flex items-center gap-3 h-10 px-3
+					rounded-lg
 					text-sm font-medium
 					transition-colors
-					${isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' : 'text-gray-700 dark:text-zinc-300 hover:bg-gray-100 dark:hover:bg-zinc-800'}
+					${isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
 				`}>
 				<Icon
-					className={`
-						w-4 h-4
-						${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-gray-400 group-hover:text-gray-600 dark:text-zinc-500'}
-					`}
+					size={16}
 					strokeWidth={1.8}
+					className={`
+						${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-500'}
+					`}
 				/>
 				{label}
 			</Link>

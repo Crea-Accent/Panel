@@ -6,6 +6,7 @@ import { ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { usePermissions } from '@/providers/PermissionsProvider';
 
 type FileEntry = {
 	path: string;
@@ -21,6 +22,8 @@ type Settings = {
 };
 
 export default function Home() {
+	const { has } = usePermissions();
+
 	const [settings, setSettings] = useState<Settings | null>(null);
 	const [projects, setProjects] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
@@ -98,7 +101,7 @@ export default function Home() {
 	};
 
 	return (
-		<div className='w-full max-w-7xl mx-auto space-y-12'>
+		<div className='w-full space-y-10'>
 			{/* HERO */}
 			<motion.section
 				initial={{ opacity: 0, y: 10 }}
@@ -107,73 +110,76 @@ export default function Home() {
 					relative overflow-hidden
 					bg-gradient-to-br from-indigo-50 to-white
 					dark:from-zinc-900 dark:to-zinc-950
-					border border-indigo-100 dark:border-zinc-800
-					rounded-3xl
+					border border-zinc-200 dark:border-zinc-800
+					rounded-2xl
 					p-8 md:p-10
 					shadow-sm
 					space-y-8
 				'>
 				<div className='flex flex-col md:flex-row md:items-center md:justify-between gap-6'>
 					<div>
-						<h1 className='text-3xl md:text-4xl font-semibold tracking-tight text-gray-900 dark:text-zinc-100'>Project Control Center</h1>
-						<p className='text-sm text-gray-500 dark:text-zinc-400 mt-2'>Manage projects, track updates and monitor storage.</p>
+						<h1 className='text-3xl md:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100'>Project Control Center</h1>
+						<p className='text-sm text-zinc-500 dark:text-zinc-400 mt-2'>Manage projects, track updates and monitor storage.</p>
 					</div>
 
-					<button
-						onClick={createProject}
-						className='
-							h-11 px-5 rounded-2xl
-							bg-indigo-600 text-white
-							text-sm font-medium
-							flex items-center gap-2
-							hover:bg-indigo-500
-							transition-colors
-						'>
-						<Plus className='w-4 h-4' />
-						New Project
-					</button>
+					{has('projects.write') && (
+						<button
+							onClick={createProject}
+							className='
+								h-11 px-5 rounded-xl
+								bg-indigo-600 text-white
+								text-sm font-medium
+								flex items-center gap-2
+								hover:bg-indigo-500
+								active:scale-[0.98]
+								transition-all
+							'>
+							<Plus size={16} />
+							New Project
+						</button>
+					)}
 				</div>
 
 				<div className='relative max-w-xl'>
-					<Search className='absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 dark:text-zinc-500' size={18} />
+					<Search className='absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500' size={18} />
+
 					<input
 						ref={searchRef}
 						placeholder='Search projects… (press /)'
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
 						className='
-							w-full h-12 pl-12 pr-4
+							w-full h-11 pl-12 pr-4
 							bg-white dark:bg-zinc-900
-							border border-gray-200 dark:border-zinc-700
-							rounded-2xl
+							border border-zinc-200 dark:border-zinc-800
+							rounded-xl
 							text-sm
-							text-gray-900 dark:text-zinc-100
-							placeholder-gray-400 dark:placeholder-zinc-500
+							text-zinc-900 dark:text-zinc-100
+							placeholder:text-zinc-400 dark:placeholder:text-zinc-500
 							focus:outline-none
-							focus:ring-2 focus:ring-indigo-500/20
-							focus:border-indigo-500
+							focus:ring-2 focus:ring-indigo-500/30
 							transition
 						'
 					/>
 				</div>
 
 				{query && filteredProjects.length > 0 && (
-					<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm divide-y divide-gray-200 dark:divide-zinc-800'>
+					<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800'>
 						{filteredProjects.slice(0, 6).map((p) => {
 							const daysAgo = p.modified ? (Date.now() - new Date(p.modified).getTime()) / (1000 * 60 * 60 * 24) : 999;
 
 							const stale = daysAgo > 365;
 
 							return (
-								<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} className='block px-6 py-5 hover:bg-gray-50 dark:hover:bg-zinc-800 transition'>
+								<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} className='block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
 									<div className='flex justify-between'>
 										<div>
-											<p className='font-medium text-gray-900 dark:text-zinc-100'>{p.name}</p>
+											<p className='font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</p>
 
 											{stale && <span className='mt-1 inline-block text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'>Needs attention</span>}
 										</div>
 
-										<div className='text-right text-xs text-gray-500 dark:text-zinc-400 space-y-1'>
+										<div className='text-right text-xs text-zinc-500 dark:text-zinc-400 space-y-1'>
 											{p.modified && <p>{new Date(p.modified).toLocaleDateString()}</p>}
 											<p>{((p.size ?? 0) / 1024 / 1024).toFixed(1)} MB</p>
 										</div>
@@ -187,22 +193,23 @@ export default function Home() {
 
 			{/* STATS */}
 			<section className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-				<StatCard icon={<FolderKanban className='w-5 h-5' />} label='Total Projects' value={loading ? '—' : projects.length} />
-				<StatCard icon={<TrendingUp className='w-5 h-5' />} label='Updated last 7 days' value={loading ? '—' : updatedLast7Days} />
-				<StatCard icon={<HardDrive className='w-5 h-5' />} label='Total Storage (MB)' value={loading ? '—' : totalStorage} />
+				<StatCard icon={<FolderKanban size={18} />} label='Total Projects' value={loading ? '—' : projects.length} />
+				<StatCard icon={<TrendingUp size={18} />} label='Updated last 7 days' value={loading ? '—' : updatedLast7Days} />
+				<StatCard icon={<HardDrive size={18} />} label='Total Storage (MB)' value={loading ? '—' : totalStorage} />
 			</section>
 
 			{/* RECENT */}
-			<section className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-4'>
-				<h2 className='text-base font-semibold flex items-center gap-2 text-gray-900 dark:text-zinc-100'>
-					<Clock className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+			<section className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 space-y-4'>
+				<h2 className='text-base font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-100'>
+					<Clock size={16} className='text-indigo-600 dark:text-indigo-400' />
 					Recently Updated
 				</h2>
 
 				{sortedByRecent.slice(0, 5).map((p) => (
-					<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} className='flex justify-between items-center px-4 py-3 rounded-xl hover:bg-gray-50 dark:hover:bg-zinc-800 transition'>
-						<span className='text-sm font-medium text-gray-900 dark:text-zinc-100'>{p.name}</span>
-						<span className='text-xs text-gray-500 dark:text-zinc-400'>{p.modified ? new Date(p.modified).toLocaleDateString() : ''}</span>
+					<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+						<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</span>
+
+						<span className='text-xs text-zinc-500 dark:text-zinc-400'>{p.modified ? new Date(p.modified).toLocaleDateString() : ''}</span>
 					</Link>
 				))}
 			</section>
@@ -212,13 +219,14 @@ export default function Home() {
 
 function StatCard({ icon, label, value }: { icon: ReactElement; label: string; value: string | number }) {
 	return (
-		<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6'>
+		<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6'>
 			<div className='flex items-center gap-3 mb-4'>
 				<div className='w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center'>{icon}</div>
-				<span className='text-xs font-medium text-gray-500 dark:text-zinc-400 uppercase tracking-wide'>{label}</span>
+
+				<span className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide'>{label}</span>
 			</div>
 
-			<p className='text-2xl font-semibold text-gray-900 dark:text-zinc-100'>{value}</p>
+			<p className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>{value}</p>
 		</div>
 	);
 }

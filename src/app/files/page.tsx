@@ -78,9 +78,7 @@ export default function FilesPage() {
 			let timeout: NodeJS.Timeout;
 
 			if (isSearching) {
-				timeout = setTimeout(() => {
-					loadFiles(currentPath, true);
-				}, 600);
+				timeout = setTimeout(() => loadFiles(currentPath, true), 600);
 			} else {
 				loadFiles(currentPath, false);
 			}
@@ -110,7 +108,6 @@ export default function FilesPage() {
 		if (currentPath === settings.path) return;
 
 		const parent = currentPath.substring(0, currentPath.lastIndexOf('\\'));
-
 		setCurrentPath(parent);
 	}
 
@@ -166,50 +163,51 @@ export default function FilesPage() {
 		loadFiles(currentPath);
 	}
 
-	if (loading) return <div className='p-6 text-sm text-gray-500 dark:text-zinc-400'>Loading…</div>;
+	if (loading) {
+		return <div className='text-sm text-zinc-500 dark:text-zinc-400'>Loading…</div>;
+	}
 
-	if (!settings?.path) return <div className='p-6 text-sm text-gray-500 dark:text-zinc-400'>No files path configured.</div>;
+	if (!settings?.path) {
+		return <div className='text-sm text-zinc-500 dark:text-zinc-400'>No files path configured.</div>;
+	}
 
 	return (
 		<div className='space-y-6'>
-			<h1 className='text-2xl font-semibold text-gray-900 dark:text-zinc-100'>Files</h1>
+			<h1 className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>Files</h1>
 
 			{/* Toolbar */}
 			<div className='flex flex-wrap items-center gap-3'>
 				{[
 					{ icon: Home, onClick: goHome },
 					{ icon: ArrowUp, onClick: goUp },
-					{
-						icon: Copy,
-						onClick: () => currentPath && copyToClipboard(currentPath),
-					},
+					{ icon: Copy, onClick: () => currentPath && copyToClipboard(currentPath) },
 				].map(({ icon: Icon, onClick }, i) => (
 					<button
 						key={i}
 						onClick={onClick}
 						disabled={isSearching}
-						className='h-10 w-10 flex items-center justify-center rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-700 disabled:opacity-40 transition'>
-						<Icon className='w-4 h-4' />
+						className='h-9 w-9 flex items-center justify-center rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 hover:bg-zinc-50 dark:hover:bg-zinc-800 disabled:opacity-40 transition'>
+						<Icon size={16} />
 					</button>
 				))}
 
 				<div className='relative max-w-xs'>
-					<Search className='absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400' />
+					<Search className='absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400' size={16} />
 					<input
 						placeholder='Search files…'
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						className='h-10 pl-10 pr-8 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition'
+						className='h-9 pl-9 pr-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition'
 					/>
 					{query && (
-						<button onClick={() => setQuery('')} className='absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-700 dark:hover:text-zinc-200'>
+						<button onClick={() => setQuery('')} className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'>
 							✕
 						</button>
 					)}
 				</div>
 
-				<button onClick={() => uploadRef.current?.click()} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
-					<Upload className='w-4 h-4' />
+				<button onClick={() => uploadRef.current?.click()} className='h-9 px-4 flex items-center gap-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+					<Upload size={16} />
 					Upload
 				</button>
 
@@ -217,8 +215,8 @@ export default function FilesPage() {
 			</div>
 
 			{/* Table */}
-			<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden'>
-				<div className='hidden md:grid grid-cols-4 px-6 py-3 text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-500 bg-gray-50 dark:bg-zinc-800'>
+			<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden'>
+				<div className='hidden md:grid grid-cols-4 px-6 py-3 text-xs uppercase tracking-wide text-zinc-500 bg-zinc-50 dark:bg-zinc-800'>
 					<div>Name</div>
 					<div>Size</div>
 					<div>Modified</div>
@@ -226,24 +224,24 @@ export default function FilesPage() {
 				</div>
 
 				{filtered.map((file) => (
-					<div key={file.path} className='border-t border-gray-100 dark:border-zinc-800 hover:bg-gray-50 dark:hover:bg-zinc-800 transition'>
+					<div key={file.path} className='border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
 						<div className='flex md:grid md:grid-cols-4 items-center px-4 md:px-6 py-4 gap-3'>
 							<div className='flex items-start gap-3 cursor-pointer flex-1' onClick={() => navigate(file)}>
-								{file.type === 'directory' ? <Folder className='w-5 h-5 text-indigo-600 dark:text-indigo-400' /> : <File className='w-5 h-5 text-gray-400 dark:text-zinc-500' />}
+								{file.type === 'directory' ? <Folder size={18} className='text-indigo-600 dark:text-indigo-400' /> : <File size={18} className='text-zinc-400' />}
 
 								<div className='flex flex-col'>
-									<span className='text-sm font-medium text-gray-900 dark:text-zinc-100 truncate'>{file.name}</span>
+									<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{file.name}</span>
 
-									<div className='text-xs text-gray-500 dark:text-zinc-500 md:hidden mt-1 space-x-3'>
+									<div className='text-xs text-zinc-500 md:hidden mt-1 space-x-3'>
 										<span>{formatSize(file.size)}</span>
 										<span>{formatDate(file.modified)}</span>
 									</div>
 								</div>
 							</div>
 
-							<div className='hidden md:block text-sm text-gray-500 dark:text-zinc-400'>{formatSize(file.size)}</div>
+							<div className='hidden md:block text-sm text-zinc-500'>{formatSize(file.size)}</div>
 
-							<div className='hidden md:block text-sm text-gray-500 dark:text-zinc-400'>{formatDate(file.modified)}</div>
+							<div className='hidden md:block text-sm text-zinc-500'>{formatDate(file.modified)}</div>
 
 							<div className='flex justify-end gap-2'>
 								<ActionIcon icon={Copy} onClick={() => copyToClipboard(file.path)} />
@@ -263,10 +261,10 @@ function ActionIcon({ icon: Icon, onClick, danger }: { icon: LucideIcon; onClick
 	return (
 		<button
 			onClick={onClick}
-			className={`h-9 w-9 flex items-center justify-center rounded-xl transition ${
-				danger ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-700'
+			className={`h-8 w-8 flex items-center justify-center rounded-lg transition ${
+				danger ? 'text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30' : 'text-zinc-500 hover:bg-zinc-100 dark:hover:bg-zinc-800'
 			}`}>
-			<Icon className='w-4 h-4' />
+			<Icon size={14} />
 		</button>
 	);
 }
