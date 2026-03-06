@@ -2,12 +2,18 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Folder, HardDrive, Trash2 } from 'lucide-react';
+import { Folder, HardDrive, Tag, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
+
+type Label = {
+	name: string;
+	color: string;
+};
 
 type ProjectsSettings = {
 	path?: string;
 	requiredFolders?: string[];
+	labels?: Label[];
 	dateFormat?: string;
 };
 
@@ -15,10 +21,14 @@ export default function ProjectsSettings() {
 	const [settings, setSettings] = useState<ProjectsSettings>({
 		path: '',
 		requiredFolders: [],
+		labels: [],
 		dateFormat: 'DDMMYYYY',
 	});
 
 	const [newFolder, setNewFolder] = useState('');
+	const [newLabel, setNewLabel] = useState('');
+	const [newColor, setNewColor] = useState('#6366f1');
+
 	const [loading, setLoading] = useState(true);
 	const [saving, setSaving] = useState(false);
 
@@ -33,6 +43,7 @@ export default function ProjectsSettings() {
 			const merged = {
 				path: '',
 				requiredFolders: [],
+				labels: [],
 				dateFormat: 'DDMMYYYY',
 				...data,
 			};
@@ -96,6 +107,38 @@ export default function ProjectsSettings() {
 		});
 	}
 
+	function addLabel() {
+		if (!newLabel.trim()) return;
+
+		setSettings({
+			...settings,
+			labels: [
+				...(settings.labels || []),
+				{
+					name: newLabel.trim(),
+					color: newColor,
+				},
+			],
+		});
+
+		setNewLabel('');
+		setNewColor('#6366f1');
+	}
+
+	function removeLabel(name: string) {
+		setSettings({
+			...settings,
+			labels: settings.labels?.filter((l) => l.name !== name) || [],
+		});
+	}
+
+	function updateLabelColor(name: string, color: string) {
+		setSettings({
+			...settings,
+			labels: settings.labels?.map((l) => (l.name === name ? { ...l, color } : l)) || [],
+		});
+	}
+
 	function formatPreview(parts: string[]) {
 		const d = new Date();
 		const DD = String(d.getDate()).padStart(2, '0');
@@ -123,55 +166,29 @@ export default function ProjectsSettings() {
 				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Configure project storage and default structure.</p>
 			</div>
 
-			{/* Base Path */}
+			{/* Labels */}
 			<div className={card}>
-				<div className='flex items-center gap-3'>
-					<div className='h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center'>
-						<HardDrive className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
-					</div>
-					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Location</h3>
-				</div>
-
-				<input
-					className={input}
-					placeholder='/sim'
-					value={settings.path || ''}
-					onChange={(e) =>
-						setSettings({
-							...settings,
-							path: e.target.value,
-						})
-					}
-				/>
-
-				<p className='text-xs text-gray-500 dark:text-zinc-500'>Relative to application root.</p>
-			</div>
-
-			{/* Required Folders */}
-			<div className={card}>
-				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Required Folders</h3>
+				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
+					<Tag className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					Project Labels
+				</h3>
 
 				<div className='space-y-2'>
 					<AnimatePresence>
-						{settings.requiredFolders?.map((folder) => (
+						{settings.labels?.map((label) => (
 							<motion.div
-								key={folder}
-								initial={{
-									opacity: 0,
-									y: -4,
-								}}
-								animate={{
-									opacity: 1,
-									y: 0,
-								}}
-								exit={{
-									opacity: 0,
-									x: 10,
-								}}
-								className='flex items-center justify-between rounded-xl border border-gray-200 dark:border-zinc-700 px-4 py-3 bg-gray-50 dark:bg-zinc-800'>
-								<span className='text-sm font-medium text-gray-900 dark:text-zinc-100'>{folder}</span>
+								key={label.name}
+								initial={{ opacity: 0, y: -4 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, x: 10 }}
+								className='flex items-center justify-between gap-3 rounded-xl border border-gray-200 dark:border-zinc-700 px-4 py-3 bg-gray-50 dark:bg-zinc-800'>
+								<div className='flex items-center gap-3'>
+									<input type='color' value={label.color} onChange={(e) => updateLabelColor(label.name, e.target.value)} className='w-8 h-8 border-none bg-transparent' />
 
-								<button onClick={() => removeFolder(folder)} className='h-8 w-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition'>
+									<span className='text-sm font-medium text-gray-900 dark:text-zinc-100'>{label.name}</span>
+								</div>
+
+								<button onClick={() => removeLabel(label.name)} className='h-8 w-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition'>
 									<Trash2 className='w-4 h-4' />
 								</button>
 							</motion.div>
@@ -180,36 +197,13 @@ export default function ProjectsSettings() {
 				</div>
 
 				<div className='flex gap-3'>
-					<input className={input} placeholder='New folder name' value={newFolder} onChange={(e) => setNewFolder(e.target.value)} />
+					<input className={input} placeholder='New label' value={newLabel} onChange={(e) => setNewLabel(e.target.value)} />
 
-					<button onClick={addFolder} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+					<input type='color' value={newColor} onChange={(e) => setNewColor(e.target.value)} className='w-12 h-10' />
+
+					<button onClick={addLabel} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
 						Add
 					</button>
-				</div>
-			</div>
-
-			{/* Date Format */}
-			<div className={card}>
-				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Date Format</h3>
-
-				<p className='text-sm text-gray-500 dark:text-zinc-400'>Drag to reorder how dates are saved in project uploads.</p>
-
-				<div className='flex gap-3'>
-					{dateParts.map((part, index) => (
-						<div
-							key={part}
-							draggable
-							onDragStart={() => setDragIndex(index)}
-							onDragOver={(e) => e.preventDefault()}
-							onDrop={() => handleDrop(index)}
-							className='h-10 px-4 flex items-center bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl cursor-move text-sm font-medium text-gray-900 dark:text-zinc-100'>
-							{part}
-						</div>
-					))}
-				</div>
-
-				<div className='text-sm text-gray-600 dark:text-zinc-400'>
-					Preview: <span className='font-medium text-gray-900 dark:text-zinc-100'>{formatPreview(dateParts)}</span>
 				</div>
 			</div>
 

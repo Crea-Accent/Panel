@@ -1,28 +1,50 @@
 /** @format */
 'use client';
 
-import { Folder, Search } from 'lucide-react';
+import { Folder, MapPin, Pencil, Search } from 'lucide-react';
 import { NotPermitted, usePermissions } from '@/providers/PermissionsProvider';
 import { useEffect, useMemo, useState } from 'react';
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 
-type FileEntry = {
+type LabelSetting = {
+	name: string;
+	color: string;
+};
+
+type Project = {
 	path: string;
 	name: string;
 	type: string;
+	label?: string;
+	updatedAt?: string;
+	address?: {
+		street?: string;
+		number?: string;
+		postalCode?: string;
+		city?: string;
+		country?: string;
+	};
 };
 
 type Settings = {
 	path: string;
 	requiredFolders: string[];
+	labels?: LabelSetting[];
 };
 
+type SortKey = 'name' | 'updated';
+
 export default function ProjectsPage() {
-	const [projects, setProjects] = useState<FileEntry[]>([]);
+	const [projects, setProjects] = useState<Project[]>([]);
 	const [settings, setSettings] = useState<Settings | null>(null);
+
 	const [query, setQuery] = useState('');
+	const [labelFilter, setLabelFilter] = useState('');
+
+	const [sortKey, setSortKey] = useState<SortKey>('name');
+	const [sortAsc, setSortAsc] = useState(true);
 
 	const { loading } = usePermissions();
 
@@ -36,16 +58,95 @@ export default function ProjectsPage() {
 			const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}`);
 			const data = await res.json();
 
-			const foldersOnly = data.filter((f: FileEntry) => f.type === 'directory');
-			setProjects(foldersOnly);
+			const foldersOnly = data.filter((f: Project) => f.type === 'directory');
+
+			const withMetadata = await Promise.all(
+				foldersOnly.map(async (p: Project) => {
+					try {
+						const meta = await fetch(`/api/projects/metadata?client=${encodeURIComponent(p.name)}`).then((r) => r.json());
+
+						return {
+							...p,
+							label: meta.label,
+							updatedAt: meta.updatedAt,
+							address: meta.address,
+						};
+					} catch {
+						return p;
+					}
+				})
+			);
+
+			setProjects(withMetadata);
 		})();
 	}, []);
 
+	function toggleSort(key: SortKey) {
+		if (sortKey === key) {
+			setSortAsc(!sortAsc);
+		} else {
+			setSortKey(key);
+			setSortAsc(true);
+		}
+	}
+
 	const filteredProjects = useMemo(() => {
+		let list = [...projects];
+
 		const q = query.toLowerCase().trim();
-		if (!q) return projects;
-		return projects.filter((c) => c.name.toLowerCase().includes(q));
-	}, [projects, query]);
+
+		list = list.filter((p) => {
+			if (q && !p.name.toLowerCase().includes(q)) return false;
+			if (labelFilter && p.label !== labelFilter) return false;
+			return true;
+		});
+
+		list.sort((a, b) => {
+			if (sortKey === 'name') {
+				return sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+			}
+
+			if (sortKey === 'updated') {
+				const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+				const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+
+				return sortAsc ? aDate - bDate : bDate - aDate;
+			}
+
+			return 0;
+		});
+
+		return list;
+	}, [projects, query, labelFilter, sortKey, sortAsc]);
+
+	function renameProject(oldName: string) {
+		const next = prompt('Rename project', oldName);
+		if (!next || next === oldName) return;
+
+		fetch('/api/files/rename', {
+			method: 'POST',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				from: `${settings?.path}/${oldName}`,
+				to: `${settings?.path}/${next}`,
+			}),
+		}).then(() => location.reload());
+	}
+
+	function openMaps(p: Project) {
+		if (!p.address) return;
+
+		const q = [p.address.street, p.address.number, p.address.postalCode, p.address.city, p.address.country].filter(Boolean).join(' ');
+
+		window.open(`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(q)}`, '_blank');
+	}
+
+	function labelColor(name?: string) {
+		if (!name || !settings?.labels) return '#6366f1';
+
+		const l = settings.labels.find((l) => l.name === name);
+		return l?.color ?? '#6366f1';
+	}
 
 	if (loading) return null;
 
@@ -62,14 +163,14 @@ export default function ProjectsPage() {
 					<div className='min-w-0'>
 						<h1 className='text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100'>Projects</h1>
 
-						<p className='text-sm text-zinc-500 dark:text-zinc-400'>Select a project to open</p>
+						<p className='text-sm text-zinc-500 dark:text-zinc-400'>Browse and manage projects</p>
 					</div>
 				</div>
 
-				{/* Search */}
+				{/* Search + Filter */}
 
-				<div className='max-w-md'>
-					<div className='relative'>
+				<div className='flex items-center gap-3 max-w-2xl'>
+					<div className='relative flex-1'>
 						<Search size={16} className='absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400' />
 
 						<input
@@ -77,58 +178,93 @@ export default function ProjectsPage() {
 							placeholder='Search projects…'
 							value={query}
 							onChange={(e) => setQuery(e.target.value)}
-							className='
-								w-full h-9
-								pl-9 pr-4
-								rounded-lg
-								border border-zinc-200 dark:border-zinc-800
-								bg-white dark:bg-zinc-900
-								text-sm text-zinc-900 dark:text-zinc-100
-								placeholder:text-zinc-400
-								focus:outline-none
-								focus:ring-2 focus:ring-indigo-500/30
-								transition
-							'
+							className='w-full h-9 pl-9 pr-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'
 						/>
 					</div>
+
+					<select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className='h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'>
+						<option value=''>All labels</option>
+
+						{settings?.labels?.map((l) => (
+							<option key={l.name} value={l.name}>
+								{l.name}
+							</option>
+						))}
+					</select>
 				</div>
 
-				{/* List */}
+				{/* File table */}
 
-				<motion.div
-					initial={{ opacity: 0, y: 6 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.2 }}
-					className='
-						bg-white dark:bg-zinc-900
-						border border-zinc-200 dark:border-zinc-800
-						rounded-xl
-						shadow-sm
-						overflow-hidden
-					'>
-					{filteredProjects.length === 0 && (
-						<div className='px-5 py-4 text-sm text-zinc-500 dark:text-zinc-400'>{query ? `No projects matching “${query}”.` : `No client folders found in ${settings?.path}.`}</div>
-					)}
+				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden'>
+					<div className='grid grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
+						<button onClick={() => toggleSort('name')} className='text-left'>
+							Name
+						</button>
 
-					{filteredProjects.map((c, index) => (
-						<Link
-							key={c.path}
-							href={`/projects/${encodeURIComponent(c.name)}`}
-							className={`
-								group
-								flex items-center gap-3
-								h-11
-								px-5
-								text-sm font-medium
-								text-zinc-800 dark:text-zinc-200
-								transition-colors
-								hover:bg-zinc-50 dark:hover:bg-zinc-800
-								${index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''}
-							`}>
-							<Folder size={16} className='text-zinc-400 group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors' />
+						<span>Label</span>
 
-							<span className='truncate'>{c.name}</span>
-						</Link>
+						<button onClick={() => toggleSort('updated')} className='text-left'>
+							Updated
+						</button>
+
+						<span className='text-right'>Actions</span>
+					</div>
+
+					{filteredProjects.map((p, index) => (
+						<div
+							key={p.path}
+							className={`grid grid-cols-[1fr_140px_120px_100px] items-center h-11 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
+								index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
+							}`}>
+							<Link href={`/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
+								<Folder size={16} className='text-zinc-400' />
+								<span className='truncate font-medium'>{p.name}</span>
+							</Link>
+
+							<div>
+								{p.label && (
+									<span className='px-2 py-0.5 text-xs rounded-md text-white' style={{ backgroundColor: labelColor(p.label) }}>
+										{p.label}
+									</span>
+								)}
+							</div>
+
+							<div className='text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</div>
+
+							<div className='flex justify-end gap-1'>
+								{p.address?.city && (
+									<button
+										onClick={() => openMaps(p)}
+										className='
+				h-8 w-8
+				flex items-center justify-center
+				rounded-lg
+				text-zinc-400
+				hover:text-indigo-600 dark:hover:text-indigo-400
+				hover:bg-zinc-100 dark:hover:bg-zinc-800
+				transition
+				cursor-pointer
+			'>
+										<MapPin size={16} />
+									</button>
+								)}
+
+								<button
+									onClick={() => renameProject(p.name)}
+									className='
+			h-8 w-8
+			flex items-center justify-center
+			rounded-lg
+			text-zinc-400
+			hover:text-indigo-600 dark:hover:text-indigo-400
+			hover:bg-zinc-100 dark:hover:bg-zinc-800
+			transition
+				cursor-pointer
+		'>
+									<Pencil size={16} />
+								</button>
+							</div>
+						</div>
 					))}
 				</motion.div>
 			</div>

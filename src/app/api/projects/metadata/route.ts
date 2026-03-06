@@ -24,7 +24,7 @@ type Metadata = {
 	name: string;
 	createdAt: string;
 	updatedAt: string;
-
+	label?: string;
 	address: {
 		street: string;
 		number: string;
@@ -58,7 +58,11 @@ function loadProjectsPath(): string | null {
 	try {
 		const raw = fs.readFileSync(PROJECTS_PATH, 'utf8');
 		const parsed = JSON.parse(raw);
-		return typeof parsed.path === 'string' ? parsed.path : null;
+
+		if (typeof parsed.path !== 'string') return null;
+
+		// resolve relative to app root
+		return path.resolve(process.cwd(), parsed.path);
 	} catch {
 		return null;
 	}
@@ -85,7 +89,7 @@ function createDefaultMetadata(projectName: string): Metadata {
 		name: projectName,
 		createdAt: now,
 		updatedAt: now,
-
+		label: '',
 		address: {
 			street: '',
 			number: '',

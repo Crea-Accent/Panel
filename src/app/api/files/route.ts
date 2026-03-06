@@ -122,6 +122,27 @@ export async function GET(request: NextRequest) {
 					name: path.basename(current),
 					createdAt: new Date().toISOString(),
 					updatedAt: new Date().toISOString(),
+					label: '',
+					address: {
+						street: '',
+						number: '',
+						postalCode: '',
+						city: '',
+						country: 'Belgium',
+					},
+
+					contact: {
+						contactPersons: [],
+						phones: [],
+						emails: [],
+					},
+
+					logins: {
+						company: [],
+						client: [],
+					},
+
+					notes: '',
 				};
 
 				fs.writeFileSync(metadataPath, JSON.stringify(defaultMetadata, null, 2), 'utf-8');

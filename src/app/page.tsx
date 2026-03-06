@@ -1,11 +1,11 @@
 /** @format */
 'use client';
 
+import { AnimatePresence, motion } from 'framer-motion';
 import { Clock, FolderKanban, HardDrive, Plus, Search, TrendingUp } from 'lucide-react';
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 
 import Link from 'next/link';
-import { motion } from 'framer-motion';
 import { usePermissions } from '@/providers/PermissionsProvider';
 
 type FileEntry = {
@@ -30,6 +30,8 @@ export default function Home() {
 	const [loading, setLoading] = useState(true);
 	const [recentOpened, setRecentOpened] = useState<string[]>([]);
 	const searchRef = useRef<HTMLInputElement | null>(null);
+	const [creating, setCreating] = useState(false);
+	const [newProjectName, setNewProjectName] = useState('');
 
 	useEffect(() => {
 		(async () => {
@@ -89,16 +91,19 @@ export default function Home() {
 		return (total / 1024 / 1024).toFixed(1);
 	}, [projects]);
 
-	const createProject = async () => {
-		if (!settings?.path) return;
+	async function createProject() {
+		if (!settings?.path || !newProjectName.trim()) return;
 
-		const name = prompt('New project name');
-		if (!name) return;
-
+		const name = newProjectName.trim();
 		const newPath = `${settings.path}/${name}`;
+
 		await fetch(`/api/files?view=${encodeURIComponent(newPath)}`);
+
+		setCreating(false);
+		setNewProjectName('');
+
 		window.location.href = `/projects/${encodeURIComponent(name)}`;
-	};
+	}
 
 	return (
 		<div className='w-full space-y-10'>
@@ -124,7 +129,7 @@ export default function Home() {
 
 					{has('projects.write') && (
 						<button
-							onClick={createProject}
+							onClick={() => setCreating(true)}
 							className='
 								h-11 px-5 rounded-xl
 								bg-indigo-600 text-white
@@ -213,6 +218,71 @@ export default function Home() {
 					</Link>
 				))}
 			</section>
+
+			<AnimatePresence>
+				{creating && (
+					<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm'>
+						<motion.div
+							initial={{ scale: 0.95, opacity: 0 }}
+							animate={{ scale: 1, opacity: 1 }}
+							exit={{ scale: 0.95, opacity: 0 }}
+							className='
+					w-full max-w-md
+					bg-white dark:bg-zinc-900
+					border border-zinc-200 dark:border-zinc-800
+					rounded-2xl
+					shadow-xl
+					p-6
+					space-y-5
+				'>
+							<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Create Project</h2>
+
+							<input
+								autoFocus
+								value={newProjectName}
+								onChange={(e) => setNewProjectName(e.target.value)}
+								placeholder='Project name'
+								className='
+						w-full h-10 px-4
+						rounded-xl
+						bg-gray-50 dark:bg-zinc-800
+						border border-zinc-200 dark:border-zinc-700
+						text-sm
+						focus:outline-none
+						focus:ring-2 focus:ring-indigo-500/30
+					'
+							/>
+
+							<div className='flex justify-end gap-3 pt-2'>
+								<button
+									onClick={() => {
+										setCreating(false);
+										setNewProjectName('');
+									}}
+									className='
+							h-10 px-4 rounded-xl
+							border border-zinc-200 dark:border-zinc-700
+							text-sm
+							hover:bg-zinc-100 dark:hover:bg-zinc-800
+						'>
+									Cancel
+								</button>
+
+								<button
+									onClick={createProject}
+									className='
+							h-10 px-5 rounded-xl
+							bg-indigo-600 text-white
+							text-sm font-medium
+							hover:bg-indigo-500
+						'>
+									Create
+								</button>
+							</div>
+						</motion.div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 		</div>
 	);
 }
