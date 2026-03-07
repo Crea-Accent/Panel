@@ -6,14 +6,11 @@ import Header from '@/components/Header';
 import type { Metadata } from 'next';
 import { PermissionsProvider } from '@/providers/PermissionsProvider';
 import { SessionProvider } from '@/providers/SessionProvider';
-import Sidebar from '@/components/Sidebar';
-import { SidebarLayout } from '@/components/SidebarLayout';
 import { SidebarProvider } from '@/providers/SidebarProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
 import { UploadProvider } from '@/providers/UploadProvider';
 import { authConfig } from '@/lib/auth';
 import { getServerSession } from 'next-auth';
-import { redirect } from 'next/navigation';
 
 export const metadata: Metadata = {
 	title: 'Crea-Accent',
@@ -29,8 +26,6 @@ export default async function RootLayout({
 	children: React.ReactNode;
 }>) {
 	const session = await getServerSession(authConfig);
-
-	if (!session) return redirect('/api/auth/signin');
 
 	return (
 		<html lang='en' className='h-full'>
@@ -51,21 +46,7 @@ export default async function RootLayout({
 								<SidebarProvider>
 									<div className='min-h-screen flex flex-col'>
 										<Header />
-										<Sidebar />
-										<SidebarLayout>
-											<main
-												className='
-													flex-1
-													min-h-0
-													w-full
-													px-4
-													md:px-6
-													lg:px-8
-													py-6
-												'>
-												{children}
-											</main>
-										</SidebarLayout>
+										{children}
 									</div>
 								</SidebarProvider>
 							</PermissionsProvider>

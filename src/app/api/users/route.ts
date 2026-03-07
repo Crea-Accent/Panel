@@ -27,6 +27,7 @@ type User = {
 	roleId: string;
 	permissions: string[];
 	theme?: Theme;
+	projects?: string[];
 };
 
 function ensureFiles() {
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
 // ---------- PATCH (ADMIN EDIT USER) ----------
 export async function PATCH(request: NextRequest) {
 	const body = await request.json();
-	const { id, name, email, roleId, password, permissions, theme } = body || {};
+	const { id, name, email, roleId, password, permissions, theme, projects } = body || {};
 
 	if (!id) {
 		return NextResponse.json({ error: 'Missing user id' }, { status: 400 });
@@ -140,6 +141,10 @@ export async function PATCH(request: NextRequest) {
 
 	if (Array.isArray(permissions)) {
 		users[index].permissions = permissions;
+	}
+
+	if (Array.isArray(projects)) {
+		users[index].projects = projects;
 	}
 
 	if (theme && ['light', 'dark', 'system'].includes(theme)) {

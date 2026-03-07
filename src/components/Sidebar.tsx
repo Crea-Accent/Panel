@@ -12,7 +12,7 @@ import { usePermissions } from '@/providers/PermissionsProvider';
 import { useSidebar } from '../providers/SidebarProvider';
 
 export default function Sidebar() {
-	const pathname = usePathname();
+	const pathname = usePathname() || '';
 	const { open, toggle } = useSidebar();
 	const { data: session } = useSession();
 	const { has, loading } = usePermissions();
@@ -20,12 +20,12 @@ export default function Sidebar() {
 	if (loading) return null;
 
 	const navItems = [
-		{ href: '/', label: 'Home', icon: Home },
-		{ href: '/projects', label: 'Projects', icon: FolderKanban, permission: 'projects.read' },
-		{ href: '/files', label: 'Files', icon: Folder, permission: 'files.read' },
-		{ href: '/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
-		{ href: '/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
-		{ href: '/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
+		{ href: '/dashboard', label: 'Home', icon: Home },
+		{ href: '/dashboard/projects', label: 'Projects', icon: FolderKanban, permission: 'projects.read' },
+		{ href: '/dashboard/files', label: 'Files', icon: Folder, permission: 'files.read' },
+		{ href: '/dashboard/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
+		{ href: '/dashboard/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
+		{ href: '/dashboard/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
 	];
 
 	const visibleItems = navItems.filter((item) => !item.permission || has(item.permission));
@@ -147,7 +147,7 @@ export default function Sidebar() {
 }
 
 function NavItem({ href, label, Icon, currentPath }: { href: string; label: string; Icon: React.ElementType; currentPath: string }) {
-	const isActive = href === '/' ? currentPath === '/' : currentPath.startsWith(href);
+	const isActive = href === '/dashboard' ? currentPath === '/dashboard' : currentPath.startsWith(href);
 
 	return (
 		<li>

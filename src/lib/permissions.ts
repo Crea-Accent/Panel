@@ -51,6 +51,16 @@ export const PERMISSIONS = [
 		label: 'Passwords - Write',
 		group: 'Passwords',
 	},
+	{
+		key: 'client.read',
+		label: 'Client - Read',
+		group: 'Client',
+	},
+	{
+		key: 'client.write',
+		label: 'Client - Write',
+		group: 'Client',
+	},
 ];
 
 export function groupPermissions() {

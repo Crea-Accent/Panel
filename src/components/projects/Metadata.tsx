@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Check, ChevronDown, ChevronUp, Copy, Eye, EyeOff, Folder, Plus, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import { User } from 'next-auth';
+
 type Login = {
 	label?: string;
 	link?: string;
@@ -43,12 +45,19 @@ export default function Metadata({ client }: { client: string }) {
 	const [saved, setSaved] = useState(false);
 	const [initialMetadata, setInitialMetadata] = useState<MetadataType | null>(null);
 	const [openSections, setOpenSections] = useState<string[]>(['address', 'contact', 'company', 'client']);
+	const [users, setUsers] = useState<User[]>([]);
 
 	const [visiblePasswords, setVisiblePasswords] = useState<Record<string, boolean>>({});
 
 	const [labels, setLabels] = useState<Label[]>([]);
 
 	const hasChanges = JSON.stringify(metadata) !== JSON.stringify(initialMetadata);
+
+	async function loadUsers() {
+		const res = await fetch('/api/users');
+		const data = await res.json();
+		setUsers(data.users ?? []);
+	}
 
 	useEffect(() => {
 		(async () => {
@@ -76,6 +85,12 @@ export default function Metadata({ client }: { client: string }) {
 			setInitialMetadata(data ?? {});
 		})();
 	}, [client]);
+
+	useEffect(() => {
+		fetch('/api/users')
+			.then((r) => r.json())
+			.then((d) => setUsers(d.users));
+	}, []);
 
 	if (!metadata) return null;
 
@@ -174,6 +189,23 @@ export default function Metadata({ client }: { client: string }) {
 		});
 	};
 
+	async function toggleUser(user: User) {
+		const hasAccess = user.projects?.includes(client);
+
+		const nextProjects = hasAccess ? user.projects.filter((p) => p !== client) : [...(user.projects ?? []), client];
+
+		await fetch('/api/users', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({
+				id: user.id,
+				projects: nextProjects,
+			}),
+		});
+
+		loadUsers();
+	}
+
 	function labelColor(name?: string) {
 		if (!name) return '#6366f1';
 
@@ -258,6 +290,32 @@ export default function Metadata({ client }: { client: string }) {
 						</motion.div>
 					)}
 				</AnimatePresence>
+			</div>
+
+			<div className={section}>
+				<button onClick={() => toggleSection('access')} className='w-full px-5 py-4 flex justify-between text-sm font-medium'>
+					<span>Project Access</span>
+				</button>
+
+				{openSections.includes('access') && (
+					<div className='px-5 pb-5 flex flex-wrap gap-2'>
+						{users.map((user) => {
+							const active = user.projects?.includes(client);
+
+							return (
+								<button
+									key={user.id}
+									onClick={() => toggleUser(user)}
+									className={`
+							px-3 py-1 text-xs rounded-lg border
+							${active ? 'bg-indigo-600 text-white border-indigo-600' : 'border-zinc-300 dark:border-zinc-700'}
+						`}>
+									{user.name} - {user.email}
+								</button>
+							);
+						})}
+					</div>
+				)}
 			</div>
 
 			{/* CONTACT */}

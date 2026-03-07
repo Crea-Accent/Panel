@@ -49,11 +49,11 @@ export default function ProjectsPage() {
 	const { loading } = usePermissions();
 
 	useEffect(() => {
-		(async () => {
+		async function load() {
 			const s = await fetch('/api/settings/projects').then((r) => r.json());
 			setSettings(s);
 
-			if (!s.path) return;
+			if (!s?.path) return;
 
 			const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}`);
 			const data = await res.json();
@@ -67,9 +67,9 @@ export default function ProjectsPage() {
 
 						return {
 							...p,
-							label: meta.label,
-							updatedAt: meta.updatedAt,
-							address: meta.address,
+							label: meta?.label,
+							updatedAt: meta?.updatedAt,
+							address: meta?.address,
 						};
 					} catch {
 						return p;
@@ -78,7 +78,9 @@ export default function ProjectsPage() {
 			);
 
 			setProjects(withMetadata);
-		})();
+		}
+
+		load();
 	}, []);
 
 	function toggleSort(key: SortKey) {
@@ -92,7 +94,6 @@ export default function ProjectsPage() {
 
 	const filteredProjects = useMemo(() => {
 		let list = [...projects];
-
 		const q = query.toLowerCase().trim();
 
 		list = list.filter((p) => {
@@ -121,13 +122,13 @@ export default function ProjectsPage() {
 
 	async function renameProject(oldName: string) {
 		const next = prompt('Rename project', oldName);
-		if (!next || next === oldName) return;
+		if (!next || next === oldName || !settings?.path) return;
 
 		await fetch('/api/files', {
 			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				oldPath: `${settings?.path}/${oldName}`,
+				oldPath: `${settings.path}/${oldName}`,
 				newName: next,
 			}),
 		});
@@ -195,7 +196,7 @@ export default function ProjectsPage() {
 					</select>
 				</div>
 
-				{/* File table */}
+				{/* Table */}
 
 				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden'>
 					<div className='grid grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
@@ -218,7 +219,7 @@ export default function ProjectsPage() {
 							className={`grid grid-cols-[1fr_140px_120px_100px] items-center h-11 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
 								index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
 							}`}>
-							<Link href={`/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
+							<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
 								<Folder size={16} className='text-zinc-400' />
 								<span className='truncate font-medium'>{p.name}</span>
 							</Link>
@@ -237,32 +238,14 @@ export default function ProjectsPage() {
 								{p.address?.city && (
 									<button
 										onClick={() => openMaps(p)}
-										className='
-				h-8 w-8
-				flex items-center justify-center
-				rounded-lg
-				text-zinc-400
-				hover:text-indigo-600 dark:hover:text-indigo-400
-				hover:bg-zinc-100 dark:hover:bg-zinc-800
-				transition
-				cursor-pointer
-			'>
+										className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
 										<MapPin size={16} />
 									</button>
 								)}
 
 								<button
 									onClick={() => renameProject(p.name)}
-									className='
-			h-8 w-8
-			flex items-center justify-center
-			rounded-lg
-			text-zinc-400
-			hover:text-indigo-600 dark:hover:text-indigo-400
-			hover:bg-zinc-100 dark:hover:bg-zinc-800
-			transition
-				cursor-pointer
-		'>
+									className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
 									<Pencil size={16} />
 								</button>
 							</div>

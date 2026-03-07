@@ -1,6 +1,6 @@
 /** @format */
 
-import NextAuth, { DefaultSession } from 'next-auth';
+import { DefaultSession } from 'next-auth';
 import { JWT as DefaultJWT } from 'next-auth/jwt';
 
 declare module 'next-auth' {
@@ -9,6 +9,7 @@ declare module 'next-auth' {
 			roleId?: string;
 			permissions?: string[];
 			theme?: 'light' | 'dark' | 'system';
+			projects: string[];
 		} & DefaultSession['user'];
 	}
 
@@ -16,6 +17,7 @@ declare module 'next-auth' {
 		roleId?: string;
 		permissions?: string[];
 		theme?: 'light' | 'dark' | 'system';
+		projects: string[];
 	}
 }
 
@@ -24,5 +26,6 @@ declare module 'next-auth/jwt' {
 		roleId?: string;
 		permissions?: string[];
 		theme?: 'light' | 'dark' | 'system';
+		projects: string[];
 	}
 }

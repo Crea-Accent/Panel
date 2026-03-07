@@ -16,6 +16,12 @@ function loadUsers() {
 }
 
 export const authConfig: NextAuthOptions = {
+	pages: {
+		signIn: '/auth/login',
+		error: '/auth/login',
+		signOut: '/auth/logout',
+	},
+
 	providers: [
 		Credentials({
 			name: 'Credentials',
@@ -45,6 +51,7 @@ export const authConfig: NextAuthOptions = {
 					roleId: user.roleId,
 					permissions: user.permissions,
 					theme: user.theme || 'system',
+					projects: user.projects || [],
 				};
 			},
 		}),
@@ -59,6 +66,7 @@ export const authConfig: NextAuthOptions = {
 				token.roleId = user.roleId;
 				token.permissions = user.permissions;
 				token.theme = user.theme;
+				token.projects = user.projects ?? [];
 				return token;
 			}
 
@@ -70,6 +78,7 @@ export const authConfig: NextAuthOptions = {
 				token.roleId = dbUser.roleId;
 				token.permissions = dbUser.permissions;
 				token.theme = dbUser.theme ?? 'system';
+				token.projects = dbUser.projects ?? [];
 			}
 
 			return token;
@@ -80,6 +89,7 @@ export const authConfig: NextAuthOptions = {
 				session.user.roleId = token.roleId;
 				session.user.permissions = token.permissions;
 				session.user.theme = token.theme;
+				session.user.projects = token.projects;
 			}
 			return session;
 		},
