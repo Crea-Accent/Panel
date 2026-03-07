@@ -82,7 +82,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 
 	const inputRef = useRef<HTMLInputElement | null>(null);
 
-	const baseDir = `${basePath}/${client}/pictures`;
+	const baseDir = `${basePath}/${client}/picture`;
 
 	/* ---------------- Detect mobile ---------------- */
 
@@ -150,7 +150,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 
 	const upload = async (files: FileList) => {
 		for (const file of Array.from(files)) {
-			await uploadFile(file, baseDir);
+			await uploadFile(file, client, 'picture');
 		}
 
 		load();

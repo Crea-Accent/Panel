@@ -61,6 +61,10 @@ export default function Home() {
 				e.preventDefault();
 				searchRef.current?.focus();
 			}
+
+			if (e.key === 'Escape') {
+				setCreating(false);
+			}
 		};
 
 		window.addEventListener('keydown', handler);
@@ -91,6 +95,16 @@ export default function Home() {
 		return (total / 1024 / 1024).toFixed(1);
 	}, [projects]);
 
+	const recentProjectsResolved = useMemo(() => {
+		return recentOpened.map((name) => projects.find((p) => p.name === name)).filter(Boolean) as FileEntry[];
+	}, [recentOpened, projects]);
+
+	function pushRecent(name: string) {
+		const next = [name, ...recentOpened.filter((p) => p !== name)].slice(0, 6);
+		setRecentOpened(next);
+		localStorage.setItem('recentProjects', JSON.stringify(next));
+	}
+
 	async function createProject() {
 		if (!settings?.path || !newProjectName.trim()) return;
 
@@ -102,12 +116,13 @@ export default function Home() {
 		setCreating(false);
 		setNewProjectName('');
 
+		pushRecent(name);
+
 		window.location.href = `/projects/${encodeURIComponent(name)}`;
 	}
 
 	return (
 		<div className='w-full space-y-10'>
-			{/* HERO */}
 			<motion.section
 				initial={{ opacity: 0, y: 10 }}
 				animate={{ opacity: 1, y: 0 }}
@@ -170,40 +185,47 @@ export default function Home() {
 
 				{query && filteredProjects.length > 0 && (
 					<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800'>
-						{filteredProjects.slice(0, 6).map((p) => {
-							const daysAgo = p.modified ? (Date.now() - new Date(p.modified).getTime()) / (1000 * 60 * 60 * 24) : 999;
+						{filteredProjects.slice(0, 6).map((p) => (
+							<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} onClick={() => pushRecent(p.name)} className='block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+								<div className='flex justify-between'>
+									<p className='font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</p>
 
-							const stale = daysAgo > 365;
-
-							return (
-								<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} className='block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
-									<div className='flex justify-between'>
-										<div>
-											<p className='font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</p>
-
-											{stale && <span className='mt-1 inline-block text-xs px-2 py-0.5 rounded-full bg-amber-100 text-amber-700 dark:bg-amber-900/40 dark:text-amber-300'>Needs attention</span>}
-										</div>
-
-										<div className='text-right text-xs text-zinc-500 dark:text-zinc-400 space-y-1'>
-											{p.modified && <p>{new Date(p.modified).toLocaleDateString()}</p>}
-											<p>{((p.size ?? 0) / 1024 / 1024).toFixed(1)} MB</p>
-										</div>
+									<div className='text-right text-xs text-zinc-500 dark:text-zinc-400 space-y-1'>
+										{p.modified && <p>{new Date(p.modified).toLocaleDateString()}</p>}
+										<p>{((p.size ?? 0) / 1024 / 1024).toFixed(1)} MB</p>
 									</div>
-								</Link>
-							);
-						})}
+								</div>
+							</Link>
+						))}
 					</div>
 				)}
 			</motion.section>
 
-			{/* STATS */}
 			<section className='grid grid-cols-1 md:grid-cols-3 gap-6'>
 				<StatCard icon={<FolderKanban size={18} />} label='Total Projects' value={loading ? '—' : projects.length} />
 				<StatCard icon={<TrendingUp size={18} />} label='Updated last 7 days' value={loading ? '—' : updatedLast7Days} />
 				<StatCard icon={<HardDrive size={18} />} label='Total Storage (MB)' value={loading ? '—' : totalStorage} />
 			</section>
 
-			{/* RECENT */}
+			{recentProjectsResolved.length > 0 && (
+				<section className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 space-y-4'>
+					<h2 className='text-base font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-100'>
+						<Clock size={16} className='text-indigo-600 dark:text-indigo-400' />
+						Recently Opened
+					</h2>
+
+					{recentProjectsResolved.map((p) => (
+						<Link
+							key={p.path}
+							href={`/projects/${encodeURIComponent(p.name)}`}
+							onClick={() => pushRecent(p.name)}
+							className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+							<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</span>
+						</Link>
+					))}
+				</section>
+			)}
+
 			<section className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 space-y-4'>
 				<h2 className='text-base font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-100'>
 					<Clock size={16} className='text-indigo-600 dark:text-indigo-400' />
@@ -211,7 +233,11 @@ export default function Home() {
 				</h2>
 
 				{sortedByRecent.slice(0, 5).map((p) => (
-					<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+					<Link
+						key={p.path}
+						href={`/projects/${encodeURIComponent(p.name)}`}
+						onClick={() => pushRecent(p.name)}
+						className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
 						<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</span>
 
 						<span className='text-xs text-zinc-500 dark:text-zinc-400'>{p.modified ? new Date(p.modified).toLocaleDateString() : ''}</span>
@@ -227,30 +253,33 @@ export default function Home() {
 							animate={{ scale: 1, opacity: 1 }}
 							exit={{ scale: 0.95, opacity: 0 }}
 							className='
-					w-full max-w-md
-					bg-white dark:bg-zinc-900
-					border border-zinc-200 dark:border-zinc-800
-					rounded-2xl
-					shadow-xl
-					p-6
-					space-y-5
-				'>
+								w-full max-w-md
+								bg-white dark:bg-zinc-900
+								border border-zinc-200 dark:border-zinc-800
+								rounded-2xl
+								shadow-xl
+								p-6
+								space-y-5
+							'>
 							<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Create Project</h2>
 
 							<input
 								autoFocus
 								value={newProjectName}
 								onChange={(e) => setNewProjectName(e.target.value)}
+								onKeyDown={(e) => {
+									if (e.key === 'Enter') createProject();
+								}}
 								placeholder='Project name'
 								className='
-						w-full h-10 px-4
-						rounded-xl
-						bg-gray-50 dark:bg-zinc-800
-						border border-zinc-200 dark:border-zinc-700
-						text-sm
-						focus:outline-none
-						focus:ring-2 focus:ring-indigo-500/30
-					'
+									w-full h-10 px-4
+									rounded-xl
+									bg-gray-50 dark:bg-zinc-800
+									border border-zinc-200 dark:border-zinc-700
+									text-sm
+									focus:outline-none
+									focus:ring-2 focus:ring-indigo-500/30
+								'
 							/>
 
 							<div className='flex justify-end gap-3 pt-2'>
@@ -260,22 +289,22 @@ export default function Home() {
 										setNewProjectName('');
 									}}
 									className='
-							h-10 px-4 rounded-xl
-							border border-zinc-200 dark:border-zinc-700
-							text-sm
-							hover:bg-zinc-100 dark:hover:bg-zinc-800
-						'>
+										h-10 px-4 rounded-xl
+										border border-zinc-200 dark:border-zinc-700
+										text-sm
+										hover:bg-zinc-100 dark:hover:bg-zinc-800
+									'>
 									Cancel
 								</button>
 
 								<button
 									onClick={createProject}
 									className='
-							h-10 px-5 rounded-xl
-							bg-indigo-600 text-white
-							text-sm font-medium
-							hover:bg-indigo-500
-						'>
+										h-10 px-5 rounded-xl
+										bg-indigo-600 text-white
+										text-sm font-medium
+										hover:bg-indigo-500
+									'>
 									Create
 								</button>
 							</div>

@@ -69,8 +69,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 	}, [basePath, client]);
 
 	const upload = async (file: File) => {
-		const progPath = `${basePath}/${client}/programmation`;
-		const success = await uploadFile(file, progPath);
+		const success = await uploadFile(file, client, 'programmation');
 		if (success) await load();
 	};
 

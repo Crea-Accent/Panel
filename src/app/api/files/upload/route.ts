@@ -3,7 +3,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 import AdmZip from 'adm-zip';
-import { authConfig } from '@/lib/auth'; // adjust if needed
+import { authConfig } from '@/lib/auth';
 import fs from 'fs';
 import { getServerSession } from 'next-auth';
 import path from 'path';
@@ -13,12 +13,13 @@ const SETTINGS_PATH = path.join(DATA_DIR, 'projects.json');
 
 function loadSettings() {
 	if (!fs.existsSync(SETTINGS_PATH)) {
-		return { path: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
+		return { path: '', dateFormat: 'DDMMYYYY' };
 	}
+
 	try {
 		return JSON.parse(fs.readFileSync(SETTINGS_PATH, 'utf8'));
 	} catch {
-		return { path: '', requiredFolders: [], dateFormat: 'DDMMYYYY' };
+		return { path: '', dateFormat: 'DDMMYYYY' };
 	}
 }
 
@@ -28,38 +29,30 @@ function formatDate(format?: string) {
 	const MM = String(d.getMonth() + 1).padStart(2, '0');
 	const YYYY = d.getFullYear();
 
-	const safeFormat = format || 'DDMMYYYY';
-
-	return safeFormat.replace('DD', DD).replace('MM', MM).replace('YYYY', String(YYYY));
+	return (format || 'DDMMYYYY').replace('DD', DD).replace('MM', MM).replace('YYYY', String(YYYY));
 }
 
 function getInitials(name?: string | null) {
 	if (!name) return 'XX';
 
-	const parts = name.trim().split(/\s+/);
-	const letters = parts.map((p) => p[0]?.toUpperCase() || '');
-	return letters.join('');
+	return name
+		.trim()
+		.split(/\s+/)
+		.map((p) => p[0]?.toUpperCase() || '')
+		.join('');
 }
 
-function resolveUniquePath(baseDir: string, baseName: string) {
-	const finalPath = path.join(baseDir, baseName);
-
-	if (!fs.existsSync(finalPath)) {
-		return finalPath;
-	}
-
-	let i = 1;
+function resolveUniquePath(dir: string, project: string, stamp: string, initials: string, ext = '') {
+	let index = 0;
 
 	while (true) {
-		const candidateName = baseName.replace(/(\d{8})(\s+[A-Z]+)(\.[^.]*)?$/, (_, date, initials, ext = '') => `${date}_${i}${initials}${ext}`);
+		const name = index === 0 ? `${project} ${stamp} ${initials}${ext}` : `${project} ${stamp}_${index} ${initials}${ext}`;
 
-		const candidate = path.join(baseDir, candidateName);
+		const full = path.join(dir, name);
 
-		if (!fs.existsSync(candidate)) {
-			return candidate;
-		}
+		if (!fs.existsSync(full)) return full;
 
-		i++;
+		index++;
 	}
 }
 
@@ -82,52 +75,23 @@ export async function POST(request: NextRequest) {
 	const kind = formData.get('kind') as string | null;
 
 	if (!file || !rawClient || !kind) {
-		return NextResponse.json({ error: 'Missing file, client, or kind' }, { status: 400 });
+		return NextResponse.json({ error: 'Missing file, client or kind' }, { status: 400 });
 	}
 
-	const client = decodeURIComponent(rawClient);
-	const baseClientDir = path.join(settings.path, client);
+	const client = path.basename(decodeURIComponent(rawClient));
+	const projectDir = path.join(settings.path, client);
+	const targetDir = path.join(projectDir, kind);
 
-	if (!fs.existsSync(baseClientDir)) {
-		fs.mkdirSync(baseClientDir, { recursive: true });
-	}
+	fs.mkdirSync(targetDir, { recursive: true });
 
 	const buffer = Buffer.from(await file.arrayBuffer());
 	const stamp = formatDate(settings.dateFormat);
 	const initials = getInitials(session.user.name);
+	const projectName = path.basename(client);
 
-	// -------- SCHEMAS --------
-	if (kind === 'schemas') {
-		const targetDir = path.join(baseClientDir, 'schemas');
-
-		if (!fs.existsSync(targetDir)) {
-			fs.mkdirSync(targetDir, { recursive: true });
-		}
-
-		const ext = path.extname(file.name);
-		const baseName = `${client} ${stamp} ${initials}${ext}`;
-
-		const uniquePath = resolveUniquePath(targetDir, baseName);
-
-		fs.writeFileSync(uniquePath, buffer);
-
-		return NextResponse.json({
-			ok: true,
-			savedAs: uniquePath,
-			kind: 'schemas',
-		});
-	}
-
-	// -------- PROGRAMMATION --------
+	// ---------- PROGRAMMATION ----------
 	if (kind === 'programmation') {
-		const progRoot = path.join(baseClientDir, 'programmation');
-
-		if (!fs.existsSync(progRoot)) {
-			fs.mkdirSync(progRoot, { recursive: true });
-		}
-
-		const baseName = `${client} ${stamp} ${initials}`;
-		const uniqueDir = resolveUniquePath(progRoot, baseName);
+		const uniqueDir = resolveUniquePath(targetDir, projectName, stamp, initials);
 
 		fs.mkdirSync(uniqueDir);
 
@@ -138,31 +102,19 @@ export async function POST(request: NextRequest) {
 			ok: true,
 			savedAs: uniqueDir,
 			name: path.basename(uniqueDir),
-			kind: 'programmation',
+			kind,
 		});
 	}
 
-	// -------- PICTURES --------
-	if (kind === 'pictures') {
-		const picsDir = path.join(baseClientDir, 'pictures');
+	// ---------- NORMAL FILE ----------
+	const ext = path.extname(file.name);
+	const uniquePath = resolveUniquePath(targetDir, projectName, stamp, initials, ext);
 
-		if (!fs.existsSync(picsDir)) {
-			fs.mkdirSync(picsDir, { recursive: true });
-		}
+	fs.writeFileSync(uniquePath, buffer);
 
-		const ext = path.extname(file.name);
-		const baseName = `${client} ${stamp} ${initials}${ext}`;
-
-		const uniquePath = resolveUniquePath(picsDir, baseName);
-
-		fs.writeFileSync(uniquePath, buffer);
-
-		return NextResponse.json({
-			ok: true,
-			savedAs: uniquePath,
-			kind: 'pictures',
-		});
-	}
-
-	return NextResponse.json({ error: `Unknown upload kind: ${kind}` }, { status: 400 });
+	return NextResponse.json({
+		ok: true,
+		savedAs: uniquePath,
+		kind,
+	});
 }

@@ -166,6 +166,31 @@ export default function ProjectsSettings() {
 				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Configure project storage and default structure.</p>
 			</div>
 
+			{/* Base Path */}
+			<div className={card}>
+				<div className='flex items-center gap-3'>
+					<div className='h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center'>
+						<HardDrive className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					</div>
+
+					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Location</h3>
+				</div>
+
+				<input
+					className={input}
+					placeholder='/projects'
+					value={settings.path || ''}
+					onChange={(e) =>
+						setSettings({
+							...settings,
+							path: e.target.value,
+						})
+					}
+				/>
+
+				<p className='text-xs text-gray-500 dark:text-zinc-500'>Relative to application root.</p>
+			</div>
+
 			{/* Labels */}
 			<div className={card}>
 				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
@@ -204,6 +229,63 @@ export default function ProjectsSettings() {
 					<button onClick={addLabel} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
 						Add
 					</button>
+				</div>
+			</div>
+
+			{/* Required Folders */}
+			<div className={card}>
+				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Required Folders</h3>
+
+				<div className='space-y-2'>
+					<AnimatePresence>
+						{settings.requiredFolders?.map((folder) => (
+							<motion.div
+								key={folder}
+								initial={{ opacity: 0, y: -4 }}
+								animate={{ opacity: 1, y: 0 }}
+								exit={{ opacity: 0, x: 10 }}
+								className='flex items-center justify-between rounded-xl border border-gray-200 dark:border-zinc-700 px-4 py-3 bg-gray-50 dark:bg-zinc-800'>
+								<span className='text-sm font-medium text-gray-900 dark:text-zinc-100'>{folder}</span>
+
+								<button onClick={() => removeFolder(folder)} className='h-8 w-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition'>
+									<Trash2 className='w-4 h-4' />
+								</button>
+							</motion.div>
+						))}
+					</AnimatePresence>
+				</div>
+
+				<div className='flex gap-3'>
+					<input className={input} placeholder='New folder name' value={newFolder} onChange={(e) => setNewFolder(e.target.value)} />
+
+					<button onClick={addFolder} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+						Add
+					</button>
+				</div>
+			</div>
+
+			{/* Date Format */}
+			<div className={card}>
+				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Date Format</h3>
+
+				<p className='text-sm text-gray-500 dark:text-zinc-400'>Drag to reorder how dates are saved in project uploads.</p>
+
+				<div className='flex gap-3'>
+					{dateParts.map((part, index) => (
+						<div
+							key={part}
+							draggable
+							onDragStart={() => setDragIndex(index)}
+							onDragOver={(e) => e.preventDefault()}
+							onDrop={() => handleDrop(index)}
+							className='h-10 px-4 flex items-center bg-gray-50 dark:bg-zinc-800 border border-gray-200 dark:border-zinc-700 rounded-xl cursor-move text-sm font-medium text-gray-900 dark:text-zinc-100'>
+							{part}
+						</div>
+					))}
+				</div>
+
+				<div className='text-sm text-gray-600 dark:text-zinc-400'>
+					Preview: <span className='font-medium text-gray-900 dark:text-zinc-100'>{formatPreview(dateParts)}</span>
 				</div>
 			</div>
 

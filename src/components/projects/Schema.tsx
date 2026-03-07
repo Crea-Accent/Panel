@@ -42,8 +42,7 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 	}, [basePath, client]);
 
 	const upload = async (file: File) => {
-		const schemasPath = `${basePath}/${client}/schemas`;
-		const success = await uploadFile(file, schemasPath);
+		const success = await uploadFile(file, client, 'schema');
 		if (success) await load();
 	};
 

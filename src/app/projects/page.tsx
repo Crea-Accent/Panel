@@ -119,18 +119,20 @@ export default function ProjectsPage() {
 		return list;
 	}, [projects, query, labelFilter, sortKey, sortAsc]);
 
-	function renameProject(oldName: string) {
+	async function renameProject(oldName: string) {
 		const next = prompt('Rename project', oldName);
 		if (!next || next === oldName) return;
 
-		fetch('/api/files/rename', {
-			method: 'POST',
+		await fetch('/api/files', {
+			method: 'PATCH',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
-				from: `${settings?.path}/${oldName}`,
-				to: `${settings?.path}/${next}`,
+				oldPath: `${settings?.path}/${oldName}`,
+				newName: next,
 			}),
-		}).then(() => location.reload());
+		});
+
+		location.reload();
 	}
 
 	function openMaps(p: Project) {
