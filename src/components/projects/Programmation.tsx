@@ -13,15 +13,38 @@ type FileEntry = {
 	type: string;
 };
 
-function parseDateFromFolderName(name: string): number {
+function parseDateFromFolderName(name: string, dateFormat: string = 'DDMMYYYY'): number {
 	const parts = name.split(' ');
 	const datePart = parts[parts.length - 2];
 
 	if (!/^\d{8}$/.test(datePart)) return 0;
 
-	const dd = datePart.slice(0, 2);
-	const mm = datePart.slice(2, 4);
-	const yyyy = datePart.slice(4, 8);
+	let dd = '';
+	let mm = '';
+	let yyyy = '';
+
+	switch (dateFormat) {
+		case 'DDMMYYYY':
+			dd = datePart.slice(0, 2);
+			mm = datePart.slice(2, 4);
+			yyyy = datePart.slice(4, 8);
+			break;
+
+		case 'MMDDYYYY':
+			mm = datePart.slice(0, 2);
+			dd = datePart.slice(2, 4);
+			yyyy = datePart.slice(4, 8);
+			break;
+
+		case 'YYYYMMDD':
+			yyyy = datePart.slice(0, 4);
+			mm = datePart.slice(4, 6);
+			dd = datePart.slice(6, 8);
+			break;
+
+		default:
+			return 0;
+	}
 
 	return Number(`${yyyy}${mm}${dd}`);
 }
@@ -48,6 +71,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 	const [open, setOpen] = useState(true);
 	const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 	const inputRef = useRef<HTMLInputElement | null>(null);
+	const [dateFormat, setDateFormat] = useState('DDMMYYYY');
 
 	const load = async () => {
 		setLoading(true);
@@ -56,7 +80,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		const res = await fetch(`/api/files?view=${encodeURIComponent(progPath)}`);
 		const data: FileEntry[] = await res.json();
 
-		const sorted = data.sort((a, b) => parseDateFromFolderName(b.name) - parseDateFromFolderName(a.name));
+		const sorted = data.sort((a, b) => parseDateFromFolderName(b.name, dateFormat) - parseDateFromFolderName(a.name, dateFormat));
 
 		setItems(sorted);
 		setLoading(false);
@@ -67,6 +91,18 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 			load();
 		})();
 	}, [basePath, client]);
+
+	useEffect(() => {
+		const loadSettings = async () => {
+			try {
+				const res = await fetch('/api/settings/projects');
+				const s = await res.json();
+				if (s?.dateFormat) setDateFormat(s.dateFormat);
+			} catch {}
+		};
+
+		loadSettings();
+	}, []);
 
 	const upload = async (file: File) => {
 		const success = await uploadFile(file, client, 'programmation');
