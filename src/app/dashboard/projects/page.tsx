@@ -199,14 +199,14 @@ export default function ProjectsPage() {
 				{/* Table */}
 
 				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden'>
-					<div className='grid grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
+					<div className='grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
 						<button onClick={() => toggleSort('name')} className='text-left'>
 							Name
 						</button>
 
-						<span>Label</span>
+						<span className='text-center md:text-left'>Label</span>
 
-						<button onClick={() => toggleSort('updated')} className='text-left'>
+						<button onClick={() => toggleSort('updated')} className='hidden md:block text-left'>
 							Updated
 						</button>
 
@@ -216,7 +216,7 @@ export default function ProjectsPage() {
 					{filteredProjects.map((p, index) => (
 						<div
 							key={p.path}
-							className={`grid grid-cols-[1fr_140px_120px_100px] items-center h-11 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
+							className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-11 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
 								index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
 							}`}>
 							<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
@@ -224,16 +224,25 @@ export default function ProjectsPage() {
 								<span className='truncate font-medium'>{p.name}</span>
 							</Link>
 
-							<div>
+							{/* Label */}
+							<div className='flex justify-center md:justify-start'>
 								{p.label && (
-									<span className='px-2 py-0.5 text-xs rounded-md text-white' style={{ backgroundColor: labelColor(p.label) }}>
-										{p.label}
-									</span>
+									<>
+										{/* Mobile dot */}
+										<span className='w-2.5 h-2.5 rounded-full md:hidden' style={{ backgroundColor: labelColor(p.label) }} />
+
+										{/* Desktop label */}
+										<span className='hidden md:inline px-2 py-0.5 text-xs rounded-md text-white' style={{ backgroundColor: labelColor(p.label) }}>
+											{p.label}
+										</span>
+									</>
 								)}
 							</div>
 
-							<div className='text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</div>
+							{/* Updated */}
+							<div className='hidden md:block text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</div>
 
+							{/* Actions */}
 							<div className='flex justify-end gap-1'>
 								{p.address?.city && (
 									<button
