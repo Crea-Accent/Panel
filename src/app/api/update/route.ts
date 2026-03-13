@@ -89,7 +89,9 @@ export async function PATCH() {
 
 			send('Starting update...');
 
-			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 restart panel']);
+			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build'], {
+				shell: true,
+			});
 
 			child.stdout.on('data', (data) => {
 				send(data.toString());
@@ -99,8 +101,20 @@ export async function PATCH() {
 				send(`ERROR: ${data.toString()}`);
 			});
 
-			child.on('close', () => {
-				send('Update complete! Refresh page.');
+			child.on('close', (code) => {
+				if (code === 0) {
+					send('Build finished. Restarting service...');
+
+					spawn('cmd.exe', ['/c', 'pm2 restart panel'], {
+						detached: true,
+						stdio: 'ignore',
+					}).unref();
+
+					send('Restart triggered.');
+				} else {
+					send(`Update failed with code ${code}`);
+				}
+
 				controller.close();
 			});
 		},
