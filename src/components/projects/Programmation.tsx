@@ -46,7 +46,7 @@ function parseDateFromFolderName(name: string, dateFormat: string = 'DDMMYYYY'):
 			return 0;
 	}
 
-	return Number(`${yyyy}${mm}${dd}`);
+	return Number(`${dd}${mm}${yyyy}`);
 }
 
 function detectProgrammationType(entry: FileEntry): 'DuoTecno' | 'DALI' | 'Loxone' | 'Niko' | 'Siemens' | 'Other' {
@@ -80,7 +80,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		const res = await fetch(`/api/files?view=${encodeURIComponent(progPath)}`);
 		const data: FileEntry[] = await res.json();
 
-		const sorted = data.sort((a, b) => parseDateFromFolderName(b.name, dateFormat) - parseDateFromFolderName(a.name, dateFormat));
+		const sorted = data.sort((a, b) => parseDateFromFolderName(a.name, dateFormat) - parseDateFromFolderName(b.name, dateFormat));
 
 		setItems(sorted);
 		setLoading(false);
