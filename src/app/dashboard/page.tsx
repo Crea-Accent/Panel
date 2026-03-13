@@ -118,7 +118,7 @@ export default function Home() {
 
 		pushRecent(name);
 
-		window.location.href = `/projects/${encodeURIComponent(name)}`;
+		window.location.href = `/dashboard/projects/${encodeURIComponent(name)}`;
 	}
 
 	return (
@@ -128,7 +128,7 @@ export default function Home() {
 				animate={{ opacity: 1, y: 0 }}
 				className='
 					relative overflow-hidden
-					bg-gradient-to-br from-indigo-50 to-white
+					bg-linear-to-br from-indigo-50 to-white
 					dark:from-zinc-900 dark:to-zinc-950
 					border border-zinc-200 dark:border-zinc-800
 					rounded-2xl
@@ -186,7 +186,11 @@ export default function Home() {
 				{query && filteredProjects.length > 0 && (
 					<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800'>
 						{filteredProjects.slice(0, 6).map((p) => (
-							<Link key={p.path} href={`/projects/${encodeURIComponent(p.name)}`} onClick={() => pushRecent(p.name)} className='block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+							<Link
+								key={p.path}
+								href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
+								onClick={() => pushRecent(p.name)}
+								className='block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
 								<div className='flex justify-between'>
 									<p className='font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</p>
 
@@ -217,7 +221,7 @@ export default function Home() {
 					{recentProjectsResolved.map((p) => (
 						<Link
 							key={p.path}
-							href={`/projects/${encodeURIComponent(p.name)}`}
+							href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
 							onClick={() => pushRecent(p.name)}
 							className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
 							<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</span>
@@ -235,7 +239,7 @@ export default function Home() {
 				{sortedByRecent.slice(0, 5).map((p) => (
 					<Link
 						key={p.path}
-						href={`/projects/${encodeURIComponent(p.name)}`}
+						href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
 						onClick={() => pushRecent(p.name)}
 						className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
 						<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</span>
