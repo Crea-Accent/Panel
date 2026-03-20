@@ -6,6 +6,7 @@ import AdmZip from 'adm-zip';
 import { authConfig } from '@/lib/auth';
 import fs from 'fs';
 import { getServerSession } from 'next-auth';
+import os from 'os';
 import path from 'path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -56,6 +57,42 @@ function resolveUniquePath(dir: string, project: string, stamp: string, initials
 	}
 }
 
+function copyDirectoryRecursive(source: string, destination: string) {
+	fs.mkdirSync(destination, { recursive: true });
+
+	const entries = fs.readdirSync(source, { withFileTypes: true });
+
+	for (const entry of entries) {
+		const sourcePath = path.join(source, entry.name);
+		const destinationPath = path.join(destination, entry.name);
+
+		if (entry.isDirectory()) {
+			copyDirectoryRecursive(sourcePath, destinationPath);
+			continue;
+		}
+
+		fs.mkdirSync(path.dirname(destinationPath), { recursive: true });
+		fs.copyFileSync(sourcePath, destinationPath);
+	}
+}
+
+function removeDirectoryRecursive(target: string) {
+	if (!fs.existsSync(target)) return;
+
+	for (const entry of fs.readdirSync(target, { withFileTypes: true })) {
+		const entryPath = path.join(target, entry.name);
+
+		if (entry.isDirectory()) {
+			removeDirectoryRecursive(entryPath);
+			continue;
+		}
+
+		fs.unlinkSync(entryPath);
+	}
+
+	fs.rmdirSync(target);
+}
+
 export async function POST(request: NextRequest) {
 	const session = await getServerSession(authConfig);
 
@@ -89,32 +126,67 @@ export async function POST(request: NextRequest) {
 	const initials = getInitials(session.user.name);
 	const projectName = path.basename(client);
 
-	// ---------- PROGRAMMATION ----------
 	if (kind === 'programmation') {
 		const uniqueDir = resolveUniquePath(targetDir, projectName, stamp, initials);
+		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-programmation-'));
 
-		fs.mkdirSync(uniqueDir);
+		try {
+			fs.mkdirSync(uniqueDir, { recursive: true });
 
-		const zip = new AdmZip(buffer);
-		zip.extractAllTo(uniqueDir, true);
+			const zip = new AdmZip(buffer);
+			zip.extractAllTo(tempDir, true);
 
-		return NextResponse.json({
-			ok: true,
-			savedAs: uniqueDir,
-			name: path.basename(uniqueDir),
-			kind,
-		});
+			copyDirectoryRecursive(tempDir, uniqueDir);
+
+			return NextResponse.json({
+				ok: true,
+				savedAs: uniqueDir,
+				name: path.basename(uniqueDir),
+				kind,
+			});
+		} catch (error) {
+			console.error('ZIP extraction failed:', error);
+			console.error('Temporary extraction folder:', tempDir);
+			console.error('Final target folder:', uniqueDir);
+
+			return NextResponse.json(
+				{
+					error: 'Failed to extract ZIP archive',
+					details: error instanceof Error ? error.message : String(error),
+				},
+				{ status: 500 }
+			);
+		} finally {
+			try {
+				removeDirectoryRecursive(tempDir);
+			} catch (cleanupError) {
+				console.error('Failed to remove temp directory:', cleanupError);
+			}
+		}
 	}
 
-	// ---------- NORMAL FILE ----------
 	const ext = path.extname(file.name);
 	const uniquePath = resolveUniquePath(targetDir, projectName, stamp, initials, ext);
 
-	fs.writeFileSync(uniquePath, buffer);
+	try {
+		fs.writeFileSync(uniquePath, buffer);
 
-	return NextResponse.json({
-		ok: true,
-		savedAs: uniquePath,
-		kind,
-	});
+		return NextResponse.json({
+			ok: true,
+			savedAs: uniquePath,
+			kind,
+		});
+	} catch (error) {
+		console.error('File save failed:', error);
+		console.error('Write target:', uniquePath);
+
+		return NextResponse.json(
+			{
+				error: 'Failed to save file',
+				details: error instanceof Error ? error.message : String(error),
+				target: uniquePath,
+			},
+			{ status: 500 }
+		);
+	}
 }
