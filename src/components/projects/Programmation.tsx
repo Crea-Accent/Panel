@@ -80,7 +80,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		const res = await fetch(`/api/files?view=${encodeURIComponent(progPath)}`);
 		const data: FileEntry[] = await res.json();
 
-		const sorted = data.sort((a, b) => parseDateFromFolderName(a.name, dateFormat) - parseDateFromFolderName(b.name, dateFormat));
+		const sorted = data.sort((a, b) => parseDateFromFolderName(b.name, dateFormat) - parseDateFromFolderName(a.name, dateFormat));
 
 		setItems(sorted);
 		setLoading(false);
