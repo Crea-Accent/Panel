@@ -126,7 +126,9 @@ export async function POST(request: NextRequest) {
 	const initials = getInitials(session.user.name);
 	const projectName = path.basename(client);
 
-	if (kind === 'programmation') {
+	const ext = path.extname(file.name).toLowerCase();
+
+	if (kind === 'programmation' && ext === '.zip') {
 		const uniqueDir = resolveUniquePath(targetDir, projectName, stamp, initials);
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-programmation-'));
 
@@ -165,7 +167,6 @@ export async function POST(request: NextRequest) {
 		}
 	}
 
-	const ext = path.extname(file.name);
 	const uniquePath = resolveUniquePath(targetDir, projectName, stamp, initials, ext);
 
 	try {
