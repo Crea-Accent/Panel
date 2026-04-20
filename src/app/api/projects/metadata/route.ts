@@ -2,79 +2,47 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 
-import bcrypt from 'bcryptjs';
+import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const PROJECTS_PATH = path.join(DATA_DIR, 'projects.json');
-const SALT_ROUNDS = 10;
 
-/* ================= TYPES ================= */
+const SECRET = process.env.SECRET_KEY || 'change-this';
+const key = crypto.createHash('sha256').update(SECRET).digest();
 
-type LoginInput = {
-	label: string;
-	link: string;
-	username: string;
-	password?: string; // plaintext from frontend
-	passwordHash?: string; // stored only
-};
+/* ================= ENCRYPT / DECRYPT ================= */
 
-type Metadata = {
-	name: string;
-	createdAt: string;
-	updatedAt: string;
-	label?: string;
-	address: {
-		street: string;
-		number: string;
-		postalCode: string;
-		city: string;
-		country: string;
-	};
+function encrypt(text: string) {
+	const iv = crypto.randomBytes(16);
+	const cipher = crypto.createCipheriv('aes-256-ctr', key, iv);
+	const encrypted = Buffer.concat([cipher.update(text), cipher.final()]);
+	return iv.toString('hex') + ':' + encrypted.toString('hex');
+}
 
-	contact: {
-		contactPersons: {
-			name: string;
-			role: string;
-		}[];
-		phones: string[];
-		emails: string[];
-	};
+function decrypt(payload: string) {
+	const [ivHex, contentHex] = payload.split(':');
+	const iv = Buffer.from(ivHex, 'hex');
+	const content = Buffer.from(contentHex, 'hex');
 
-	logins: {
-		company: LoginInput[];
-		client: LoginInput[];
-	};
+	const decipher = crypto.createDecipheriv('aes-256-ctr', key, iv);
+	const decrypted = Buffer.concat([decipher.update(content), decipher.final()]);
 
-	notes: string;
-};
+	return decrypted.toString();
+}
 
 /* ================= HELPERS ================= */
 
-function loadProjectsPath(): string | null {
-	if (!fs.existsSync(PROJECTS_PATH)) return null;
-
-	try {
-		const raw = fs.readFileSync(PROJECTS_PATH, 'utf8');
-		const parsed = JSON.parse(raw);
-
-		if (typeof parsed.path !== 'string') return null;
-
-		// resolve relative to app root
-		return path.resolve(process.cwd(), parsed.path);
-	} catch {
-		return null;
-	}
+function loadProjectsPath(): string {
+	const raw = fs.readFileSync(PROJECTS_PATH, 'utf8');
+	const parsed = JSON.parse(raw);
+	return path.resolve(process.cwd(), parsed.path);
 }
 
 function resolveProjectFolder(client: string, base: string) {
 	const folder = path.resolve(base, client);
-
-	if (!folder.startsWith(path.resolve(base))) {
-		throw new Error('Forbidden');
-	}
-
+	if (!folder.startsWith(base)) throw new Error('Forbidden');
 	return folder;
 }
 
@@ -82,189 +50,88 @@ function metadataPath(folder: string) {
 	return path.join(folder, 'metadata.json');
 }
 
-function createDefaultMetadata(projectName: string): Metadata {
-	const now = new Date().toISOString();
+/* ================= LOGIN PROCESS ================= */
 
-	return {
-		name: projectName,
-		createdAt: now,
-		updatedAt: now,
-		label: '',
-		address: {
-			street: '',
-			number: '',
-			postalCode: '',
-			city: '',
-			country: 'Belgium',
-		},
+function processLogins(existing: any, incoming: any) {
+	const result: any = { company: [], client: [] };
 
-		contact: {
-			contactPersons: [],
-			phones: [],
-			emails: [],
-		},
+	for (const type of ['company', 'client']) {
+		const prev = existing[type] ?? [];
+		const next = incoming?.[type] ?? prev;
 
-		logins: {
-			company: [],
-			client: [],
-		},
+		result[type] = next.map((current: any, i: number) => {
+			const old = prev[i];
 
-		notes: '',
-	};
-}
+			let passwordEncrypted = old?.passwordEncrypted;
 
-async function hashLogins(logins: Metadata['logins']) {
-	for (const type of ['company', 'client'] as const) {
-		for (const login of logins[type]) {
-			if (login.password) {
-				login.passwordHash = await bcrypt.hash(login.password, SALT_ROUNDS);
-				delete login.password;
+			if (current.password === '') {
+				passwordEncrypted = undefined;
+			} else if (current.password) {
+				passwordEncrypted = encrypt(current.password);
 			}
-		}
-	}
-}
 
-function stripSensitive(metadata: Metadata): Metadata {
-	const clone: Metadata = JSON.parse(JSON.stringify(metadata));
-
-	for (const type of ['company', 'client'] as const) {
-		for (const login of clone.logins[type]) {
-			delete login.passwordHash;
-		}
+			return {
+				label: current.label ?? '',
+				link: current.link ?? '',
+				username: current.username ?? '',
+				passwordEncrypted,
+			};
+		});
 	}
 
-	return clone;
+	return result;
 }
 
 /* ================= GET ================= */
 
-export async function GET(request: NextRequest) {
-	const client = request.nextUrl.searchParams.get('client');
-	if (!client) {
-		return NextResponse.json({ error: 'Missing client' }, { status: 400 });
-	}
+export async function GET(req: NextRequest) {
+	const client = req.nextUrl.searchParams.get('client')!;
+	const reveal = req.nextUrl.searchParams.get('reveal') === 'true';
 
 	const base = loadProjectsPath();
-	if (!base) {
-		return NextResponse.json({ error: 'Projects path not configured' }, { status: 500 });
-	}
+	const folder = resolveProjectFolder(client, base);
+	const file = metadataPath(folder);
 
-	try {
-		const folder = resolveProjectFolder(client, base);
-		const file = metadataPath(folder);
+	const data = JSON.parse(fs.readFileSync(file, 'utf8'));
 
-		if (!fs.existsSync(file)) {
-			const metadata = createDefaultMetadata(client);
-			fs.writeFileSync(file, JSON.stringify(metadata, null, 2), 'utf8');
-			return NextResponse.json(stripSensitive(metadata));
+	if (reveal) {
+		for (const type of ['company', 'client']) {
+			for (const login of data.logins[type]) {
+				if (login.passwordEncrypted) {
+					login.password = decrypt(login.passwordEncrypted);
+				}
+			}
 		}
-
-		const raw = fs.readFileSync(file, 'utf8');
-		const parsed: Metadata = JSON.parse(raw);
-
-		return NextResponse.json(stripSensitive(parsed));
-	} catch {
-		return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
-	}
-}
-
-/* ================= POST ================= */
-
-export async function POST(request: NextRequest) {
-	const { client } = await request.json();
-
-	if (!client) {
-		return NextResponse.json({ error: 'Missing client' }, { status: 400 });
 	}
 
-	const base = loadProjectsPath();
-	if (!base) {
-		return NextResponse.json({ error: 'Projects path not configured' }, { status: 500 });
-	}
-
-	try {
-		const folder = resolveProjectFolder(client, base);
-		const file = metadataPath(folder);
-
-		if (fs.existsSync(file)) {
-			return NextResponse.json({ error: 'Metadata already exists' }, { status: 400 });
+	for (const type of ['company', 'client']) {
+		for (const login of data.logins[type]) {
+			delete login.passwordEncrypted;
 		}
-
-		const metadata = createDefaultMetadata(client);
-
-		fs.writeFileSync(file, JSON.stringify(metadata, null, 2), 'utf8');
-
-		return NextResponse.json({ ok: true });
-	} catch {
-		return NextResponse.json({ error: 'Create failed' }, { status: 500 });
 	}
+
+	return NextResponse.json(data);
 }
 
 /* ================= PATCH ================= */
 
-export async function PATCH(request: NextRequest) {
-	const { client, data } = await request.json();
-
-	if (!client || !data) {
-		return NextResponse.json({ error: 'Invalid data' }, { status: 400 });
-	}
+export async function PATCH(req: NextRequest) {
+	const { client, data } = await req.json();
 
 	const base = loadProjectsPath();
-	if (!base) {
-		return NextResponse.json({ error: 'Projects path not configured' }, { status: 500 });
-	}
+	const folder = resolveProjectFolder(client, base);
+	const file = metadataPath(folder);
 
-	try {
-		const folder = resolveProjectFolder(client, base);
-		const file = metadataPath(folder);
+	const existing = JSON.parse(fs.readFileSync(file, 'utf8'));
 
-		if (!fs.existsSync(file)) {
-			return NextResponse.json({ error: 'Metadata not found' }, { status: 404 });
-		}
+	const updated = {
+		...existing,
+		...data,
+		logins: processLogins(existing.logins, data.logins),
+		updatedAt: new Date().toISOString(),
+	};
 
-		const raw = fs.readFileSync(file, 'utf8');
-		const existing: Metadata = JSON.parse(raw);
+	fs.writeFileSync(file, JSON.stringify(updated, null, 2));
 
-		const updated: Metadata = {
-			...existing,
-			...data,
-			updatedAt: new Date().toISOString(),
-		};
-
-		await hashLogins(updated.logins);
-
-		fs.writeFileSync(file, JSON.stringify(updated, null, 2), 'utf8');
-
-		return NextResponse.json({ ok: true });
-	} catch {
-		return NextResponse.json({ error: 'Update failed' }, { status: 500 });
-	}
-}
-
-/* ================= DELETE ================= */
-
-export async function DELETE(request: NextRequest) {
-	const client = request.nextUrl.searchParams.get('client');
-
-	if (!client) {
-		return NextResponse.json({ error: 'Missing client' }, { status: 400 });
-	}
-
-	const base = loadProjectsPath();
-	if (!base) {
-		return NextResponse.json({ error: 'Projects path not configured' }, { status: 500 });
-	}
-
-	try {
-		const folder = resolveProjectFolder(client, base);
-		const file = metadataPath(folder);
-
-		if (fs.existsSync(file)) {
-			fs.unlinkSync(file);
-		}
-
-		return NextResponse.json({ ok: true });
-	} catch {
-		return NextResponse.json({ error: 'Delete failed' }, { status: 500 });
-	}
+	return NextResponse.json({ ok: true });
 }
