@@ -23,9 +23,9 @@ export default function NotFound() {
 						inline-flex items-center gap-2
 						h-10 px-4
 						rounded-xl
-						bg-indigo-600 text-white
+						bg-(--accent)
 						text-sm font-medium
-						hover:bg-indigo-500
+						hover:bg-(--hover-accent) 
 						transition
 					'>
 						<Home size={16} />
@@ -38,9 +38,9 @@ export default function NotFound() {
 						inline-flex items-center gap-2
 						h-10 px-4
 						rounded-xl
-						border border-zinc-200 dark:border-zinc-700
+						bg-(--accent)
 						text-sm font-medium
-						hover:bg-zinc-100 dark:hover:bg-zinc-800
+						hover:bg-(--hover-accent) 
 						transition
 					'>
 						<Search size={16} />

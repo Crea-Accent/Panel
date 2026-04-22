@@ -217,7 +217,7 @@ export default function Page() {
 					{p.username && <div className='text-sm text-zinc-500'>{p.username}</div>}
 
 					{p.link && (
-						<a href={p.link} target='_blank' className='text-xs text-indigo-500 truncate hover:underline'>
+						<a href={p.link} target='_blank' className='text-xs text-(--accent) truncate hover:underline'>
 							{p.link}
 						</a>
 					)}
@@ -263,7 +263,7 @@ export default function Page() {
 					<h1 className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>Passwords</h1>
 
 					{canWrite && (
-						<button onClick={openCreate} className='h-9 px-4 flex items-center gap-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+						<button onClick={openCreate} className='h-9 px-4 flex items-center gap-2 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 							<Plus size={16} />
 							New
 						</button>
@@ -368,7 +368,7 @@ export default function Page() {
 										<div key={u.id} className='flex items-center justify-between border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2'>
 											<span className='text-sm'>{u.name}</span>
 
-											<button onClick={() => toggleUser(u.id)} className={`w-10 h-5 rounded-full transition ${active ? 'bg-indigo-600' : 'bg-zinc-400'}`}>
+											<button onClick={() => toggleUser(u.id)} className={`w-10 h-5 rounded-full transition ${active ? 'bg-(--accent)' : 'bg-zinc-400'}`}>
 												<div className={`w-4 h-4 bg-white rounded-full transform transition ${active ? 'translate-x-5' : 'translate-x-1'}`} />
 											</button>
 										</div>
@@ -381,7 +381,7 @@ export default function Page() {
 									Cancel
 								</button>
 
-								<button onClick={save} className='h-9 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500'>
+								<button onClick={save} className='h-9 px-4 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent)'>
 									Save
 								</button>
 							</div>

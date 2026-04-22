@@ -60,8 +60,8 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 	return (
 		<section className='space-y-6'>
 			<header className='flex items-center gap-3'>
-				<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
-					<File className='w-5 h-5 text-indigo-600 dark:text-indigo-400' strokeWidth={1.8} />
+				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
+					<File className='w-5 h-5 text-(--accent) dark:text-(--accent)' strokeWidth={1.8} />
 				</div>
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Documents</h2>
@@ -88,7 +88,7 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 									className={`
 										h-10 px-4 flex items-center gap-2 rounded-xl
 										text-sm font-medium transition-colors
-										${uploading ? 'bg-indigo-400 text-white cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-500'}
+										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}
 									`}>
 									<Upload className='w-4 h-4' />
 									{uploading ? 'Uploading…' : 'Upload'}
@@ -116,7 +116,7 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 
 										<button
 											onClick={() => download(file.path)}
-											className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors'>
+											className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition-colors'>
 											<Download className='w-4 h-4' />
 											Download
 										</button>

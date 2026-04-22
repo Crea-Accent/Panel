@@ -36,7 +36,7 @@ export default async function RootLayout({
 					text-zinc-900 dark:text-zinc-100
 					antialiased
 					font-sans
-					selection:bg-indigo-600 selection:text-white
+					selection:bg-(--accent) selection:text-white
 					transition-colors duration-200
 				'>
 				<SessionProvider>

@@ -95,7 +95,7 @@ export default function Metadata({ client }: { client: string }) {
 		'border border-zinc-200 dark:border-zinc-800 ' +
 		'text-zinc-900 dark:text-zinc-100 ' +
 		'placeholder:text-zinc-400 ' +
-		'focus:outline-none focus:ring-2 focus:ring-indigo-500/30';
+		'focus:outline-none focus:ring-2 focus:ring-(--accent)/30';
 
 	const sectionButton = 'w-full px-5 py-4 flex justify-between items-center text-sm font-medium ' + 'text-zinc-900 dark:text-zinc-100 ' + 'hover:bg-zinc-50 dark:hover:bg-zinc-800 transition';
 
@@ -192,8 +192,8 @@ export default function Metadata({ client }: { client: string }) {
 		<section className='space-y-6'>
 			<header className='flex justify-between items-center'>
 				<div className='flex items-center gap-3'>
-					<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
-						<Folder size={16} className='text-indigo-600 dark:text-indigo-400' />
+					<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
+						<Folder size={16} className='text-(--accent) dark:text-(--accent)' />
 					</div>
 
 					<div>
@@ -202,7 +202,7 @@ export default function Metadata({ client }: { client: string }) {
 					</div>
 				</div>
 
-				<button onClick={save} disabled={!hasChanges || saving} className='h-9 px-4 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 disabled:opacity-50 transition'>
+				<button onClick={save} disabled={!hasChanges || saving} className='h-9 px-4 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) disabled:opacity-50 transition'>
 					{saving ? 'Saving…' : saved ? <Check size={16} /> : 'Save'}
 				</button>
 			</header>
@@ -262,7 +262,7 @@ export default function Metadata({ client }: { client: string }) {
 													},
 												})
 											}
-											className='text-xs flex items-center gap-1 text-zinc-500 hover:text-indigo-600 transition'>
+											className='text-xs flex items-center gap-1 text-zinc-500 hover:text-(--hover-accent) transition'>
 											<Plus size={14} /> Add
 										</button>
 									</div>
@@ -319,7 +319,7 @@ export default function Metadata({ client }: { client: string }) {
 					<AnimatePresence>
 						{openSections.includes(group) && (
 							<motion.div className='px-5 pb-5 space-y-4'>
-								<button onClick={() => addLogin(group)} className='text-xs flex items-center gap-1 text-zinc-500 hover:text-indigo-600'>
+								<button onClick={() => addLogin(group)} className='text-xs flex items-center gap-1 text-zinc-500 hover:text-(--hover-accent)'>
 									<Plus size={14} /> Add Login
 								</button>
 

@@ -65,7 +65,7 @@ export default function AccountPage() {
 						space-y-4
 					'>
 					<div className='flex items-center gap-3'>
-						<User size={18} className='text-indigo-600 dark:text-indigo-400' />
+						<User size={18} className='text-(--accent) dark:text-(--accent)' />
 						<h1 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Account</h1>
 					</div>
 
@@ -93,7 +93,7 @@ export default function AccountPage() {
 						space-y-4
 					'>
 					<div className='flex items-center gap-3'>
-						<Moon size={18} className='text-indigo-600 dark:text-indigo-400' />
+						<Moon size={18} className='text-(--accent) dark:text-(--accent)' />
 						<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Appearance</h2>
 					</div>
 
@@ -108,7 +108,7 @@ export default function AccountPage() {
 									text-sm capitalize
 									font-medium
 									transition-colors
-									${theme === t ? 'bg-indigo-600 text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'}
+									${theme === t ? 'bg-(--accent) text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'}
 								`}>
 								{t}
 							</button>
@@ -131,7 +131,7 @@ export default function AccountPage() {
 					space-y-4
 				'>
 				<div className='flex items-center gap-3'>
-					<Lock size={18} className='text-indigo-600 dark:text-indigo-400' />
+					<Lock size={18} className='text-(--accent) dark:text-(--accent)' />
 					<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Change Password</h2>
 				</div>
 
@@ -150,7 +150,7 @@ export default function AccountPage() {
 							text-zinc-900 dark:text-zinc-100
 							placeholder:text-zinc-400 dark:placeholder:text-zinc-500
 							focus:outline-none
-							focus:ring-2 focus:ring-indigo-500/30
+							focus:ring-2 focus:ring-(--accent)/30
 							transition
 						'
 					/>
@@ -169,7 +169,7 @@ export default function AccountPage() {
 							text-zinc-900 dark:text-zinc-100
 							placeholder:text-zinc-400 dark:placeholder:text-zinc-500
 							focus:outline-none
-							focus:ring-2 focus:ring-indigo-500/30
+							focus:ring-2 focus:ring-(--accent)/30
 							transition
 						'
 					/>
@@ -182,10 +182,10 @@ export default function AccountPage() {
 						className='
 							h-9 px-4
 							rounded-lg
-							bg-indigo-600
+							bg-(--accent)
 							text-white
 							text-sm font-medium
-							hover:bg-indigo-500
+							hover:bg-(--accent)
 							active:scale-[0.98]
 							disabled:opacity-60 disabled:cursor-not-allowed
 							transition-all

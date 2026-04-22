@@ -50,8 +50,8 @@ export default function SettingsPage() {
 							text-sm font-medium
 							text-gray-900 dark:text-zinc-100
 							focus:outline-none
-							focus:ring-2 focus:ring-indigo-500/20
-							focus:border-indigo-500
+							focus:ring-2 focus:ring-(--accent)/20
+							focus:border-(--accent)
 							transition
 						'>
 							{tabs.map((t) => (

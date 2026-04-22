@@ -70,8 +70,8 @@ export default function AppsSettings() {
 					space-y-5
 				'>
 				<div className='flex items-center gap-3'>
-					<div className='h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center'>
-						<HardDrive className='w-4 h-4 text-indigo-600 dark:text-indigo-400' strokeWidth={1.8} />
+					<div className='h-9 w-9 rounded-xl bg-(--active-accent) dark:bg-(--accent)/10 flex items-center justify-center'>
+						<HardDrive className='w-4 h-4 text-(--accent) dark:text-(--accent)' strokeWidth={1.8} />
 					</div>
 					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Location</h3>
 				</div>
@@ -86,8 +86,8 @@ export default function AppsSettings() {
 						text-gray-900 dark:text-zinc-100
 						placeholder:text-gray-400 dark:placeholder:text-zinc-500
 						focus:outline-none
-						focus:ring-2 focus:ring-indigo-500/20
-						focus:border-indigo-500
+						focus:ring-2 focus:ring-(--accent)/20
+						focus:border-(--accent)
 						transition
 					'
 					placeholder='C:/Installers'
@@ -108,11 +108,11 @@ export default function AppsSettings() {
 						className='
 							h-10 px-4
 							rounded-xl
-							bg-indigo-600
+							bg-(--accent)
 							text-white
 							text-sm font-medium
 							flex items-center gap-2
-							hover:bg-indigo-500
+							hover:bg-(--hover-accent)
 							transition
 							disabled:opacity-60
 						'

@@ -107,7 +107,7 @@ export default function UserSettings() {
 	const card = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
 
 	const input =
-		'h-10 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition';
+		'h-10 rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-(--accent)/20 focus:border-(--accent) transition';
 
 	return (
 		<div className='space-y-8'>
@@ -115,13 +115,13 @@ export default function UserSettings() {
 			<div className='flex justify-between items-center'>
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
-						<User className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+						<User className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
 						Users
 					</h2>
 					<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Manage system access and permissions.</p>
 				</div>
 
-				<button onClick={() => setShowModal(true)} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 hover:bg-indigo-500 transition'>
+				<button onClick={() => setShowModal(true)} className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium flex items-center gap-2 hover:bg-(--hover-accent) transition'>
 					<Plus className='w-4 h-4' />
 					New User
 				</button>
@@ -157,7 +157,7 @@ export default function UserSettings() {
 										<div className='text-xs text-gray-500 dark:text-zinc-400'>{user.email}</div>
 
 										{role && (
-											<div className='mt-2 inline-flex items-center gap-1 text-xs bg-indigo-50 dark:bg-indigo-900/40 text-indigo-700 dark:text-indigo-300 px-2 py-1 rounded-full'>
+											<div className='mt-2 inline-flex items-center gap-1 text-xs bg-(--active-accent) dark:bg-(--accent)/40 text-(--accent) dark:text-(--accent) px-2 py-1 rounded-full'>
 												<ShieldCheck className='w-3 h-3' />
 												{role.name}
 											</div>
@@ -282,7 +282,7 @@ export default function UserSettings() {
 															Reset to role defaults
 														</button>
 
-														<button onClick={() => updateUser(user)} className='h-9 px-3 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+														<button onClick={() => updateUser(user)} className='h-9 px-3 rounded-xl bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 															Save changes
 														</button>
 													</div>
@@ -395,7 +395,7 @@ export default function UserSettings() {
 									</select>
 								</div>
 
-								<button onClick={createUser} className='h-10 w-full rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+								<button onClick={createUser} className='h-10 w-full rounded-xl bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 									Create User
 								</button>
 							</div>

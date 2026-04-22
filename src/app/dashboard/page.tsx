@@ -128,7 +128,7 @@ export default function Home() {
 				animate={{ opacity: 1, y: 0 }}
 				className='
 					relative overflow-hidden
-					bg-linear-to-br from-indigo-50 to-white
+					bg-linear-to-br from-(--active-accent) to-white
 					dark:from-zinc-900 dark:to-zinc-950
 					border border-zinc-200 dark:border-zinc-800
 					rounded-2xl
@@ -147,10 +147,10 @@ export default function Home() {
 							onClick={() => setCreating(true)}
 							className='
 								h-11 px-5 rounded-xl
-								bg-indigo-600 text-white
+								bg-(--accent) text-white
 								text-sm font-medium
 								flex items-center gap-2
-								hover:bg-indigo-500
+								hover:bg-(--accent)
 								active:scale-[0.98]
 								transition-all
 							'>
@@ -177,7 +177,7 @@ export default function Home() {
 							text-zinc-900 dark:text-zinc-100
 							placeholder:text-zinc-400 dark:placeholder:text-zinc-500
 							focus:outline-none
-							focus:ring-2 focus:ring-indigo-500/30
+							focus:ring-2 focus:ring-(--accent)/30
 							transition
 						'
 					/>
@@ -214,7 +214,7 @@ export default function Home() {
 			{recentProjectsResolved.length > 0 && (
 				<section className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 space-y-4'>
 					<h2 className='text-base font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-100'>
-						<Clock size={16} className='text-indigo-600 dark:text-indigo-400' />
+						<Clock size={16} className='text-(--accent) dark:text-(--accent)' />
 						Recently Opened
 					</h2>
 
@@ -232,7 +232,7 @@ export default function Home() {
 
 			<section className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 space-y-4'>
 				<h2 className='text-base font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-100'>
-					<Clock size={16} className='text-indigo-600 dark:text-indigo-400' />
+					<Clock size={16} className='text-(--accent) dark:text-(--accent)' />
 					Recently Updated
 				</h2>
 
@@ -282,7 +282,7 @@ export default function Home() {
 									border border-zinc-200 dark:border-zinc-700
 									text-sm
 									focus:outline-none
-									focus:ring-2 focus:ring-indigo-500/30
+									focus:ring-2 focus:ring-(--accent)/30
 								'
 							/>
 
@@ -305,9 +305,9 @@ export default function Home() {
 									onClick={createProject}
 									className='
 										h-10 px-5 rounded-xl
-										bg-indigo-600 text-white
+										bg-(--accent) text-white
 										text-sm font-medium
-										hover:bg-indigo-500
+										hover:bg-(--hover-accent)
 									'>
 									Create
 								</button>
@@ -324,7 +324,7 @@ function StatCard({ icon, label, value }: { icon: ReactElement; label: string; v
 	return (
 		<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6'>
 			<div className='flex items-center gap-3 mb-4'>
-				<div className='w-10 h-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-300 flex items-center justify-center'>{icon}</div>
+				<div className='w-10 h-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 text-(--accent) dark:text-(--accent) flex items-center justify-center'>{icon}</div>
 
 				<span className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide'>{label}</span>
 			</div>

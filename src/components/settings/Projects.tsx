@@ -153,14 +153,14 @@ export default function ProjectsSettings() {
 	const card = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6';
 
 	const input =
-		'h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition';
+		'h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-(--accent)/20 focus:border-(--accent) transition';
 
 	return (
 		<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }} className='space-y-8'>
 			{/* Header */}
 			<div>
 				<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
-					<Folder className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					<Folder className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
 					Projects
 				</h2>
 				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Configure project storage and default structure.</p>
@@ -169,8 +169,8 @@ export default function ProjectsSettings() {
 			{/* Base Path */}
 			<div className={card}>
 				<div className='flex items-center gap-3'>
-					<div className='h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center'>
-						<HardDrive className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					<div className='h-9 w-9 rounded-xl bg-(--active-accent) dark:bg-(--accent)/10 flex items-center justify-center'>
+						<HardDrive className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
 					</div>
 
 					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Location</h3>
@@ -194,7 +194,7 @@ export default function ProjectsSettings() {
 			{/* Labels */}
 			<div className={card}>
 				<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
-					<Tag className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					<Tag className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
 					Project Labels
 				</h3>
 
@@ -226,7 +226,7 @@ export default function ProjectsSettings() {
 
 					<input type='color' value={newColor} onChange={(e) => setNewColor(e.target.value)} className='w-12 h-10' />
 
-					<button onClick={addLabel} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+					<button onClick={addLabel} className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 						Add
 					</button>
 				</div>
@@ -258,7 +258,7 @@ export default function ProjectsSettings() {
 				<div className='flex gap-3'>
 					<input className={input} placeholder='New folder name' value={newFolder} onChange={(e) => setNewFolder(e.target.value)} />
 
-					<button onClick={addFolder} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+					<button onClick={addFolder} className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 						Add
 					</button>
 				</div>
@@ -291,7 +291,7 @@ export default function ProjectsSettings() {
 
 			{/* Save */}
 			<div>
-				<button onClick={save} className='h-10 px-5 rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition disabled:opacity-60' disabled={saving}>
+				<button onClick={save} className='h-10 px-5 rounded-xl bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition disabled:opacity-60' disabled={saving}>
 					{saving ? 'Saving…' : 'Save Changes'}
 				</button>
 			</div>

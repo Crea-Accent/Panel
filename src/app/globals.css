@@ -1,4 +1,8 @@
 /** @format */
 @import 'tailwindcss';
 
-@variant dark (&:where(.dark, .dark *));
+:root {
+	--accent: #a4b795;
+	--hover-accent: #8fa57f;
+	--active-accent: ##7e946f;
+}

@@ -83,7 +83,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 								text-sm font-medium
 								text-zinc-900 dark:text-zinc-100
 								focus:outline-none
-								focus:ring-2 focus:ring-indigo-500/30
+								focus:ring-2 focus:ring-(--accent)/30
 								transition
 							'>
 							{tabs.map((t) => (

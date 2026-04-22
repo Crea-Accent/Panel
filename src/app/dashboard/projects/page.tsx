@@ -145,10 +145,10 @@ export default function ProjectsPage() {
 	}
 
 	function labelColor(name?: string) {
-		if (!name || !settings?.labels) return '#6366f1';
+		if (!name || !settings?.labels) return 'var(--accent)';
 
 		const l = settings.labels.find((l) => l.name === name);
-		return l?.color ?? '#6366f1';
+		return l?.color ?? 'var(--accent)';
 	}
 
 	if (loading) return null;
@@ -159,8 +159,8 @@ export default function ProjectsPage() {
 				{/* Header */}
 
 				<div className='flex items-center gap-4'>
-					<div className='h-11 w-11 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center shrink-0'>
-						<Folder size={20} className='text-indigo-600 dark:text-indigo-400' />
+					<div className='h-11 w-11 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center shrink-0'>
+						<Folder size={20} className='text-(--accent) dark:text-(--accent)' />
 					</div>
 
 					<div className='min-w-0'>
@@ -247,14 +247,14 @@ export default function ProjectsPage() {
 								{p.address?.city && (
 									<button
 										onClick={() => openMaps(p)}
-										className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
+										className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
 										<MapPin size={16} />
 									</button>
 								)}
 
 								<button
 									onClick={() => renameProject(p.name)}
-									className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
+									className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
 									<Pencil size={16} />
 								</button>
 							</div>

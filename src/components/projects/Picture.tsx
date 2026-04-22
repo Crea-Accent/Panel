@@ -60,7 +60,7 @@ function DroppableFolder({ id, children, enabled }: { id: string; children: Reac
 			className={`
 			space-y-4
 			transition
-			${isOver ? 'ring-2 ring-indigo-500 rounded-xl p-2' : ''}
+			${isOver ? 'ring-2 ring-(--accent) rounded-xl p-2' : ''}
 		`}>
 			{children}
 		</div>
@@ -286,7 +286,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 		<>
 			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6'>
 				<div className='flex justify-between'>
-					<button onClick={() => inputRef.current?.click()} disabled={uploading} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-indigo-600 text-white'>
+					<button onClick={() => inputRef.current?.click()} disabled={uploading} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white'>
 						<Upload className='w-4 h-4' />
 						Upload
 					</button>
@@ -366,8 +366,8 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 	return (
 		<section className='space-y-6'>
 			<header className='flex items-center gap-3'>
-				<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
-					<ImageIcon className='w-5 h-5 text-indigo-600 dark:text-indigo-400' />
+				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
+					<ImageIcon className='w-5 h-5 text-(--accent) dark:text-(--accent)' />
 				</div>
 
 				<div>

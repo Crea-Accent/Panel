@@ -61,8 +61,8 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 		<section className='space-y-6'>
 			{/* Header */}
 			<header className='flex items-center gap-3'>
-				<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
-					<FileText className='w-5 h-5 text-indigo-600 dark:text-indigo-400' />
+				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
+					<FileText className='w-5 h-5 text-(--accent) dark:text-(--accent)' />
 				</div>
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Schemas</h2>
@@ -88,7 +88,7 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 									onClick={() => inputRef.current?.click()}
 									disabled={uploading}
 									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
-										${uploading ? 'bg-indigo-400 text-white cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}>
+										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}`}>
 									<Upload className='w-4 h-4' />
 									{uploading ? 'Uploading…' : 'Upload'}
 								</button>
@@ -127,7 +127,7 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 
 										<button
 											onClick={() => download(file.path)}
-											className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition'>
+											className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
 											<Download className='w-4 h-4' />
 											Download
 										</button>

@@ -65,7 +65,7 @@ export default function RoleSettings() {
 
 	const card = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
 
-	const input = 'text-base font-medium bg-transparent border-b border-transparent focus:border-indigo-500 focus:outline-none transition text-gray-900 dark:text-zinc-100';
+	const input = 'text-base font-medium bg-transparent border-b border-transparent focus:border-(--accent) focus:outline-none transition text-gray-900 dark:text-zinc-100';
 
 	return (
 		<div className='space-y-8'>
@@ -73,13 +73,13 @@ export default function RoleSettings() {
 			<div className='flex justify-between items-center'>
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
-						<Shield className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+						<Shield className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
 						Roles
 					</h2>
 					<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Define default permission templates.</p>
 				</div>
 
-				<button onClick={() => setShowModal(true)} className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 hover:bg-indigo-500 transition'>
+				<button onClick={() => setShowModal(true)} className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium flex items-center gap-2 hover:bg-(--hover-accent) transition'>
 					<Plus className='w-4 h-4' />
 					New Role
 				</button>
@@ -211,7 +211,7 @@ export default function RoleSettings() {
 								</div>
 
 								<input
-									className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition'
+									className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-(--accent)/20 focus:border-(--accent) transition'
 									placeholder='Role name'
 									value={newRoleName}
 									onChange={(e) => setNewRoleName(e.target.value)}
@@ -222,7 +222,7 @@ export default function RoleSettings() {
 										await createRole();
 										setShowModal(false);
 									}}
-									className='h-10 w-full rounded-xl bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+									className='h-10 w-full rounded-xl bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 									Create Role
 								</button>
 							</div>

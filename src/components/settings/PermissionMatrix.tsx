@@ -71,7 +71,7 @@ export default function PermissionMatrix({ value, onChange, compareWith }: Props
 									onClick={() => toggle(domain, type)}
 									className={`
 										relative w-11 h-6 rounded-full transition-colors duration-200
-										${active ? 'bg-indigo-600' : 'bg-gray-300 dark:bg-zinc-700'}
+										${active ? 'bg-(--accent)' : 'bg-gray-300 dark:bg-zinc-700'}
 										${override ? 'ring-2 ring-amber-400/60 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900' : ''}
 									`}>
 									<motion.span

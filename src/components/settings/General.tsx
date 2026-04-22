@@ -94,7 +94,7 @@ export default function GeneralSettings() {
 
 		return {
 			icon: Info,
-			className: 'bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900/40',
+			className: 'bg-(--active-accent) dark:bg-(--accent)/20 text-(--accent) dark:text-(--accent) border-(--accent) dark:border-(--accent)/40',
 		};
 	}
 
@@ -180,7 +180,7 @@ export default function GeneralSettings() {
 									whileTap={{ scale: 0.97 }}
 									onClick={runUpdate}
 									disabled={updating}
-									className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50 hover:bg-indigo-500 transition'>
+									className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50 hover:bg-(--accent) transition'>
 									{updating ? (
 										<>
 											<Loader2 className='w-4 h-4 animate-spin' />
@@ -218,14 +218,14 @@ export default function GeneralSettings() {
 			{/* FILES ROOT PATH */}
 			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-4'>
 				<div className='flex items-center gap-3'>
-					<div className='h-9 w-9 rounded-xl bg-indigo-50 dark:bg-indigo-500/10 flex items-center justify-center'>
-						<HardDrive className='w-4 h-4 text-indigo-600 dark:text-indigo-400' />
+					<div className='h-9 w-9 rounded-xl bg-(--active-accent) dark:bg-(--accent)/10 flex items-center justify-center'>
+						<HardDrive className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
 					</div>
 					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Files Root Path</h3>
 				</div>
 
 				<input
-					className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500 transition'
+					className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-(--accent)/20 focus:border-(--accent) transition'
 					placeholder='D:\\Shared'
 					value={filesSettings.path || ''}
 					onChange={(e) =>
@@ -241,7 +241,7 @@ export default function GeneralSettings() {
 				<div className='pt-2'>
 					<button
 						onClick={saveFilesPath}
-						className='h-10 px-4 rounded-xl bg-indigo-600 text-white text-sm font-medium flex items-center gap-2 hover:bg-indigo-500 transition disabled:opacity-60'
+						className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium flex items-center gap-2 hover:bg-(--hover-accent) transition disabled:opacity-60'
 						disabled={savingPath}>
 						<Save className='w-4 h-4' />
 						{savingPath ? 'Saving…' : 'Save Path'}

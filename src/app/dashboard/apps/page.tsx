@@ -113,8 +113,8 @@ export default function AppsPage() {
 										rounded-lg
 										text-sm font-medium
 										text-zinc-600 dark:text-zinc-300
-										hover:text-indigo-600 dark:hover:text-indigo-400
-										hover:bg-indigo-50 dark:hover:bg-indigo-900/30
+										hover:text-(--accent) dark:hover:text-(--hover-accent)
+										hover:bg-(--active-accent) dark:hover:bg-(--hover-accent)/30
 										transition-colors
 									'>
 									<Download size={16} strokeWidth={1.8} />

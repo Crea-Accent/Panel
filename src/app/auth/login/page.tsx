@@ -51,7 +51,7 @@ export default function LoginPage() {
 				min-h-screen
 				flex items-center justify-center
 				bg-gradient-to-br
-				from-indigo-50 via-white to-indigo-100
+				from-(--active-accent) via-white to-(--accent)
 				dark:from-zinc-950 dark:via-zinc-950 dark:to-zinc-900
 				p-6
 			'>
@@ -92,7 +92,7 @@ export default function LoginPage() {
 						bg-white dark:bg-zinc-900
 						text-sm
 						focus:outline-none
-						focus:ring-2 focus:ring-indigo-500/50
+						focus:ring-2 focus:ring-(--accent)/50
 					'
 				/>
 
@@ -112,7 +112,7 @@ export default function LoginPage() {
 							bg-white dark:bg-zinc-900
 							text-sm
 							focus:outline-none
-							focus:ring-2 focus:ring-indigo-500/50
+							focus:ring-2 focus:ring-(--accent)/50
 						'
 					/>
 
@@ -125,7 +125,7 @@ export default function LoginPage() {
 							flex items-center justify-center
 							rounded-md
 							text-zinc-400
-							hover:text-indigo-600 dark:hover:text-indigo-400
+							hover:text-(--hover-accent) dark:hover:text-(--hover-accent)
 							hover:bg-zinc-100 dark:hover:bg-zinc-800
 							transition
 						'>
@@ -146,9 +146,9 @@ export default function LoginPage() {
 						w-full h-10
 						flex items-center justify-center gap-2
 						rounded-lg
-						bg-indigo-600 text-white
+						bg-(--accent) text-white
 						text-sm font-medium
-						hover:bg-indigo-500
+						hover:bg-(--accent)
 						active:scale-[0.98]
 						transition
 					'>

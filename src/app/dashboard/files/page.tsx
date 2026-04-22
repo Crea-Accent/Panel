@@ -197,7 +197,7 @@ export default function FilesPage() {
 						placeholder='Search files…'
 						value={query}
 						onChange={(e) => setQuery(e.target.value)}
-						className='h-9 pl-9 pr-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-indigo-500/30 transition'
+						className='h-9 pl-9 pr-8 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm text-zinc-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-(--accent)/30 transition'
 					/>
 					{query && (
 						<button onClick={() => setQuery('')} className='absolute right-2 top-1/2 -translate-y-1/2 text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200'>
@@ -206,7 +206,7 @@ export default function FilesPage() {
 					)}
 				</div>
 
-				<button onClick={() => uploadRef.current?.click()} className='h-9 px-4 flex items-center gap-2 rounded-lg bg-indigo-600 text-white text-sm font-medium hover:bg-indigo-500 transition'>
+				<button onClick={() => uploadRef.current?.click()} className='h-9 px-4 flex items-center gap-2 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 					<Upload size={16} />
 					Upload
 				</button>
@@ -227,7 +227,7 @@ export default function FilesPage() {
 					<div key={file.path} className='border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
 						<div className='flex md:grid md:grid-cols-4 items-center px-4 md:px-6 py-4 gap-3'>
 							<div className='flex items-start gap-3 cursor-pointer flex-1' onClick={() => navigate(file)}>
-								{file.type === 'directory' ? <Folder size={18} className='text-indigo-600 dark:text-indigo-400' /> : <File size={18} className='text-zinc-400' />}
+								{file.type === 'directory' ? <Folder size={18} className='text-(--accent) dark:text-(--accent)' /> : <File size={18} className='text-zinc-400' />}
 
 								<div className='flex flex-col'>
 									<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{file.name}</span>

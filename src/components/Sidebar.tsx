@@ -80,7 +80,7 @@ export default function Sidebar() {
 								<>
 									{/* User Info */}
 									<div className='flex items-center gap-3 px-2'>
-										<div className='w-9 h-9 rounded-xl bg-indigo-100 dark:bg-indigo-900/40 text-indigo-600 dark:text-indigo-300 flex items-center justify-center text-sm font-semibold'>
+										<div className='w-9 h-9 rounded-xl bg-(--accent) dark:bg-(--accent)/40 text-(--accent) dark:text-(--accent) flex items-center justify-center text-sm font-semibold'>
 											{session.user?.name?.[0] ?? session.user?.email?.[0]}
 										</div>
 
@@ -128,9 +128,9 @@ export default function Sidebar() {
 										w-full h-9
 										flex items-center gap-2
 										px-3 rounded-lg
-										bg-indigo-600 text-white
+										bg-(--accent) text-white
 										text-sm font-medium
-										hover:bg-indigo-500
+										hover:bg-(--hover-accent)
 										active:scale-[0.98]
 										transition-all
 									'>
@@ -158,13 +158,13 @@ function NavItem({ href, label, Icon, currentPath }: { href: string; label: stri
 					rounded-lg
 					text-sm font-medium
 					transition-colors
-					${isActive ? 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
+					${isActive ? 'bg-(--active-accent) dark:bg-(--accent)/30 text-(--accent) dark:text-(--accent)' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
 				`}>
 				<Icon
 					size={16}
 					strokeWidth={1.8}
 					className={`
-						${isActive ? 'text-indigo-600 dark:text-indigo-300' : 'text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-500'}
+						${isActive ? 'text-(--accent) dark:text-(--accent)' : 'text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-500'}
 					`}
 				/>
 				{label}

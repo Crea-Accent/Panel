@@ -132,8 +132,8 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		<section className='space-y-6'>
 			{/* Header */}
 			<header className='flex items-center gap-3'>
-				<div className='h-10 w-10 rounded-xl bg-indigo-50 dark:bg-indigo-900/30 flex items-center justify-center'>
-					<Code className='w-5 h-5 text-indigo-600 dark:text-indigo-400' />
+				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
+					<Code className='w-5 h-5 text-(--accent) dark:text-(--accent)' />
 				</div>
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Programmation</h2>
@@ -159,7 +159,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 									onClick={() => inputRef.current?.click()}
 									disabled={uploading}
 									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
-										${uploading ? 'bg-indigo-400 text-white cursor-not-allowed' : 'bg-indigo-600 text-white hover:bg-indigo-500'}`}>
+										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}`}>
 									<Upload className='w-4 h-4' />
 									{uploading ? 'Uploading…' : 'Upload'}
 								</button>
@@ -182,12 +182,12 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 											<h3 className='text-xs uppercase tracking-wide text-gray-500 dark:text-zinc-500'>{type}</h3>
 
 											{/* Latest */}
-											<div className='h-12 px-4 flex items-center justify-between rounded-2xl border border-indigo-200 dark:border-indigo-800 bg-indigo-50 dark:bg-indigo-900/30'>
+											<div className='h-12 px-4 flex items-center justify-between rounded-2xl border border-(--accent) dark:border-(--accent) bg-(--active-accent) dark:bg-(--accent)/30'>
 												<span className='text-sm font-medium truncate text-gray-900 dark:text-zinc-100'>{latest.name}</span>
 
 												<button
 													onClick={() => download(latest.path)}
-													className='flex items-center gap-1 text-sm font-medium text-indigo-700 dark:text-indigo-400 hover:text-indigo-900 dark:hover:text-indigo-300 transition'>
+													className='flex items-center gap-1 text-sm font-medium text-(--accent) dark:text-(--accent) hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
 													<Download className='w-4 h-4' />
 													Download
 												</button>
@@ -198,7 +198,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 												<>
 													<button
 														onClick={() => setExpandedGroups((prev) => (prev.includes(type) ? prev.filter((g) => g !== type) : [...prev, type]))}
-														className='text-xs text-gray-500 dark:text-zinc-500 hover:text-indigo-600 dark:hover:text-indigo-400 flex items-center gap-1 transition'>
+														className='text-xs text-gray-500 dark:text-zinc-500 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) flex items-center gap-1 transition'>
 														{isExpanded ? <ChevronUp className='w-3.5 h-3.5' /> : <ChevronDown className='w-3.5 h-3.5' />}
 														{isExpanded ? 'Hide older' : `Show older (${older.length})`}
 													</button>
@@ -238,7 +238,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 
 																		<button
 																			onClick={() => download(item.path)}
-																			className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-indigo-600 dark:hover:text-indigo-400 transition'>
+																			className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
 																			<Download className='w-4 h-4' />
 																			Download
 																		</button>
