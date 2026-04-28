@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Folder, FolderArchive, FolderKanban, Home, KeyRound, LogIn, LogOut, Package, Settings, User } from 'lucide-react';
+import { Folder, FolderArchive, FolderKanban, Home, KeyRound, LogIn, LogOut, Network, Package, Settings, User } from 'lucide-react';
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -26,6 +26,7 @@ export default function Sidebar() {
 		{ href: '/dashboard/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
 		{ href: '/dashboard/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
 		{ href: '/dashboard/workspace', label: 'Workspace', icon: FolderArchive, permission: 'files.read' },
+		{ href: '/dashboard/network', label: 'Network', icon: Network, permission: 'network.read' },
 		{ href: '/dashboard/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
 	];
 

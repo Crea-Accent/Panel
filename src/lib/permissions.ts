@@ -61,6 +61,16 @@ export const PERMISSIONS = [
 		label: 'Client - Write',
 		group: 'Client',
 	},
+	{
+		key: 'network.read',
+		label: 'Network - Read',
+		group: 'Network',
+	},
+	{
+		key: 'network.write',
+		label: 'Network - Write',
+		group: 'Network',
+	},
 ];
 
 export function groupPermissions() {
