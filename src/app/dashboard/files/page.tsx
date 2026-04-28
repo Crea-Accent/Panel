@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ArrowUp, Copy, Download, File, Folder, Home, LucideIcon, Pencil, Search, Trash2, Upload } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
+import Image from 'next/image';
+
 type FileEntry = {
 	path: string;
 	name: string;
@@ -30,12 +32,20 @@ function formatDate(date?: string) {
 	return new Date(date).toLocaleString();
 }
 
+const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'];
+
+function isImage(name: string) {
+	const lower = name.toLowerCase();
+	return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
+}
+
 export default function FilesPage() {
 	const [settings, setSettings] = useState<Settings | null>(null);
 	const [currentPath, setCurrentPath] = useState<string | null>(null);
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
 	const [loading, setLoading] = useState(true);
+	const [view, setView] = useState<'list' | 'grid'>('list');
 
 	const abortRef = useRef<AbortController | null>(null);
 	const uploadRef = useRef<HTMLInputElement>(null);
@@ -133,6 +143,8 @@ export default function FilesPage() {
 		loadFiles(currentPath!);
 	}
 
+	const hasImages = files.some((f) => isImage(f.name));
+
 	async function rename(oldPath: string) {
 		const newName = prompt('New name?');
 		if (!newName) return;
@@ -205,6 +217,13 @@ export default function FilesPage() {
 						</button>
 					)}
 				</div>
+				{hasImages && (
+					<button
+						onClick={() => setView((v) => (v === 'list' ? 'grid' : 'list'))}
+						className='h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition'>
+						{view === 'list' ? 'Gallery' : 'List'}
+					</button>
+				)}
 
 				<button onClick={() => uploadRef.current?.click()} className='h-9 px-4 flex items-center gap-2 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
 					<Upload size={16} />
@@ -215,44 +234,94 @@ export default function FilesPage() {
 			</div>
 
 			{/* Table */}
-			<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden'>
-				<div className='hidden md:grid grid-cols-4 px-6 py-3 text-xs uppercase tracking-wide text-zinc-500 bg-zinc-50 dark:bg-zinc-800'>
-					<div>Name</div>
-					<div>Size</div>
-					<div>Modified</div>
-					<div className='text-right'>Actions</div>
-				</div>
+			{view === 'list' ? (
+				<motion.div
+					initial={{ opacity: 0, y: 6 }}
+					animate={{ opacity: 1, y: 0 }}
+					className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden'>
+					{/* Header */}
+					<div className='hidden md:grid grid-cols-4 px-6 py-3 text-xs uppercase tracking-wide text-zinc-500 bg-zinc-50 dark:bg-zinc-800'>
+						<div>Name</div>
+						<div>Size</div>
+						<div>Modified</div>
+						<div className='text-right'>Actions</div>
+					</div>
 
-				{filtered.map((file) => (
-					<div key={file.path} className='border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
-						<div className='flex md:grid md:grid-cols-4 items-center px-4 md:px-6 py-4 gap-3'>
-							<div className='flex items-start gap-3 cursor-pointer flex-1' onClick={() => navigate(file)}>
-								{file.type === 'directory' ? <Folder size={18} className='text-(--accent) dark:text-(--accent)' /> : <File size={18} className='text-zinc-400' />}
+					{/* Rows */}
+					{filtered.map((file) => (
+						<div key={file.path} className='border-t border-zinc-200 dark:border-zinc-800 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+							<div className='flex md:grid md:grid-cols-4 items-center px-4 md:px-6 py-4 gap-3'>
+								{/* Name */}
+								<div className='flex items-start gap-3 cursor-pointer flex-1' onClick={() => navigate(file)}>
+									{file.type === 'directory' ? (
+										<Folder size={18} className='text-(--accent)' />
+									) : isImage(file.name) ? (
+										<img src={`/api/files/download?path=${encodeURIComponent(file.path)}`} className='w-6 h-6 object-cover rounded' />
+									) : (
+										<File size={18} className='text-zinc-400' />
+									)}
 
-								<div className='flex flex-col'>
-									<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{file.name}</span>
+									<div className='flex flex-col min-w-0'>
+										<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{file.name}</span>
 
-									<div className='text-xs text-zinc-500 md:hidden mt-1 space-x-3'>
-										<span>{formatSize(file.size)}</span>
-										<span>{formatDate(file.modified)}</span>
+										{/* Mobile meta */}
+										<div className='text-xs text-zinc-500 md:hidden mt-1 space-x-3'>
+											<span>{formatSize(file.size)}</span>
+											<span>{formatDate(file.modified)}</span>
+										</div>
 									</div>
 								</div>
-							</div>
 
-							<div className='hidden md:block text-sm text-zinc-500'>{formatSize(file.size)}</div>
+								{/* Size */}
+								<div className='hidden md:block text-sm text-zinc-500'>{formatSize(file.size)}</div>
 
-							<div className='hidden md:block text-sm text-zinc-500'>{formatDate(file.modified)}</div>
+								{/* Modified */}
+								<div className='hidden md:block text-sm text-zinc-500'>{formatDate(file.modified)}</div>
 
-							<div className='flex justify-end gap-2'>
-								<ActionIcon icon={Copy} onClick={() => copyToClipboard(file.path)} />
-								<ActionIcon icon={Download} onClick={() => download(file.path)} />
-								<ActionIcon icon={Pencil} onClick={() => rename(file.path)} />
-								<ActionIcon icon={Trash2} onClick={() => remove(file.path)} danger />
+								{/* Actions */}
+								<div className='flex justify-end gap-2'>
+									<ActionIcon icon={Copy} onClick={() => copyToClipboard(file.path)} />
+									<ActionIcon icon={Download} onClick={() => download(file.path)} />
+									<ActionIcon icon={Pencil} onClick={() => rename(file.path)} />
+									<ActionIcon icon={Trash2} onClick={() => remove(file.path)} danger />
+								</div>
 							</div>
 						</div>
-					</div>
-				))}
-			</motion.div>
+					))}
+				</motion.div>
+			) : (
+				/* ===== GRID / IMAGE VIEW ===== */
+				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'>
+					{filtered.map((file, i) => {
+						const image = isImage(file.name);
+
+						return (
+							<div
+								key={file.path}
+								className='group relative rounded-xl overflow-hidden border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 cursor-pointer'
+								onClick={() => navigate(file)}>
+								{/* IMAGE */}
+								{image ? (
+									<Image src={`/api/files/download?path=${encodeURIComponent(file.path)}`} className='w-full h-40 object-cover' alt={String(i)} height={512} width={512} />
+								) : (
+									<div className='h-40 flex items-center justify-center'>
+										{file.type === 'directory' ? <Folder size={28} className='text-(--accent)' /> : <File size={28} className='text-zinc-400' />}
+									</div>
+								)}
+
+								{/* NAME */}
+								<div className='px-3 py-2 text-xs truncate text-zinc-700 dark:text-zinc-300'>{file.name}</div>
+
+								{/* ACTIONS (hover) */}
+								<div className='absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition'>
+									<ActionIcon icon={Download} onClick={() => download(file.path)} />
+									<ActionIcon icon={Trash2} onClick={() => remove(file.path)} danger />
+								</div>
+							</div>
+						);
+					})}
+				</motion.div>
+			)}
 		</div>
 	);
 }

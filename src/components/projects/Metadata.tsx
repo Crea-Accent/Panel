@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, ChevronUp, Eye, EyeOff, Folder, Plus, Trash2 } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Eye, EyeOff, Folder, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import { User } from 'next-auth';
@@ -90,7 +90,7 @@ export default function Metadata({ client }: { client: string }) {
 	const section = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden';
 
 	const input =
-		'w-full h-9 px-3 rounded-lg text-sm transition ' +
+		'w-full px-3 rounded-lg text-sm transition ' +
 		'bg-white dark:bg-zinc-900 ' +
 		'border border-zinc-200 dark:border-zinc-800 ' +
 		'text-zinc-900 dark:text-zinc-100 ' +
@@ -190,21 +190,61 @@ export default function Metadata({ client }: { client: string }) {
 
 	return (
 		<section className='space-y-6'>
-			<header className='flex justify-between items-center'>
-				<div className='flex items-center gap-3'>
+			<header className='flex items-center justify-between gap-4 flex-wrap'>
+				<div className='flex items-center gap-3 min-w-0'>
 					<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
-						<Folder size={16} className='text-(--accent) dark:text-(--accent)' />
+						<Folder size={16} className='text-(--accent)' />
 					</div>
 
-					<div>
-						<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Project Information</h2>
+					<div className='min-w-0'>
+						<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100 truncate'>Project Information</h2>
 						<p className='text-xs text-zinc-500 dark:text-zinc-400'>Last updated: {metadata.updatedAt ? new Date(metadata.updatedAt).toLocaleString() : '—'}</p>
 					</div>
 				</div>
 
-				<button onClick={save} disabled={!hasChanges || saving} className='h-9 px-4 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) disabled:opacity-50 transition'>
-					{saving ? 'Saving…' : saved ? <Check size={16} /> : 'Save'}
-				</button>
+				<div className='flex items-center gap-2 flex-wrap justify-end'>
+					{/* LABEL SELECTOR */}
+					<div className='flex items-center gap-2'>
+						<select
+							value={metadata.label ?? ''}
+							onChange={(e) =>
+								setMetadata({
+									...metadata,
+									label: e.target.value,
+								})
+							}
+							className='
+					h-9 px-3 rounded-lg text-sm
+					bg-white dark:bg-zinc-900
+					border border-zinc-200 dark:border-zinc-800
+					text-zinc-900 dark:text-zinc-100
+					focus:outline-none
+					focus:ring-2 focus:ring-(--accent)/30
+				'>
+							<option value=''>No status</option>
+							{labels.map((l) => (
+								<option key={l.name} value={l.name}>
+									{l.name}
+								</option>
+							))}
+						</select>
+					</div>
+
+					{/* SAVE BUTTON */}
+					<button
+						onClick={save}
+						disabled={!hasChanges || saving}
+						className='
+				h-9 px-4 rounded-lg
+				bg-(--accent) text-white
+				text-sm font-medium
+				hover:bg-(--hover-accent)
+				disabled:opacity-50
+				transition
+			'>
+						{saving ? 'Saving…' : saved ? <Check size={16} /> : 'Save'}
+					</button>
+				</div>
 			</header>
 
 			<div className={section}>
@@ -335,7 +375,7 @@ export default function Metadata({ client }: { client: string }) {
 
 											<div className='relative'>
 												<input
-													type={isVisible ? 'text' : 'password'}
+													type={isVisible ? `text` : `password`}
 													className={input}
 													placeholder='Password'
 													value={login.password ?? ''}
@@ -368,6 +408,30 @@ export default function Metadata({ client }: { client: string }) {
 				</div>
 			))}
 
+			<div className={section}>
+				<button onClick={() => toggleSection('access')} className={sectionButton}>
+					<span>Access</span>
+					{openSections.includes('access') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+				</button>
+
+				<AnimatePresence>
+					{openSections.includes('access') && (
+						<motion.div className='px-5 pb-5 space-y-4'>
+							<AccessPicker
+								users={users}
+								value={(metadata as any).access ?? []}
+								onChange={(next: string[]) =>
+									setMetadata({
+										...metadata,
+										access: next,
+									} as any)
+								}
+							/>
+						</motion.div>
+					)}
+				</AnimatePresence>
+			</div>
+
 			{/* NOTES */}
 			<div className={section}>
 				<button onClick={() => toggleSection('notes')} className={sectionButton}>
@@ -379,7 +443,7 @@ export default function Metadata({ client }: { client: string }) {
 					{openSections.includes('notes') && (
 						<motion.div className='px-5 pb-5'>
 							<textarea
-								className={`${input} h-24`}
+								className={`${input} h-50`}
 								value={metadata.notes ?? ''}
 								onChange={(e) =>
 									setMetadata({
@@ -393,5 +457,80 @@ export default function Metadata({ client }: { client: string }) {
 				</AnimatePresence>
 			</div>
 		</section>
+	);
+}
+
+function AccessPicker({ users, value, onChange }: { users: User[]; value: string[]; onChange: (v: string[]) => void }) {
+	const [query, setQuery] = useState('');
+	const [open, setOpen] = useState(false);
+
+	const filtered = users.filter((u) => {
+		const q = query.toLowerCase();
+		return u.name?.toLowerCase().includes(q) || u.email?.toLowerCase().includes(q);
+	});
+
+	function add(id: string) {
+		if (value.includes(id)) return;
+		onChange([...value, id]);
+		setQuery('');
+		setOpen(false);
+	}
+
+	function remove(id: string) {
+		onChange(value.filter((x) => x !== id));
+	}
+
+	return (
+		<div className='space-y-3'>
+			{/* Selected users */}
+			<div className='flex flex-wrap gap-2'>
+				{value.map((id) => {
+					const u = users.find((x) => x.id === id);
+					if (!u) return null;
+
+					return (
+						<div key={id} className='flex items-center gap-2 px-3 h-8 rounded-lg bg-zinc-100 dark:bg-zinc-800 text-sm'>
+							<span className='truncate max-w-[120px]'>{u.name || u.email}</span>
+
+							<button onClick={() => remove(id)} className='text-zinc-400 hover:text-red-500'>
+								<X size={14} />
+							</button>
+						</div>
+					);
+				})}
+			</div>
+
+			{/* Search input */}
+			<div className='relative h-50'>
+				<input
+					value={query}
+					onChange={(e) => {
+						setQuery(e.target.value);
+						setOpen(true);
+					}}
+					placeholder='Search users…'
+					className='
+						w-full h-9 px-3 rounded-lg text-sm
+						bg-white dark:bg-zinc-900
+						border border-zinc-200 dark:border-zinc-800
+						focus:outline-none focus:ring-2 focus:ring-(--accent)/30
+					'
+				/>
+
+				{/* Dropdown */}
+				{open && query && (
+					<div className='absolute mt-2 w-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-lg max-h-60 overflow-auto z-50'>
+						{filtered.length === 0 && <div className='px-3 py-2 text-sm text-zinc-500'>No users found</div>}
+
+						{filtered.slice(0, 8).map((u) => (
+							<button key={u.id} onClick={() => add(u.id)} className='w-full text-left px-3 py-2 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800 transition'>
+								<div className='font-medium'>{u.name || 'Unnamed'}</div>
+								<div className='text-xs text-zinc-500'>{u.email}</div>
+							</button>
+						))}
+					</div>
+				)}
+			</div>
+		</div>
 	);
 }
