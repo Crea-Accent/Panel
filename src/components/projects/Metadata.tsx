@@ -90,7 +90,7 @@ export default function Metadata({ client }: { client: string }) {
 	const section = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden';
 
 	const input =
-		'w-full px-3 rounded-lg text-sm transition ' +
+		'w-full h-9 px-3 rounded-lg text-sm transition ' +
 		'bg-white dark:bg-zinc-900 ' +
 		'border border-zinc-200 dark:border-zinc-800 ' +
 		'text-zinc-900 dark:text-zinc-100 ' +

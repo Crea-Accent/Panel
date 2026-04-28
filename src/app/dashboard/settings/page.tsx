@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { ChevronDown, Folder, Package, Settings, Shield, Users } from 'lucide-react';
+import { ChevronDown, Folder, FolderArchive, Package, Settings, Shield, Users } from 'lucide-react';
 
 import AppsSettings from '@/components/settings/Apps';
 import GeneralSettings from '@/components/settings/General';
@@ -9,10 +9,11 @@ import { NotPermitted } from '@/providers/PermissionsProvider';
 import ProjectSettings from '@/components/settings/Projects';
 import RoleSettings from '@/components/settings/Roles';
 import UserSettings from '@/components/settings/Users';
+import Workspace from '@/components/settings/Workspace';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 
-type Tab = 'general' | 'projects' | 'users' | 'roles' | 'apps';
+type Tab = 'general' | 'projects' | 'users' | 'roles' | 'apps' | 'workspace';
 
 export default function SettingsPage() {
 	const [tab, setTab] = useState<Tab>('general');
@@ -23,6 +24,7 @@ export default function SettingsPage() {
 		{ key: 'projects', label: 'Projects', icon: Folder },
 		{ key: 'users', label: 'Users', icon: Users },
 		{ key: 'roles', label: 'Roles', icon: Shield },
+		{ key: 'workspace', label: 'Workspace', icon: FolderArchive },
 	] as const;
 
 	return (
@@ -115,6 +117,7 @@ export default function SettingsPage() {
 					{tab === 'users' && <UserSettings />}
 					{tab === 'roles' && <RoleSettings />}
 					{tab === 'apps' && <AppsSettings />}
+					{tab === 'workspace' && <Workspace />}
 				</motion.div>
 			</div>
 		</NotPermitted>
