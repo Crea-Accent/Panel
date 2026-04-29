@@ -2,9 +2,10 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, ChevronUp, Eye, EyeOff, Folder, Plus, Trash2, X } from 'lucide-react';
+import { Check, ChevronDown, ChevronUp, Eye, EyeOff, Folder, Link2, Plus, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import Link from 'next/link';
 import { User } from 'next-auth';
 
 type Login = {
@@ -90,7 +91,7 @@ export default function Metadata({ client }: { client: string }) {
 	const section = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden';
 
 	const input =
-		'w-full h-9 px-3 rounded-lg text-sm transition ' +
+		'w-full h-9 px-3 rounded-lg text-sm transition min-w-60 ' +
 		'bg-white dark:bg-zinc-900 ' +
 		'border border-zinc-200 dark:border-zinc-800 ' +
 		'text-zinc-900 dark:text-zinc-100 ' +
@@ -368,8 +369,10 @@ export default function Metadata({ client }: { client: string }) {
 									const isVisible = visiblePasswords[key];
 
 									return (
-										<div key={i} className='grid md:grid-cols-4 gap-3 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800'>
+										<div key={i} className='flex gap-3 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800'>
 											<input className={input} placeholder='Label' value={login.label ?? ''} onChange={(e) => updateLogin(group, i, 'label', e.target.value)} />
+
+											<input className={input} placeholder='Link' value={login.link ?? ''} onChange={(e) => updateLogin(group, i, 'link', e.target.value)} />
 
 											<input className={input} placeholder='Username' value={login.username ?? ''} onChange={(e) => updateLogin(group, i, 'username', e.target.value)} />
 
@@ -384,16 +387,24 @@ export default function Metadata({ client }: { client: string }) {
 											</div>
 
 											<div className='flex justify-end'>
-												<button
-													onClick={() =>
-														setVisiblePasswords((prev) => ({
-															...prev,
-															[key]: !prev[key],
-														}))
-													}
-													className={iconButton}>
-													{isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-												</button>
+												{login.link && (
+													<Link href={login.link} className={iconButton} target='_blank'>
+														<Link2 size={14} />
+													</Link>
+												)}
+
+												{login.password && (
+													<button
+														onClick={() =>
+															setVisiblePasswords((prev) => ({
+																...prev,
+																[key]: !prev[key],
+															}))
+														}
+														className={iconButton}>
+														{isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+													</button>
+												)}
 
 												<button onClick={() => removeLogin(group, i)} className={dangerButton}>
 													<Trash2 size={16} />
