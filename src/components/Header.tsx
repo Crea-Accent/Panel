@@ -4,6 +4,7 @@
 
 import { HEADER_HEIGHT } from '@/lib/layout';
 import Icon from '@/../public/favicon.svg';
+import Link from 'next/link';
 import { Menu } from 'lucide-react';
 import { useSidebar } from '../providers/SidebarProvider';
 
@@ -40,15 +41,16 @@ export default function Header() {
 				</button>
 
 				{/* Logo */}
-				<div
+				<Link
+					href='/'
 					className='
-						pointer-events-none
+						hover:cursor-pointer
 						absolute inset-0
 						flex items-center justify-center
 						md:relative md:inset-auto md:justify-start md:ml-4
 					'>
 					<Icon className='h-9 w-auto fill-current text-zinc-900 dark:text-zinc-100' />
-				</div>
+				</Link>
 
 				{/* Spacer for desktop alignment */}
 				<div className='hidden md:block flex-1' />
