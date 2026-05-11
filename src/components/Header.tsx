@@ -28,6 +28,7 @@ export default function Header() {
 					onClick={toggle}
 					className='
 						h-10 w-10
+						z-99999
 						flex items-center justify-center
 						rounded-lg
 						border border-zinc-200 dark:border-zinc-800
