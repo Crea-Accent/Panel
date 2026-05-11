@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Clock, FolderKanban, HardDrive, Plus, Search, TrendingUp } from 'lucide-react';
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 
+import EnergyCard from '@/components/EnergyCard';
 import Link from 'next/link';
 import { usePermissions } from '@/providers/PermissionsProvider';
 
@@ -208,7 +209,7 @@ export default function Home() {
 			<section className='grid grid-cols-1 md:grid-cols-3 gap-6'>
 				<StatCard icon={<FolderKanban size={18} />} label='Total Projects' value={loading ? '—' : projects.length} />
 				<StatCard icon={<TrendingUp size={18} />} label='Updated last 7 days' value={loading ? '—' : updatedLast7Days} />
-				<StatCard icon={<HardDrive size={18} />} label='Total Storage (MB)' value={loading ? '—' : totalStorage} />
+				<EnergyCard />
 			</section>
 
 			{recentProjectsResolved.length > 0 && (
