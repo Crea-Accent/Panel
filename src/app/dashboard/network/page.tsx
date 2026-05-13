@@ -157,7 +157,7 @@ export default function Page() {
 
 				<input
 					type='file'
-					accept='.xlsx,.xls'
+					accept='.xlsx,.xls,.xlsm'
 					onChange={handleFile}
 					className='block w-full text-sm text-zinc-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-(--accent) file:text-white hover:file:bg-(--hover-accent)'
 				/>

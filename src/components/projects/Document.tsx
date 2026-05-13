@@ -13,7 +13,7 @@ type FileEntry = {
 	type: string;
 };
 
-const DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx'];
+const DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.xlsm'];
 
 export default function Documents({ basePath, client }: { basePath: string; client: string }) {
 	const { uploading, uploadFile } = useUpload();
