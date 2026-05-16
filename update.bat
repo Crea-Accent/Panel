@@ -13,5 +13,5 @@ call pnpm run build
 echo [4/4] Bouncing Windows Service...
 :: 🔑 The Secret Sauce: Starts a new, completely separate CMD process to restart the service,
 :: allowing this active batch file to exit cleanly first without catching a ^C crash!
-start /b "" cmd /c "timeout /t 2 && sudo nssm restart CreaPanel"
+start /b "" cmd /c "timeout /t 2 && nssm restart CreaPanel"
 exit
