@@ -4,7 +4,7 @@ git pull
 
 echo [2/4] Syncing package dependencies...
 :: Clear npm cache to get rid of that "Cannot read properties of null" bug
-call pnpm cache clean --force 
+call pnpm cache clean
 call pnpm install
 
 echo [3/4] Compiling fresh production build...
