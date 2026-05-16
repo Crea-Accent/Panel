@@ -58,7 +58,11 @@ export default function GeneralSettings() {
 
 			if (event.data.toLowerCase().includes('update complete')) {
 				source.close();
-				window.location.reload();
+				setTimeout(() => {
+					// Appending '?v=timestamp' forces the browser and Cloudflare
+					// to ignore old cached HTML/CSS and request the raw, fresh build.
+					window.location.href = window.location.pathname + '?v=' + Date.now();
+				}, 4000);
 			}
 		};
 
