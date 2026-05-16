@@ -22,7 +22,6 @@ export default function Header() {
 				dark:supports-[backdrop-filter]:bg-zinc-950/70
 				transition-colors
 			'>
-			bbbbbbbbbbbbbbbbb
 			<div className='flex items-center h-full px-4 md:px-6 relative'>
 				{/* Sidebar Toggle */}
 				<button
