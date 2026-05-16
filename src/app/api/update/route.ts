@@ -29,27 +29,9 @@ async function getRemoteVersion(): Promise<string> {
 }
 
 /* ==========================================================
-   GET → Version Check (Brings back info, doesn't execute)
+   GET → Triggers Update & Streams Live Terminal Logs (EventSource Compatible)
 ========================================================== */
 export async function GET() {
-	try {
-		const local = getLocalVersion();
-		const remote = await getRemoteVersion();
-
-		return NextResponse.json({
-			localVersion: local,
-			remoteVersion: remote,
-			updateAvailable: local !== remote,
-		});
-	} catch (error: any) {
-		return NextResponse.json({ error: error.message }, { status: 500 });
-	}
-}
-
-/* ==========================================================
-   PATCH → Run Update & Restart NSSM Windows Service
-========================================================== */
-export async function PATCH() {
 	const encoder = new TextEncoder();
 
 	const stream = new ReadableStream({
@@ -62,7 +44,7 @@ export async function PATCH() {
 			send('Starting update pipeline...');
 
 			// Execute Git pulling, dependency installation, and production rebuild
-			const child = spawn('cmd.exe', ['/c', 'git pull && pnpm i && pnpm run build'], {
+			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build'], {
 				shell: true,
 				cwd: process.cwd(), // Ensures it targets the correct project root folder
 			});
@@ -81,7 +63,7 @@ export async function PATCH() {
 
 					// Uses NSSM to cleanly bounce the Windows service in a detached background instance
 					// Note: Ensure your service name matches "CreaNextApp" exactly!
-					spawn('cmd.exe', ['/c', 'nssm restart CreaPanel'], {
+					spawn('cmd.exe', ['/c', 'nssm restart CreaNextApp'], {
 						detached: true,
 						stdio: 'ignore',
 					}).unref();
@@ -97,10 +79,30 @@ export async function PATCH() {
 	});
 
 	return new Response(stream, {
+		status: 200,
 		headers: {
 			'Content-Type': 'text/event-stream',
-			'Cache-Control': 'no-cache',
+			'Cache-Control': 'no-cache, no-transform',
 			'Connection': 'keep-alive',
+			'X-Accel-Buffering': 'no', // Prevents proxies (like Easypanel) from buffering the text output
 		},
 	});
+}
+
+/* ==========================================================
+   PATCH → Simple JSON Endpoint to Check Versions
+========================================================== */
+export async function PATCH() {
+	try {
+		const local = getLocalVersion();
+		const remote = await getRemoteVersion();
+
+		return NextResponse.json({
+			localVersion: local,
+			remoteVersion: remote,
+			updateAvailable: local !== remote,
+		});
+	} catch (error: any) {
+		return NextResponse.json({ error: error.message }, { status: 500 });
+	}
 }
