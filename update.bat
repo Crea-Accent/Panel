@@ -2,16 +2,15 @@
 echo [1/4] Fetching latest changes from Git...
 git pull
 
-echo [2/4] Syncing package dependencies...
-:: Clear npm cache to get rid of that "Cannot read properties of null" bug
-call pnpm cache clean
-call pnpm install
+echo [2/4] Cleaning lockfiles & Syncing PNPM dependencies...
+if exist package-lock.json del /f /q package-lock.json
+call pnpm install --frozen-lockfile
 
-echo [3/4] Compiling fresh production build...
+echo [3/4] Compiling fresh production build with Turbopack...
 call pnpm run build
 
-echo [4/4] Bouncing Windows Service...
-:: 🔑 The Secret Sauce: Starts a new, completely separate CMD process to restart the service,
-:: allowing this active batch file to exit cleanly first without catching a ^C crash!
+echo [4/4] Update complete! Bouncing Windows Service...
+:: 🔑 The text "Update complete" will now trigger your React component's window.location.reload()
+:: right before the 2-second timeout finishes and NSSM recycles the engine!
 start /b "" cmd /c "timeout /t 2 && nssm restart CreaPanel"
 exit
