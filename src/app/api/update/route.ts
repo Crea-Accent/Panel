@@ -1,14 +1,13 @@
 /** @format */
 
 import { NextResponse } from 'next/server';
-import { exec } from 'child_process';
 import fs from 'fs';
 import path from 'path';
 import { spawn } from 'child_process';
 
 const PACKAGE_PATH = path.join(process.cwd(), 'package.json');
 
-// 🔧 change this to your repo
+// 🔧 Repo Configuration
 const REPO_OWNER = 'Crea-Accent';
 const REPO_NAME = 'Panel';
 const BRANCH = 'main';
@@ -29,68 +28,43 @@ async function getRemoteVersion(): Promise<string> {
 	return pkg.version;
 }
 
-/* =========================
-   GET → Version Check
-========================= */
-
+/* ==========================================================
+   GET → Version Check (Brings back info, doesn't execute)
+========================================================== */
 export async function GET() {
-	const encoder = new TextEncoder();
+	try {
+		const local = getLocalVersion();
+		const remote = await getRemoteVersion();
 
-	const stream = new ReadableStream({
-		start(controller) {
-			const send = (message: string) => {
-				controller.enqueue(encoder.encode(`data: ${message.replace(/\n/g, '')}\n\n`));
-			};
-
-			send('Starting update...');
-
-			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build && pm2 reload 3']);
-
-			child.stdout.on('data', (data) => {
-				send(data.toString());
-			});
-
-			child.stderr.on('data', (data) => {
-				send(`ERROR: ${data.toString()}`);
-			});
-
-			child.on('close', (code) => {
-				if (code === 0) {
-					send('Update complete! Refresh page.');
-				} else {
-					send(`Update failed with code ${code}`);
-				}
-				controller.close();
-			});
-		},
-	});
-
-	return new Response(stream, {
-		headers: {
-			'Content-Type': 'text/event-stream',
-			'Cache-Control': 'no-cache',
-			'Connection': 'keep-alive',
-		},
-	});
+		return NextResponse.json({
+			localVersion: local,
+			remoteVersion: remote,
+			updateAvailable: local !== remote,
+		});
+	} catch (error: any) {
+		return NextResponse.json({ error: error.message }, { status: 500 });
+	}
 }
 
-/* =========================
-   PATCH → Run Update
-========================= */
-
+/* ==========================================================
+   PATCH → Run Update & Restart NSSM Windows Service
+========================================================== */
 export async function PATCH() {
 	const encoder = new TextEncoder();
 
 	const stream = new ReadableStream({
 		start(controller) {
 			const send = (message: string) => {
-				controller.enqueue(encoder.encode(`data: ${message}\n\n`));
+				// SSE requires formatting: "data: <msg>\n\n"
+				controller.enqueue(encoder.encode(`data: ${message.trim()}\n\n`));
 			};
 
-			send('Starting update...');
+			send('Starting update pipeline...');
 
+			// Execute Git pulling, dependency installation, and production rebuild
 			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build'], {
 				shell: true,
+				cwd: process.cwd(), // Ensures it targets the correct project root folder
 			});
 
 			child.stdout.on('data', (data) => {
@@ -98,21 +72,23 @@ export async function PATCH() {
 			});
 
 			child.stderr.on('data', (data) => {
-				send(`ERROR: ${data.toString()}`);
+				send(`LOG: ${data.toString()}`);
 			});
 
 			child.on('close', (code) => {
 				if (code === 0) {
-					send('Build finished. Restarting service...');
+					send('Build finished successfully! Restarting Windows Service...');
 
-					spawn('cmd.exe', ['/c', 'pm2 restart panel'], {
+					// Uses NSSM to cleanly bounce the Windows service in a detached background instance
+					// Note: Ensure your service name matches "CreaNextApp" exactly!
+					spawn('cmd.exe', ['/c', 'nssm restart CreaNextApp'], {
 						detached: true,
 						stdio: 'ignore',
 					}).unref();
 
-					send('Restart triggered.');
+					send('Service restart triggered. Connection closing.');
 				} else {
-					send(`Update failed with code ${code}`);
+					send(`Update failed with execution code ${code}`);
 				}
 
 				controller.close();
