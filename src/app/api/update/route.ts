@@ -62,7 +62,7 @@ export async function PATCH() {
 			send('Starting update pipeline...');
 
 			// Execute Git pulling, dependency installation, and production rebuild
-			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build'], {
+			const child = spawn('cmd.exe', ['/c', 'git pull && pnpm i && pnpm run build'], {
 				shell: true,
 				cwd: process.cwd(), // Ensures it targets the correct project root folder
 			});
