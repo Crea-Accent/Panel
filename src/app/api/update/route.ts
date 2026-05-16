@@ -37,16 +37,18 @@ export async function GET() {
 	const stream = new ReadableStream({
 		start(controller) {
 			const send = (message: string) => {
-				// SSE requires formatting: "data: <msg>\n\n"
+				// Formatting clean data strings for Server-Sent Events (SSE)
 				controller.enqueue(encoder.encode(`data: ${message.trim()}\n\n`));
 			};
 
 			send('Starting update pipeline...');
 
-			// Execute Git pulling, dependency installation, and production rebuild
-			const child = spawn('cmd.exe', ['/c', 'git pull && npm i && npm run build'], {
+			// 🔑 FIX: Run via an external batch script so Next.js doesn't kill itself mid-build
+			// 🔑 FIX: process.env is passed so Git and Node can read system PATH setups
+			const child = spawn('cmd.exe', ['/c', 'update.bat'], {
 				shell: true,
-				cwd: process.cwd(), // Ensures it targets the correct project root folder
+				cwd: process.cwd(),
+				env: process.env,
 			});
 
 			child.stdout.on('data', (data) => {
@@ -59,20 +61,10 @@ export async function GET() {
 
 			child.on('close', (code) => {
 				if (code === 0) {
-					send('Build finished successfully! Restarting Windows Service...');
-
-					// Uses NSSM to cleanly bounce the Windows service in a detached background instance
-					// Note: Ensure your service name matches "CreaNextApp" exactly!
-					spawn('cmd.exe', ['/c', 'nssm restart CreaNextApp'], {
-						detached: true,
-						stdio: 'ignore',
-					}).unref();
-
-					send('Service restart triggered. Connection closing.');
+					send('Build finished successfully! Background service restart scheduled.');
 				} else {
-					send(`Update failed with execution code ${code}`);
+					send(`Update pipeline exited with code ${code}. Check logs/error.log for details.`);
 				}
-
 				controller.close();
 			});
 		},
@@ -84,7 +76,7 @@ export async function GET() {
 			'Content-Type': 'text/event-stream',
 			'Cache-Control': 'no-cache, no-transform',
 			'Connection': 'keep-alive',
-			'X-Accel-Buffering': 'no', // Prevents proxies (like Easypanel) from buffering the text output
+			'X-Accel-Buffering': 'no', // Prevents Easypanel/Nginx reverse proxy buffer locks
 		},
 	});
 }
