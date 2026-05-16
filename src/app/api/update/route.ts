@@ -81,7 +81,7 @@ export async function PATCH() {
 
 					// Uses NSSM to cleanly bounce the Windows service in a detached background instance
 					// Note: Ensure your service name matches "CreaNextApp" exactly!
-					spawn('cmd.exe', ['/c', 'nssm restart CreaNextApp'], {
+					spawn('cmd.exe', ['/c', 'nssm restart CreaPanel'], {
 						detached: true,
 						stdio: 'ignore',
 					}).unref();
