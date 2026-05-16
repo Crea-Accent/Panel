@@ -13,5 +13,5 @@ call pnpm run build
 echo [4/4] Update complete! Bouncing Windows Service...
 :: 🔑 FIX: Swapped 'timeout' for 'ping' to create a background-safe 3-second delay.
 :: 🔑 Also explicitly targets C:\Windows\System32\nssm.exe so the path context is never lost.
-start /b "" cmd /c "ping 127.0.0.1 -n 3 >nul && nssm restart CreaPanel"
+start "" cmd /c "ping 127.0.0.1 -n 3 >nul && nssm restart CreaPanel"
 exit
