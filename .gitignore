@@ -1,6 +1,8 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 data
 sim
+public/invites
+public/generated-invites
 
 # dependencies
 /node_modules

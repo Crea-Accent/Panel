@@ -26,7 +26,7 @@ export default function Sidebar() {
 		{ href: '/dashboard/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
 		{ href: '/dashboard/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
 		{ href: '/dashboard/workspace', label: 'Workspace', icon: FolderArchive, permission: 'files.read' },
-		{ href: '/dashboard/network', label: 'Network', icon: Network, permission: 'network.read' },
+		{ href: '/dashboard/events', label: 'Events', icon: Network, permission: 'events.read' },
 		{ href: '/dashboard/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
 	];
 

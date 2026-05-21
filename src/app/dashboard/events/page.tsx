@@ -3,15 +3,20 @@
 
 import * as XLSX from 'xlsx';
 
-import { Download, FileUp, MapPin, User, Users } from 'lucide-react';
+import { Download, FileUp, GitPullRequestCreate, Link2, MapPin, Upload, User, Users } from 'lucide-react';
 import groupsplit, { leaders } from '@/lib/groupsplit';
+import { useEffect, useState } from 'react';
 
 import { motion } from 'framer-motion';
-import { useState } from 'react';
 
 export default function Page() {
 	const [people, setPeople] = useState<string[]>([]);
 	const [data, setData] = useState<any[]>([]);
+
+	const [inviteImage, setInviteImage] = useState('');
+	const [formUrl, setFormUrl] = useState('');
+
+	const [generatedInvites, setGeneratedInvites] = useState<any[]>([]);
 
 	function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
 		const file = e.target.files?.[0];
@@ -35,6 +40,16 @@ export default function Page() {
 		};
 
 		reader.readAsBinaryString(file);
+	}
+
+	async function loadInvites() {
+		const response = await fetch('/api/files/invite');
+
+		const json = await response.json();
+
+		if (json.ok) {
+			setGeneratedInvites(json.invites);
+		}
 	}
 
 	function exportStyledExcel(data: any[], people: string[]) {
@@ -134,6 +149,60 @@ export default function Page() {
 		XLSX.writeFile(wb, 'styled_schedule.xlsx');
 	}
 
+	async function uploadInvite(e: React.ChangeEvent<HTMLInputElement>) {
+		const file = e.target.files?.[0];
+
+		if (!file) return;
+
+		const formData = new FormData();
+
+		formData.append('file', file);
+
+		const response = await fetch('/api/files/invite', {
+			method: 'POST',
+			body: formData,
+		});
+
+		const json = await response.json();
+
+		if (json.ok) {
+			setInviteImage(json.imageUrl);
+		}
+	}
+
+	async function generateInviteHtml() {
+		if (!inviteImage || !formUrl) return;
+
+		const response = await fetch('/api/files/invite', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				imageUrl: window.location.origin + inviteImage,
+				formUrl,
+			}),
+		});
+
+		const json = await response.json();
+
+		if (json.ok) {
+			loadInvites();
+		}
+	}
+
+	async function deleteInvite(name: string) {
+		await fetch(`/api/files/invite?name=${encodeURIComponent(name)}`, {
+			method: 'DELETE',
+		});
+
+		loadInvites();
+	}
+
+	useEffect(() => {
+		loadInvites();
+	}, []);
+
 	return (
 		<div className='space-y-8'>
 			{/* HEADER */}
@@ -210,6 +279,66 @@ export default function Page() {
 						</div>
 					</motion.div>
 				))}
+			</div>
+
+			<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-4'>
+				<div>
+					<h1 className='text-xl font-semibold'>Event Invite</h1>
+
+					<p className='text-sm text-zinc-500'>Upload invite image and signup URL</p>
+				</div>
+
+				<div className='space-y-4'>
+					<div>
+						<label className='flex items-center gap-2'>
+							<Upload size={16} />
+
+							<input type='file' accept='image/*' onChange={uploadInvite} />
+						</label>
+					</div>
+
+					<div className='relative'>
+						<Link2 size={16} className='absolute left-3 top-3 text-zinc-400' />
+
+						<input
+							value={formUrl}
+							onChange={(e) => setFormUrl(e.target.value)}
+							placeholder='Signup form URL'
+							className='w-full h-10 pl-10 pr-4 rounded-xl border border-zinc-300 dark:border-zinc-700 bg-transparent'
+						/>
+					</div>
+
+					{inviteImage && <img src={inviteImage} alt='Invite preview' className='rounded-xl max-h-64 object-cover' />}
+
+					{inviteImage && formUrl && (
+						<button onClick={generateInviteHtml} className='h-10 px-4 rounded-xl bg-(--accent) text-white flex items-center gap-2'>
+							<GitPullRequestCreate size={16} />
+							Generate Invite
+						</button>
+					)}
+
+					<div className='space-y-2'>
+						{generatedInvites.map((invite) => (
+							<div key={invite.name} className='flex items-center justify-between p-3 rounded-xl border border-zinc-200 dark:border-zinc-800'>
+								<div>
+									<p className='text-sm font-medium'>{invite.name}</p>
+
+									<p className='text-xs text-zinc-500'>{new Date(invite.created).toLocaleString()}</p>
+								</div>
+
+								<div className='flex items-center gap-2'>
+									<a href={invite.url} download className='h-9 px-3 rounded-lg bg-(--accent) text-white text-sm flex items-center'>
+										Download
+									</a>
+
+									<button onClick={() => deleteInvite(invite.name)} className='h-9 px-3 rounded-lg border border-red-500 text-red-500 text-sm'>
+										Delete
+									</button>
+								</div>
+							</div>
+						))}
+					</div>
+				</div>
 			</div>
 		</div>
 	);

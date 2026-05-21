@@ -62,14 +62,14 @@ export const PERMISSIONS = [
 		group: 'Client',
 	},
 	{
-		key: 'network.read',
-		label: 'Network - Read',
-		group: 'Network',
+		key: 'events.read',
+		label: 'Events - Read',
+		group: 'Events',
 	},
 	{
-		key: 'network.write',
-		label: 'Network - Write',
-		group: 'Network',
+		key: 'events.write',
+		label: 'Events - Write',
+		group: 'Events',
 	},
 ];
 
