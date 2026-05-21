@@ -326,7 +326,7 @@ export async function POST(request: NextRequest) {
 	try {
 		fs.writeFileSync(target, buffer);
 		return NextResponse.json({ ok: true });
-	} catch {
-		return NextResponse.json({ error: 'Upload failed' }, { status: 500 });
+	} catch (error) {
+		return NextResponse.json({ message: 'Upload failed', error: (error as Error).message }, { status: 500 });
 	}
 }
