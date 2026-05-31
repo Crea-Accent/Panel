@@ -73,7 +73,7 @@ if (!global.modbusStarted) {
 
 					const meterPower = await readRegister(client, 37113, 2, 1);
 
-					const batteryPower = await readRegister(client, 37001, 2, 1);
+					const batteryPower = (await readRegister(client, 37001, 2, 1)) / 10;
 
 					const batterySoc = (await readRegister(client, 37004)) / 10;
 
@@ -113,14 +113,14 @@ if (!global.modbusStarted) {
 
 						batteryPower,
 
-						production: inverterPower + batteryPower / 10,
+						production: inverterPower + batteryPower,
 
 						consumption: inverterPower - meterPower,
 
 						battery: {
 							state: batterySoc,
 
-							load: batteryPower / 10,
+							load: batteryPower,
 
 							charge: batteryCharge,
 
