@@ -113,7 +113,7 @@ if (!global.modbusStarted) {
 
 						batteryPower,
 
-						production: inverterPower + batteryPower,
+						production: inverterPower + batteryPower / 10,
 
 						consumption: inverterPower - meterPower,
 
