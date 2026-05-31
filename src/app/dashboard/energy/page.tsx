@@ -231,22 +231,22 @@ function PhaseCard({ title, smappee, modbus, showSmappee, showFusionSolar }: { t
 				<CombinedRow
 					label='Grid'
 					power={displayValue(showSmappee ? Math.abs(grid?.power ?? 0) : undefined, showFusionSolar ? gridPower : undefined)}
-					voltage={displayValue(showSmappee ? smappee?.voltage : undefined, showFusionSolar ? modbus?.grid?.voltage : undefined)}
 					current={displayValue(showSmappee ? grid?.current / 10 : undefined, showFusionSolar ? modbus?.grid?.current : undefined)}
+					cosphi={grid?.cosPhi}
 				/>
 
 				<CombinedRow
 					label='Solar'
 					power={displayValue(showSmappee ? Math.abs(solar?.power ?? 0) : undefined, showFusionSolar ? solarPower : undefined)}
-					voltage={displayValue(showSmappee ? smappee?.voltage : undefined, showFusionSolar ? modbus?.solar?.voltage : undefined)}
 					current={displayValue(showSmappee ? solar?.current / 10 : undefined, showFusionSolar ? modbus?.solar?.current : undefined)}
+					cosphi={solar?.cosPhi}
 				/>
 			</div>
 		</Card>
 	);
 }
 
-function CombinedRow({ label, power, voltage, current }: { label: string; power: string; voltage: string; current: string }) {
+function CombinedRow({ label, power, current, cosphi }: { label: string; power: string; current: string; cosphi?: number }) {
 	return (
 		<div
 			className='
@@ -255,21 +255,22 @@ function CombinedRow({ label, power, voltage, current }: { label: string; power:
 				border border-zinc-200 dark:border-zinc-800
 				p-4
 			'>
-			<p className='font-medium text-zinc-900 dark:text-zinc-100 mb-3'>{label}</p>
+			<div className='flex items-center justify-between mb-3'>
+				<p className='font-medium text-zinc-900 dark:text-zinc-100'>{label}</p>
 
-			<div className='grid grid-cols-3 gap-4'>
+				{cosphi !== undefined && <p className='text-xs text-zinc-500 dark:text-zinc-400'>cosφ {(cosphi / 100).toFixed(2)}</p>}
+			</div>
+
+			<div className='grid grid-cols-2 gap-4'>
 				<div>
 					<p className='text-xs text-zinc-500 mb-1'>Power</p>
+
 					<p className='text-xl font-semibold'>{power}W</p>
 				</div>
 
 				<div>
-					<p className='text-xs text-zinc-500 mb-1'>Voltage</p>
-					<p className='text-xl font-semibold'>{voltage}V</p>
-				</div>
-
-				<div>
 					<p className='text-xs text-zinc-500 mb-1'>Current</p>
+
 					<p className='text-xl font-semibold'>{current}A</p>
 				</div>
 			</div>
