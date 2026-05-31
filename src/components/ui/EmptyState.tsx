@@ -1,0 +1,43 @@
+/** @format */
+'use client';
+
+import { ReactNode } from 'react';
+
+type Props = {
+	icon?: ReactNode;
+	title: string;
+	description?: string;
+	action?: ReactNode;
+};
+
+export default function EmptyState({ icon, title, description, action }: Props) {
+	return (
+		<div
+			className='
+				flex flex-col items-center justify-center
+				text-center
+				py-16 px-6
+			'>
+			{icon && (
+				<div
+					className='
+						w-14 h-14
+						rounded-2xl
+						bg-(--active-accent)
+						dark:bg-(--accent)/20
+						text-(--accent)
+						flex items-center justify-center
+						mb-4
+					'>
+					{icon}
+				</div>
+			)}
+
+			<h3 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>{title}</h3>
+
+			{description && <p className='mt-2 max-w-md text-sm text-zinc-500 dark:text-zinc-400'>{description}</p>}
+
+			{action && <div className='mt-6'>{action}</div>}
+		</div>
+	);
+}

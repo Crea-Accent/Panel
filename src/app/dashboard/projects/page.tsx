@@ -1,12 +1,19 @@
 /** @format */
 'use client';
 
-import { Folder, MapPin, Pencil, Search } from 'lucide-react';
+import { Folder, MapPin, Pencil, Plus, Search } from 'lucide-react';
 import { NotPermitted, usePermissions } from '@/providers/PermissionsProvider';
 import { useEffect, useMemo, useState } from 'react';
 
+import Badge from '@/components/ui/Badge';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
 import Link from 'next/link';
+import Modal from '@/components/ui/Modal';
+import PageHeader from '@/components/ui/PageHeader';
 import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 
 type LabelSetting = {
 	name: string;
@@ -36,17 +43,25 @@ type Settings = {
 
 type SortKey = 'name' | 'updated';
 
-export default function ProjectsPage() {
+export default function Page() {
+	const { has, loading } = usePermissions();
+	const router = useRouter();
+
 	const [projects, setProjects] = useState<Project[]>([]);
 	const [settings, setSettings] = useState<Settings | null>(null);
+
+	const [creating, setCreating] = useState(false);
+	const [newProjectName, setNewProjectName] = useState('');
+
+	const [renaming, setRenaming] = useState(false);
+	const [renameProjectName, setRenameProjectName] = useState('');
+	const [renameTarget, setRenameTarget] = useState('');
 
 	const [query, setQuery] = useState('');
 	const [labelFilter, setLabelFilter] = useState('');
 
 	const [sortKey, setSortKey] = useState<SortKey>('name');
 	const [sortAsc, setSortAsc] = useState(true);
-
-	const { loading } = usePermissions();
 
 	useEffect(() => {
 		async function load() {
@@ -120,20 +135,62 @@ export default function ProjectsPage() {
 		return list;
 	}, [projects, query, labelFilter, sortKey, sortAsc]);
 
-	async function renameProject(oldName: string) {
-		const next = prompt('Rename project', oldName);
-		if (!next || next === oldName || !settings?.path) return;
+	async function createProject() {
+		if (!settings?.path || !newProjectName.trim()) return;
+
+		const name = newProjectName.trim();
+		const newPath = `${settings.path}/${name}`;
+
+		await fetch(`/api/files?view=${encodeURIComponent(newPath)}`);
+
+		setCreating(false);
+		setNewProjectName('');
+
+		router.push(`/dashboard/projects/${encodeURIComponent(name)}`);
+	}
+
+	function renameProject(oldName: string) {
+		setRenameTarget(oldName);
+		setRenameProjectName(oldName);
+		setRenaming(true);
+	}
+
+	async function submitRenameProject() {
+		if (!settings?.path) return;
+
+		const next = renameProjectName.trim();
+
+		if (!next || next === renameTarget) {
+			setRenaming(false);
+			return;
+		}
 
 		await fetch('/api/files', {
 			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: JSON.stringify({
-				oldPath: `${settings.path}/${oldName}`,
+				oldPath: `${settings.path}/${renameTarget}`,
 				newName: next,
 			}),
 		});
 
-		location.reload();
+		setProjects((current) =>
+			current.map((project) =>
+				project.name === renameTarget
+					? {
+							...project,
+							name: next,
+							path: project.path.replace(renameTarget, next),
+						}
+					: project
+			)
+		);
+
+		setRenaming(false);
+		setRenameTarget('');
+		setRenameProjectName('');
 	}
 
 	function openMaps(p: Project) {
@@ -155,34 +212,27 @@ export default function ProjectsPage() {
 
 	return (
 		<NotPermitted permission='projects.read'>
-			<div className='space-y-6'>
+			<motion.div className='space-y-6'>
 				{/* Header */}
 
-				<div className='flex items-center gap-4'>
-					<div className='h-11 w-11 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center shrink-0'>
-						<Folder size={20} className='text-(--accent) dark:text-(--accent)' />
-					</div>
-
-					<div className='min-w-0'>
-						<h1 className='text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100'>Projects</h1>
-
-						<p className='text-sm text-zinc-500 dark:text-zinc-400'>Browse and manage projects</p>
-					</div>
-				</div>
+				<PageHeader
+					icon={<Folder size={20} />}
+					title='Projects'
+					description='Browse and manage projects'
+					action={
+						has('projects.write') ? (
+							<Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+								New Project
+							</Button>
+						) : undefined
+					}
+				/>
 
 				{/* Search + Filter */}
 
 				<div className='flex items-center gap-3 max-w-2xl'>
-					<div className='relative flex-1'>
-						<Search size={16} className='absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400' />
-
-						<input
-							type='text'
-							placeholder='Search projects…'
-							value={query}
-							onChange={(e) => setQuery(e.target.value)}
-							className='w-full h-9 pl-9 pr-4 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'
-						/>
+					<div className='flex-1'>
+						<Input icon={<Search size={16} />} placeholder='Search projects...' value={query} onChange={(e) => setQuery(e.target.value)} />
 					</div>
 
 					<select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className='h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'>
@@ -198,70 +248,136 @@ export default function ProjectsPage() {
 
 				{/* Table */}
 
-				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl overflow-hidden'>
-					<div className='grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
-						<button onClick={() => toggleSort('name')} className='text-left'>
-							Name
-						</button>
+				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
+					<Card className='overflow-hidden'>
+						<div className='grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
+							<button onClick={() => toggleSort('name')} className='text-left'>
+								Name
+							</button>
 
-						<span className='text-center md:text-left'>Label</span>
+							<span className='text-center md:text-left'>Label</span>
 
-						<button onClick={() => toggleSort('updated')} className='hidden md:block text-left'>
-							Updated
-						</button>
+							<button onClick={() => toggleSort('updated')} className='hidden md:block text-left'>
+								Updated
+							</button>
 
-						<span className='text-right'>Actions</span>
-					</div>
-
-					{filteredProjects.map((p, index) => (
-						<div
-							key={p.path}
-							className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-11 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
-								index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
-							}`}>
-							<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
-								<Folder size={16} className='text-zinc-400' />
-								<span className='truncate font-medium'>{p.name}</span>
-							</Link>
-
-							{/* Label */}
-							<div className='flex justify-center md:justify-start'>
-								{p.label && (
-									<>
-										{/* Mobile dot */}
-										<span className='w-2.5 h-2.5 rounded-full md:hidden' style={{ backgroundColor: labelColor(p.label) }} />
-
-										{/* Desktop label */}
-										<span className='hidden md:inline px-2 py-0.5 text-xs rounded-md text-white' style={{ backgroundColor: labelColor(p.label) }}>
-											{p.label}
-										</span>
-									</>
-								)}
-							</div>
-
-							{/* Updated */}
-							<div className='hidden md:block text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</div>
-
-							{/* Actions */}
-							<div className='flex justify-end gap-1'>
-								{p.address?.city && (
-									<button
-										onClick={() => openMaps(p)}
-										className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
-										<MapPin size={16} />
-									</button>
-								)}
-
-								<button
-									onClick={() => renameProject(p.name)}
-									className='h-8 w-8 flex items-center justify-center rounded-lg text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) hover:bg-zinc-100 dark:hover:bg-zinc-800 transition cursor-pointer'>
-									<Pencil size={16} />
-								</button>
-							</div>
+							<span className='text-right'>Actions</span>
 						</div>
-					))}
+
+						{filteredProjects.map((p, index) => (
+							<motion.div
+								layout
+								key={p.path}
+								className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-11 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
+									index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
+								}`}>
+								<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
+									<Folder size={16} className='text-zinc-400' />
+									<span className='truncate font-medium'>{p.name}</span>
+								</Link>
+
+								{/* Label */}
+								<div className='flex justify-center md:justify-start'>
+									{p.label && (
+										<>
+											<span
+												className='w-2.5 h-2.5 rounded-full md:hidden'
+												style={{
+													backgroundColor: labelColor(p.label),
+												}}
+											/>
+
+											<div className='hidden md:block'>
+												<Badge color={labelColor(p.label)}>{p.label}</Badge>
+											</div>
+										</>
+									)}
+								</div>
+
+								{/* Updated */}
+								<div className='hidden md:block text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</div>
+
+								{/* Actions */}
+								<div className='flex justify-end gap-1'>
+									{p.address?.city && <Button size='sm' variant='ghost' icon={<MapPin size={16} />} onClick={() => openMaps(p)} />}
+
+									{has('projects.write') && <Button size='sm' variant='ghost' icon={<Pencil size={16} />} onClick={() => renameProject(p.name)} />}
+								</div>
+							</motion.div>
+						))}
+					</Card>
 				</motion.div>
-			</div>
+			</motion.div>
+
+			<Modal
+				open={creating}
+				title='Create Project'
+				onClose={() => {
+					setCreating(false);
+					setNewProjectName('');
+				}}
+				footer={
+					<>
+						<Button
+							variant='secondary'
+							onClick={() => {
+								setCreating(false);
+								setNewProjectName('');
+							}}>
+							Cancel
+						</Button>
+
+						<Button onClick={createProject}>Create</Button>
+					</>
+				}>
+				<Input
+					autoFocus
+					value={newProjectName}
+					onChange={(e) => setNewProjectName(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === 'Enter') {
+							createProject();
+						}
+					}}
+					placeholder='Project name'
+				/>
+			</Modal>
+
+			<Modal
+				open={renaming}
+				title='Rename Project'
+				onClose={() => {
+					setRenaming(false);
+					setRenameTarget('');
+					setRenameProjectName('');
+				}}
+				footer={
+					<>
+						<Button
+							variant='secondary'
+							onClick={() => {
+								setRenaming(false);
+								setRenameTarget('');
+								setRenameProjectName('');
+							}}>
+							Cancel
+						</Button>
+
+						<Button onClick={submitRenameProject}>Rename</Button>
+					</>
+				}>
+				<Input
+					autoFocus
+					value={renameProjectName}
+					onChange={(e) => setRenameProjectName(e.target.value)}
+					onKeyDown={(e) => {
+						if (e.key === 'Enter') {
+							submitRenameProject();
+						}
+					}}
+					placeholder='Project name'
+				/>
+			</Modal>
 		</NotPermitted>
 	);
 }

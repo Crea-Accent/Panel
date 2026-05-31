@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Folder, FolderArchive, FolderKanban, Home, KeyRound, LogIn, LogOut, Network, Package, Settings, User } from 'lucide-react';
+import { ClipboardList, Folder, FolderArchive, FolderKanban, Home, KeyRound, LogIn, LogOut, Network, Package, Settings, User } from 'lucide-react';
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -23,6 +23,7 @@ export default function Sidebar() {
 		{ href: '/dashboard', label: 'Home', icon: Home },
 		{ href: '/dashboard/projects', label: 'Projects', icon: FolderKanban, permission: 'projects.read' },
 		{ href: '/dashboard/files', label: 'Files', icon: Folder, permission: 'files.read' },
+		{ href: '/dashboard/procedures', label: 'Procedures', icon: ClipboardList, permission: 'projects.read' },
 		{ href: '/dashboard/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
 		{ href: '/dashboard/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
 		{ href: '/dashboard/workspace', label: 'Workspace', icon: FolderArchive, permission: 'files.read' },
@@ -30,7 +31,7 @@ export default function Sidebar() {
 		{ href: '/dashboard/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
 	];
 
-	const visibleItems = navItems.filter((item) => !item.permission || has(item.permission));
+	const visibleItems = navItems.filter((item) => !item.permission || has(item.permission as any));
 
 	return (
 		<AnimatePresence>

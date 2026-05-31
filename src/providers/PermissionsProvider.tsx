@@ -3,12 +3,15 @@
 
 import { ReactNode, createContext, useContext } from 'react';
 
+import { PERMISSIONS } from '@/lib/permissions';
 import { useSession } from 'next-auth/react';
+
+export type Permission = (typeof PERMISSIONS)[number]['key'];
 
 type PermissionsContextType = {
 	permissions: string[];
 	loading: boolean;
-	has: (perm: string) => boolean;
+	has: (perm: Permission) => boolean;
 	hasAny: (perms: string[]) => boolean;
 	hasAll: (perms: string[]) => boolean;
 };
@@ -78,7 +81,7 @@ export function NotPermitted({
 	fallback,
 	message,
 }: {
-	permission?: string;
+	permission?: Permission;
 	any?: string[];
 	all?: string[];
 	children?: ReactNode;

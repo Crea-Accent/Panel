@@ -1,10 +1,14 @@
 /** @format */
 'use client';
 
+import { Download, DownloadIcon, Package } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { Download } from 'lucide-react';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import EmptyState from '@/components/ui/EmptyState';
 import { NotPermitted } from '@/providers/PermissionsProvider';
+import PageHeader from '@/components/ui/PageHeader';
 
 type FileEntry = {
 	path: string;
@@ -60,70 +64,75 @@ export default function AppsPage() {
 	}
 
 	if (loading) {
-		return <div className='text-sm text-zinc-500 dark:text-zinc-400'>Loading installers…</div>;
+		return (
+			<Card className='p-8 text-center'>
+				<div className='text-sm text-zinc-500'>Loading installers...</div>
+			</Card>
+		);
 	}
 
 	return (
 		<NotPermitted permission='applications.read'>
 			<div className='space-y-6'>
-				<div>
-					<h1 className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>Apps</h1>
-					<p className='text-sm text-zinc-500 dark:text-zinc-400'>Available installer packages</p>
-				</div>
+				<PageHeader icon={<Package size={20} />} title='Apps' description='Available installer packages' />
 
-				{!settings?.path && <div className='text-sm text-zinc-500 dark:text-zinc-400'>No base path configured. Go to Settings → Apps.</div>}
+				{!settings?.path && <EmptyState icon={<Package size={24} />} title='Apps path not configured' description='Configure the applications directory in settings.' />}
 
-				{settings?.path && (
-					<div
-						className='
-							bg-white dark:bg-zinc-900
-							border border-zinc-200 dark:border-zinc-800
-							rounded-xl
-							shadow-sm
-							overflow-hidden
-						'>
-						{installers.length === 0 && (
-							<div className='px-6 py-6 text-sm text-zinc-500 dark:text-zinc-400'>
-								No installer files found in <span className='font-medium text-zinc-700 dark:text-zinc-200'>{settings.path}</span>.
-							</div>
-						)}
+				<Card className='overflow-hidden'>
+					{installers.length === 0 && (
+						<div className='p-8'>
+							<EmptyState icon={<Package size={24} />} title='No installers found' description={`No installer files were found in ${settings?.path}`} />
+						</div>
+					)}
 
-						{installers.map((file) => (
-							<div
-								key={file.path}
-								className='
-									flex items-center justify-between
-									px-6 py-4
-									border-t border-zinc-200 dark:border-zinc-800
-									first:border-t-0
-									hover:bg-zinc-50 dark:hover:bg-zinc-800
-									transition-colors
-								'>
-								<div className='flex flex-col min-w-0'>
-									<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{file.name}</span>
+					{installers.map((file, index) => (
+						<div
+							key={file.path}
+							className={`
+				flex
+				items-center
+				justify-between
 
-									<span className='text-xs text-zinc-500 dark:text-zinc-400 truncate'>{file.path}</span>
+				px-5
+				py-4
+
+				hover:bg-zinc-50
+				dark:hover:bg-zinc-800
+
+				transition
+
+				${index !== installers.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''}
+			`}>
+							<div className='flex items-center gap-3 min-w-0'>
+								<div
+									className='
+						h-10 w-10
+						rounded-xl
+
+						bg-(--active-accent)
+						dark:bg-(--accent)/20
+
+						flex
+						items-center
+						justify-center
+						shrink-0
+					'>
+									<Package size={18} className='text-(--accent)' />
 								</div>
 
-								<button
-									onClick={() => download(file.path)}
-									className='
-										h-9 px-3
-										flex items-center gap-2
-										rounded-lg
-										text-sm font-medium
-										text-zinc-600 dark:text-zinc-300
-										hover:text-(--accent) dark:hover:text-(--hover-accent)
-										hover:bg-(--active-accent) dark:hover:bg-(--hover-accent)/30
-										transition-colors
-									'>
-									<Download size={16} strokeWidth={1.8} />
-									Download
-								</button>
+								<div className='min-w-0'>
+									<p className='font-medium truncate'>{file.name}</p>
+
+									<p className='text-xs text-zinc-500 truncate'>{file.path}</p>
+								</div>
 							</div>
-						))}
-					</div>
-				)}
+
+							<Button size='sm' icon={<Download size={16} />} onClick={() => download(file.path)}>
+								<DownloadIcon size={14} />
+							</Button>
+						</div>
+					))}
+				</Card>
 			</div>
 		</NotPermitted>
 	);

@@ -71,10 +71,10 @@ export const PERMISSIONS = [
 		label: 'Events - Write',
 		group: 'Events',
 	},
-];
+] as const;
 
 export function groupPermissions() {
-	const groups: Record<string, typeof PERMISSIONS | []> = {};
+	const groups: Record<string, typeof PERMISSIONS | any> = {};
 
 	for (const perm of PERMISSIONS) {
 		if (!groups[perm.group]) {

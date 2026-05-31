@@ -5,6 +5,12 @@ import { ChevronDown, ChevronRight, Copy, Eye, Pencil, Plus, Search, Trash2, X }
 import { NotPermitted, usePermissions } from '@/providers/PermissionsProvider';
 import { useEffect, useMemo, useState } from 'react';
 
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import Input from '@/components/ui/Input';
+import Modal from '@/components/ui/Modal';
+import PageHeader from '@/components/ui/PageHeader';
 import { useSession } from 'next-auth/react';
 
 type Password = {
@@ -24,6 +30,65 @@ type User = {
 	email?: string;
 	permissions?: string[];
 };
+
+type PasswordCardProps = {
+	password: Password;
+	shared?: boolean;
+	ownerName?: string;
+	onView: () => void;
+	onEdit?: () => void;
+	onDelete?: () => void;
+};
+
+function PasswordCard({ password, shared, ownerName, onView, onEdit, onDelete }: PasswordCardProps) {
+	return (
+		<Card className='p-4'>
+			<div className='flex items-center justify-between gap-4'>
+				<div className='min-w-0 flex-1 space-y-1'>
+					<p className='font-medium truncate'>{password.label}</p>
+
+					{shared && ownerName && <p className='text-xs text-zinc-500'>Shared by {ownerName}</p>}
+
+					{password.username && <p className='text-sm text-zinc-500 truncate'>{password.username}</p>}
+
+					{password.link && (
+						<a href={password.link} target='_blank' rel='noreferrer' className='text-xs text-(--accent) hover:underline truncate block'>
+							{password.link}
+						</a>
+					)}
+
+					{password.tags?.length ? (
+						<div className='flex flex-wrap gap-2 pt-1'>
+							{password.tags.map((tag) => (
+								<span
+									key={tag}
+									className='
+											px-2
+											py-1
+											text-xs
+											rounded-lg
+
+											bg-zinc-100
+											dark:bg-zinc-800
+										'>
+									{tag}
+								</span>
+							))}
+						</div>
+					) : null}
+				</div>
+
+				<div className='flex items-center gap-2 shrink-0'>
+					<Button variant='ghost' icon={<Eye size={16} />} onClick={onView} />
+
+					{onEdit && <Button variant='ghost' icon={<Pencil size={16} />} onClick={onEdit} />}
+
+					{onDelete && <Button variant='danger-ghost' icon={<Trash2 size={16} />} onClick={onDelete} />}
+				</div>
+			</div>
+		</Card>
+	);
+}
 
 /* ---------------- SECTION ---------------- */
 
@@ -55,6 +120,7 @@ export default function Page() {
 	const [open, setOpen] = useState(false);
 	const [editing, setEditing] = useState<Password | null>(null);
 	const [viewing, setViewing] = useState<Password | null>(null);
+	const [deleteTarget, setDeleteTarget] = useState<Password | null>(null);
 
 	const [collapsed, setCollapsed] = useState<Record<string, boolean>>({});
 
@@ -198,6 +264,14 @@ export default function Page() {
 		setPasswords((p) => p.filter((x) => x.id !== id));
 	}
 
+	async function confirmDelete() {
+		if (!deleteTarget) return;
+
+		await remove(deleteTarget.id);
+
+		setDeleteTarget(null);
+	}
+
 	function canEdit(p: Password) {
 		return canWrite && (p.ownerId === sessionUser?.id || isAdmin);
 	}
@@ -206,88 +280,52 @@ export default function Page() {
 		return canWrite && (p.ownerId === sessionUser?.id || isAdmin);
 	}
 
-	function Card(p: Password, shared = false) {
-		return (
-			<div key={p.id} className='group border border-zinc-200 dark:border-zinc-800 rounded-xl p-4 flex justify-between items-center hover:bg-zinc-50 dark:hover:bg-zinc-900 transition'>
-				<div className='flex flex-col gap-1 min-w-0'>
-					<div className='font-medium text-zinc-900 dark:text-zinc-100'>{p.label}</div>
-
-					{shared && <div className='text-xs text-zinc-500'>Shared by {ownerName(p.ownerId)}</div>}
-
-					{p.username && <div className='text-sm text-zinc-500'>{p.username}</div>}
-
-					{p.link && (
-						<a href={p.link} target='_blank' className='text-xs text-(--accent) truncate hover:underline'>
-							{p.link}
-						</a>
-					)}
-
-					{p.tags?.length ? (
-						<div className='flex gap-2 flex-wrap mt-1'>
-							{p.tags.map((t) => (
-								<span key={t} className='text-xs bg-zinc-200 dark:bg-zinc-800 px-2 py-1 rounded'>
-									{t}
-								</span>
-							))}
-						</div>
-					) : null}
-				</div>
-
-				<div className='flex gap-2 opacity-70 group-hover:opacity-100 transition'>
-					<button onClick={() => openView(p.id)} className='h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-						<Eye size={16} />
-					</button>
-
-					{canEdit(p) && (
-						<button onClick={() => openEdit(p)} className='h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-							<Pencil size={16} />
-						</button>
-					)}
-
-					{canDelete(p) && (
-						<button onClick={() => remove(p.id)} className='h-8 w-8 flex items-center justify-center rounded-lg text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30'>
-							<Trash2 size={16} />
-						</button>
-					)}
-				</div>
-			</div>
-		);
-	}
-
 	return (
 		<NotPermitted permission='passwords.read'>
 			<div className='space-y-8'>
 				{/* HEADER */}
 
-				<div className='flex items-center justify-between'>
-					<h1 className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>Passwords</h1>
-
-					{canWrite && (
-						<button onClick={openCreate} className='h-9 px-4 flex items-center gap-2 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
-							<Plus size={16} />
-							New
-						</button>
-					)}
-				</div>
+				<PageHeader
+					icon={<Eye size={20} />}
+					title='Passwords'
+					description='Manage shared credentials and secure access.'
+					action={
+						canWrite ? (
+							<Button icon={<Plus size={16} />} onClick={openCreate}>
+								New Password
+							</Button>
+						) : undefined
+					}
+				/>
 
 				{/* SEARCH */}
 
-				<div className='flex items-center gap-2 border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 h-9 bg-white dark:bg-zinc-900'>
-					<Search size={16} className='text-zinc-400' />
-
-					<input className='flex-1 outline-none bg-transparent text-sm' placeholder='Search passwords' value={search} onChange={(e) => setSearch(e.target.value)} />
-				</div>
+				<Card className='p-4'>
+					<Input icon={<Search size={16} />} placeholder='Search passwords' value={search} onChange={(e) => setSearch(e.target.value)} />
+				</Card>
 
 				{/* YOUR */}
 
 				<Section id='your' title='Your Passwords' collapsed={collapsed} toggle={toggleSection}>
-					{yourPasswords.map((p) => Card(p))}
+					{yourPasswords.map((p) => (
+						<PasswordCard key={p.id} password={p} onView={() => openView(p.id)} onEdit={canEdit(p) ? () => openEdit(p) : undefined} onDelete={canDelete(p) ? () => setDeleteTarget(p) : undefined} />
+					))}
 				</Section>
 
 				{/* SHARED */}
 
 				<Section id='shared' title='Shared With You' collapsed={collapsed} toggle={toggleSection}>
-					{sharedPasswords.map((p) => Card(p, true))}
+					{sharedPasswords.map((p) => (
+						<PasswordCard
+							key={p.id}
+							password={p}
+							shared
+							ownerName={ownerName(p.ownerId)}
+							onView={() => openView(p.id)}
+							onEdit={canEdit(p) ? () => openEdit(p) : undefined}
+							onDelete={canDelete(p) ? () => setDeleteTarget(p) : undefined}
+						/>
+					))}
 				</Section>
 
 				{/* ADMIN */}
@@ -305,136 +343,181 @@ export default function Page() {
 
 								return (
 									<Section key={u.id} id={`user-${u.id}`} title={u.name} collapsed={collapsed} toggle={toggleSection}>
-										{userPasswords.map((p) => Card(p))}
+										{userPasswords.map((p) => (
+											<PasswordCard
+												key={p.id}
+												password={p}
+												onView={() => openView(p.id)}
+												onEdit={canEdit(p) ? () => openEdit(p) : undefined}
+												onDelete={canDelete(p) ? () => setDeleteTarget(p) : undefined}
+											/>
+										))}
 									</Section>
 								);
 							})}
 					</div>
 				)}
 
-				{open && (
-					<div className='fixed inset-0 bg-black/40 flex items-center justify-center z-50'>
-						<div className='bg-white dark:bg-zinc-900 rounded-xl w-[520px] p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 shadow-lg'>
-							<div className='flex justify-between items-center'>
-								<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>{editing ? 'Edit Password' : 'Create Password'}</h2>
+				<Modal
+					open={open}
+					title={editing ? 'Edit Password' : 'Create Password'}
+					onClose={() => setOpen(false)}
+					footer={
+						<>
+							<Button variant='secondary' onClick={() => setOpen(false)}>
+								Cancel
+							</Button>
 
-								<button onClick={() => setOpen(false)} className='h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-									<X size={18} />
-								</button>
-							</div>
+							<Button onClick={save}>Save</Button>
+						</>
+					}>
+					<div className='space-y-4'>
+						<Input label='Label' value={label} onChange={(e) => setLabel(e.target.value)} />
 
-							<input
-								className='w-full h-10 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'
-								placeholder='Label'
-								value={label}
-								onChange={(e) => setLabel(e.target.value)}
-							/>
+						<Input label='Username' value={username} onChange={(e) => setUsername(e.target.value)} />
 
-							<input
-								className='w-full h-10 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'
-								placeholder='Username'
-								value={username}
-								onChange={(e) => setUsername(e.target.value)}
-							/>
+						<Input label='Password' value={password} onChange={(e) => setPassword(e.target.value)} />
 
-							<input
-								className='w-full h-10 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'
-								placeholder='Password'
-								value={password}
-								onChange={(e) => setPassword(e.target.value)}
-							/>
+						<Input label='Link' value={link} onChange={(e) => setLink(e.target.value)} />
 
-							<input
-								className='w-full h-10 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'
-								placeholder='Link'
-								value={link}
-								onChange={(e) => setLink(e.target.value)}
-							/>
+						<Input label='Tags' placeholder='comma,separated,tags' value={tags} onChange={(e) => setTags(e.target.value)} />
 
-							<input
-								className='w-full h-10 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'
-								placeholder='Tags (comma separated)'
-								value={tags}
-								onChange={(e) => setTags(e.target.value)}
-							/>
+						<Card className='p-4'>
+							<div className='space-y-3'>
+								<p className='text-sm font-medium'>Share with users</p>
 
-							<div className='space-y-2'>
-								<div className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>Share with users</div>
+								<div className='space-y-2 max-h-60 overflow-auto'>
+									{users.map((user) => {
+										const active = selectedUsers.includes(user.id);
 
-								{users.map((u) => {
-									const active = selectedUsers.includes(u.id);
+										return (
+											<button
+												key={user.id}
+												onClick={() => toggleUser(user.id)}
+												className={`
+										w-full
 
-									return (
-										<div key={u.id} className='flex items-center justify-between border border-zinc-200 dark:border-zinc-800 rounded-lg px-3 py-2'>
-											<span className='text-sm'>{u.name}</span>
+										flex
+										items-center
+										justify-between
 
-											<button onClick={() => toggleUser(u.id)} className={`w-10 h-5 rounded-full transition ${active ? 'bg-(--accent)' : 'bg-zinc-400'}`}>
-												<div className={`w-4 h-4 bg-white rounded-full transform transition ${active ? 'translate-x-5' : 'translate-x-1'}`} />
+										px-3
+										py-2
+
+										rounded-xl
+										border
+
+										transition
+
+										${active ? 'border-(--accent) bg-(--active-accent)' : 'border-zinc-200 dark:border-zinc-800'}
+									`}>
+												<span className='text-sm'>{user.name}</span>
+
+												<div
+													className={`
+											w-4
+											h-4
+											rounded-full
+
+											${active ? 'bg-(--accent)' : 'bg-zinc-300 dark:bg-zinc-700'}
+										`}
+												/>
 											</button>
-										</div>
-									);
-								})}
+										);
+									})}
+								</div>
 							</div>
-
-							<div className='flex justify-end gap-2 pt-2'>
-								<button onClick={() => setOpen(false)} className='h-9 px-4 rounded-lg border border-zinc-200 dark:border-zinc-800 text-sm hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-									Cancel
-								</button>
-
-								<button onClick={save} className='h-9 px-4 rounded-lg bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent)'>
-									Save
-								</button>
-							</div>
-						</div>
+						</Card>
 					</div>
-				)}
-				{viewing && (
-					<div className='fixed inset-0 bg-black/40 flex items-center justify-center z-50'>
-						<div className='bg-white dark:bg-zinc-900 rounded-xl w-[520px] p-6 space-y-4 border border-zinc-200 dark:border-zinc-800 shadow-lg'>
-							<div className='flex justify-between items-center'>
-								<h2 className='font-semibold text-zinc-900 dark:text-zinc-100'>Password Details</h2>
+				</Modal>
 
-								<button onClick={() => setViewing(null)} className='h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-									<X size={18} />
-								</button>
-							</div>
+				<Modal open={!!viewing} title='Password Details' onClose={() => setViewing(null)}>
+					{viewing && (
+						<div className='space-y-5'>
+							<Card className='p-4'>
+								<div className='space-y-1'>
+									<p className='text-xs text-zinc-500'>Label</p>
 
-							<div>
-								<div className='text-xs text-zinc-500'>Label</div>
-								<div className='text-sm'>{viewing.label}</div>
-							</div>
+									<p className='font-medium'>{viewing.label}</p>
+								</div>
+							</Card>
 
 							{viewing.username && (
-								<div>
-									<div className='text-xs text-zinc-500'>Username</div>
+								<Card className='p-4'>
+									<div className='flex items-center justify-between gap-4'>
+										<div className='min-w-0'>
+											<p className='text-xs text-zinc-500'>Username</p>
 
-									<div className='flex justify-between items-center'>
-										<span className='font-mono text-sm'>{viewing.username}</span>
+											<p className='font-mono text-sm truncate'>{viewing.username}</p>
+										</div>
 
-										<button
-											onClick={() => navigator.clipboard.writeText(viewing.username ?? '')}
-											className='h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-											<Copy size={16} />
-										</button>
+										<Button variant='ghost' icon={<Copy size={16} />} onClick={() => navigator.clipboard.writeText(viewing.username ?? '')} />
 									</div>
-								</div>
+								</Card>
 							)}
 
-							<div>
-								<div className='text-xs text-zinc-500'>Password</div>
+							<Card className='p-4'>
+								<div className='flex items-center justify-between gap-4'>
+									<div className='min-w-0'>
+										<p className='text-xs text-zinc-500'>Password</p>
 
-								<div className='flex justify-between items-center'>
-									<span className='font-mono text-sm'>{viewing.password}</span>
+										<p className='font-mono text-sm truncate'>{viewing.password}</p>
+									</div>
 
-									<button onClick={() => navigator.clipboard.writeText(viewing.password)} className='h-8 w-8 flex items-center justify-center rounded-lg hover:bg-zinc-100 dark:hover:bg-zinc-800'>
-										<Copy size={16} />
-									</button>
+									<Button variant='ghost' icon={<Copy size={16} />} onClick={() => navigator.clipboard.writeText(viewing.password)} />
 								</div>
-							</div>
+							</Card>
+
+							{viewing.link && (
+								<Card className='p-4'>
+									<div className='space-y-1'>
+										<p className='text-xs text-zinc-500'>Link</p>
+
+										<a href={viewing.link} target='_blank' rel='noreferrer' className='text-(--accent) hover:underline break-all'>
+											{viewing.link}
+										</a>
+									</div>
+								</Card>
+							)}
+
+							{viewing.tags?.length ? (
+								<Card className='p-4'>
+									<div className='space-y-2'>
+										<p className='text-xs text-zinc-500'>Tags</p>
+
+										<div className='flex flex-wrap gap-2'>
+											{viewing.tags.map((tag) => (
+												<span
+													key={tag}
+													className='
+											px-2
+											py-1
+											text-xs
+											rounded-lg
+
+											bg-zinc-100
+											dark:bg-zinc-800
+										'>
+													{tag}
+												</span>
+											))}
+										</div>
+									</div>
+								</Card>
+							) : null}
 						</div>
-					</div>
-				)}
+					)}
+				</Modal>
 			</div>
+
+			<ConfirmDialog
+				open={!!deleteTarget}
+				title='Delete Password'
+				description={deleteTarget ? `Are you sure you want to delete "${deleteTarget.label}"?` : ''}
+				confirmText='Delete'
+				onConfirm={confirmDelete}
+				onClose={() => setDeleteTarget(null)}
+			/>
 		</NotPermitted>
 	);
 }

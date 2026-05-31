@@ -5,9 +5,10 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { Clock, FolderKanban, HardDrive, Plus, Search, TrendingUp } from 'lucide-react';
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 
+import Card from '@/components/ui/Card';
 import EnergyCard from '@/components/EnergyCard';
+import Input from '@/components/ui/Input';
 import Link from 'next/link';
-import { usePermissions } from '@/providers/PermissionsProvider';
 
 type FileEntry = {
 	path: string;
@@ -23,16 +24,12 @@ type Settings = {
 };
 
 export default function Home() {
-	const { has } = usePermissions();
-
 	const [settings, setSettings] = useState<Settings | null>(null);
 	const [projects, setProjects] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [recentOpened, setRecentOpened] = useState<string[]>([]);
 	const searchRef = useRef<HTMLInputElement | null>(null);
-	const [creating, setCreating] = useState(false);
-	const [newProjectName, setNewProjectName] = useState('');
 
 	useEffect(() => {
 		(async () => {
@@ -62,10 +59,6 @@ export default function Home() {
 				e.preventDefault();
 				searchRef.current?.focus();
 			}
-
-			if (e.key === 'Escape') {
-				setCreating(false);
-			}
 		};
 
 		window.addEventListener('keydown', handler);
@@ -91,11 +84,6 @@ export default function Home() {
 		return projects.filter((p) => p.modified && new Date(p.modified).getTime() > weekAgo).length;
 	}, [projects]);
 
-	const totalStorage = useMemo(() => {
-		const total = projects.reduce((acc, p) => acc + (p.size ?? 0), 0);
-		return (total / 1024 / 1024).toFixed(1);
-	}, [projects]);
-
 	const recentProjectsResolved = useMemo(() => {
 		return recentOpened.map((name) => projects.find((p) => p.name === name)).filter(Boolean) as FileEntry[];
 	}, [recentOpened, projects]);
@@ -106,105 +94,49 @@ export default function Home() {
 		localStorage.setItem('recentProjects', JSON.stringify(next));
 	}
 
-	async function createProject() {
-		if (!settings?.path || !newProjectName.trim()) return;
-
-		const name = newProjectName.trim();
-		const newPath = `${settings.path}/${name}`;
-
-		await fetch(`/api/files?view=${encodeURIComponent(newPath)}`);
-
-		setCreating(false);
-		setNewProjectName('');
-
-		pushRecent(name);
-
-		window.location.href = `/dashboard/projects/${encodeURIComponent(name)}`;
-	}
-
 	return (
 		<div className='w-full space-y-10'>
-			<motion.section
-				initial={{ opacity: 0, y: 10 }}
-				animate={{ opacity: 1, y: 0 }}
-				className='
-					relative overflow-hidden
-					bg-linear-to-br from-(--active-accent) to-white
-					dark:from-zinc-900 dark:to-zinc-950
-					border border-zinc-200 dark:border-zinc-800
-					rounded-2xl
-					p-8 md:p-10
-					shadow-sm
-					space-y-8
-				'>
-				<div className='flex flex-col md:flex-row md:items-center md:justify-between gap-6'>
+			<motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}>
+				<Card
+					className='
+			relative overflow-hidden
+			bg-linear-to-br
+			from-(--active-accent)
+			to-white
+			dark:from-zinc-900
+			dark:to-zinc-950
+			p-8 md:p-10
+			space-y-8
+		'>
 					<div>
-						<h1 className='text-3xl md:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100'>Project Control Center</h1>
-						<p className='text-sm text-zinc-500 dark:text-zinc-400 mt-2'>Manage projects, track updates and monitor storage.</p>
+						<h1 className='text-3xl md:text-4xl font-semibold tracking-tight'>Project Control Center</h1>
+
+						<p className='text-sm text-zinc-500 mt-2'>Manage projects, track updates and monitor storage.</p>
 					</div>
 
-					{has('projects.write') && (
-						<button
-							onClick={() => setCreating(true)}
-							className='
-								h-11 px-5 rounded-xl
-								bg-(--accent) text-white
-								text-sm font-medium
-								flex items-center gap-2
-								hover:bg-(--accent)
-								active:scale-[0.98]
-								transition-all
-							'>
-							<Plus size={16} />
-							New Project
-						</button>
-					)}
-				</div>
+					<div className='max-w-xl'>
+						<Input ref={searchRef} icon={<Search size={18} />} placeholder='Search projects... (press /)' value={query} onChange={(e) => setQuery(e.target.value)} />
+					</div>
 
-				<div className='relative max-w-xl'>
-					<Search className='absolute left-4 top-1/2 -translate-y-1/2 text-zinc-400 dark:text-zinc-500' size={18} />
+					{query && filteredProjects.length > 0 && (
+						<Card className='divide-y divide-zinc-200 dark:divide-zinc-800'>
+							{filteredProjects.slice(0, 6).map((p) => (
+								<Link
+									key={p.path}
+									href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
+									onClick={() => pushRecent(p.name)}
+									className='block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+									<div className='flex justify-between'>
+										<p className='font-medium'>{p.name}</p>
 
-					<input
-						ref={searchRef}
-						placeholder='Search projects… (press /)'
-						value={query}
-						onChange={(e) => setQuery(e.target.value)}
-						className='
-							w-full h-11 pl-12 pr-4
-							bg-white dark:bg-zinc-900
-							border border-zinc-200 dark:border-zinc-800
-							rounded-xl
-							text-sm
-							text-zinc-900 dark:text-zinc-100
-							placeholder:text-zinc-400 dark:placeholder:text-zinc-500
-							focus:outline-none
-							focus:ring-2 focus:ring-(--accent)/30
-							transition
-						'
-					/>
-				</div>
-
-				{query && filteredProjects.length > 0 && (
-					<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm divide-y divide-zinc-200 dark:divide-zinc-800'>
-						{filteredProjects.slice(0, 6).map((p) => (
-							<Link
-								key={p.path}
-								href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
-								onClick={() => pushRecent(p.name)}
-								className='block px-6 py-4 hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
-								<div className='flex justify-between'>
-									<p className='font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</p>
-
-									<div className='text-right text-xs text-zinc-500 dark:text-zinc-400 space-y-1'>
-										{p.modified && <p>{new Date(p.modified).toLocaleDateString()}</p>}
-										<p>{((p.size ?? 0) / 1024 / 1024).toFixed(1)} MB</p>
+										<div className='text-right text-xs text-zinc-500'>{p.modified && <p>{new Date(p.modified).toLocaleDateString()}</p>}</div>
 									</div>
-								</div>
-							</Link>
-						))}
-					</div>
-				)}
-			</motion.section>
+								</Link>
+							))}
+						</Card>
+					)}
+				</Card>
+			</motion.div>
 
 			<section className='grid grid-cols-1 md:grid-cols-3 gap-6'>
 				<StatCard icon={<FolderKanban size={18} />} label='Total Projects' value={loading ? '—' : projects.length} />
@@ -213,124 +145,70 @@ export default function Home() {
 			</section>
 
 			{recentProjectsResolved.length > 0 && (
-				<section className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 space-y-4'>
-					<h2 className='text-base font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-100'>
-						<Clock size={16} className='text-(--accent) dark:text-(--accent)' />
+				<Card className='p-6 space-y-4'>
+					<h2 className='text-base font-semibold flex items-center gap-2'>
+						<Clock size={16} className='text-(--accent)' />
 						Recently Opened
 					</h2>
 
-					{recentProjectsResolved.map((p) => (
+					<div className='space-y-1'>
+						{recentProjectsResolved.map((p) => (
+							<Link
+								key={p.path}
+								href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
+								onClick={() => pushRecent(p.name)}
+								className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
+								<span className='text-sm font-medium'>{p.name}</span>
+							</Link>
+						))}
+					</div>
+				</Card>
+			)}
+
+			<Card className='p-6 space-y-4'>
+				<h2 className='text-base font-semibold flex items-center gap-2'>
+					<Clock size={16} className='text-(--accent)' />
+					Recently Updated
+				</h2>
+
+				<div className='space-y-1'>
+					{sortedByRecent.slice(0, 5).map((p) => (
 						<Link
 							key={p.path}
 							href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
 							onClick={() => pushRecent(p.name)}
 							className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
-							<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</span>
+							<span className='text-sm font-medium'>{p.name}</span>
+
+							<span className='text-xs text-zinc-500'>{p.modified ? new Date(p.modified).toLocaleDateString() : ''}</span>
 						</Link>
 					))}
-				</section>
-			)}
-
-			<section className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6 space-y-4'>
-				<h2 className='text-base font-semibold flex items-center gap-2 text-zinc-900 dark:text-zinc-100'>
-					<Clock size={16} className='text-(--accent) dark:text-(--accent)' />
-					Recently Updated
-				</h2>
-
-				{sortedByRecent.slice(0, 5).map((p) => (
-					<Link
-						key={p.path}
-						href={`/dashboard/projects/${encodeURIComponent(p.name)}`}
-						onClick={() => pushRecent(p.name)}
-						className='flex justify-between items-center px-4 py-3 rounded-lg hover:bg-zinc-50 dark:hover:bg-zinc-800 transition'>
-						<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100'>{p.name}</span>
-
-						<span className='text-xs text-zinc-500 dark:text-zinc-400'>{p.modified ? new Date(p.modified).toLocaleDateString() : ''}</span>
-					</Link>
-				))}
-			</section>
-
-			<AnimatePresence>
-				{creating && (
-					<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm'>
-						<motion.div
-							initial={{ scale: 0.95, opacity: 0 }}
-							animate={{ scale: 1, opacity: 1 }}
-							exit={{ scale: 0.95, opacity: 0 }}
-							className='
-								w-full max-w-md
-								bg-white dark:bg-zinc-900
-								border border-zinc-200 dark:border-zinc-800
-								rounded-2xl
-								shadow-xl
-								p-6
-								space-y-5
-							'>
-							<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Create Project</h2>
-
-							<input
-								autoFocus
-								value={newProjectName}
-								onChange={(e) => setNewProjectName(e.target.value)}
-								onKeyDown={(e) => {
-									if (e.key === 'Enter') createProject();
-								}}
-								placeholder='Project name'
-								className='
-									w-full h-10 px-4
-									rounded-xl
-									bg-gray-50 dark:bg-zinc-800
-									border border-zinc-200 dark:border-zinc-700
-									text-sm
-									focus:outline-none
-									focus:ring-2 focus:ring-(--accent)/30
-								'
-							/>
-
-							<div className='flex justify-end gap-3 pt-2'>
-								<button
-									onClick={() => {
-										setCreating(false);
-										setNewProjectName('');
-									}}
-									className='
-										h-10 px-4 rounded-xl
-										border border-zinc-200 dark:border-zinc-700
-										text-sm
-										hover:bg-zinc-100 dark:hover:bg-zinc-800
-									'>
-									Cancel
-								</button>
-
-								<button
-									onClick={createProject}
-									className='
-										h-10 px-5 rounded-xl
-										bg-(--accent) text-white
-										text-sm font-medium
-										hover:bg-(--hover-accent)
-									'>
-									Create
-								</button>
-							</div>
-						</motion.div>
-					</motion.div>
-				)}
-			</AnimatePresence>
+				</div>
+			</Card>
 		</div>
 	);
 }
 
 function StatCard({ icon, label, value }: { icon: ReactElement; label: string; value: string | number }) {
 	return (
-		<div className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6'>
+		<Card className='p-6'>
 			<div className='flex items-center gap-3 mb-4'>
-				<div className='w-10 h-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 text-(--accent) dark:text-(--accent) flex items-center justify-center'>{icon}</div>
+				<div
+					className='
+						w-10 h-10
+						rounded-xl
+						bg-(--active-accent)
+						dark:bg-(--accent)/30
+						text-(--accent)
+						flex items-center justify-center
+					'>
+					{icon}
+				</div>
 
-				<span className='text-xs font-medium text-zinc-500 dark:text-zinc-400 uppercase tracking-wide'>{label}</span>
+				<span className='text-xs font-medium text-zinc-500 uppercase tracking-wide'>{label}</span>
 			</div>
 
-			<p className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>{value}</p>
-		</div>
+			<p className='text-2xl font-semibold'>{value}</p>
+		</Card>
 	);
 }

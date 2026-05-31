@@ -3,6 +3,7 @@
 import './globals.css';
 
 import Header from '@/components/Header';
+import { LocalProvider } from '@/providers/LocalProvider';
 import type { Metadata } from 'next';
 import { PermissionsProvider } from '@/providers/PermissionsProvider';
 import { SessionProvider } from '@/providers/SessionProvider';
@@ -41,16 +42,18 @@ export default async function RootLayout({
 				'>
 				<SessionProvider>
 					<ThemeProvider sessionTheme={session?.user?.theme}>
-						<UploadProvider>
-							<PermissionsProvider>
-								<SidebarProvider>
-									<div className='min-h-screen flex flex-col'>
-										<Header />
-										{children}
-									</div>
-								</SidebarProvider>
-							</PermissionsProvider>
-						</UploadProvider>
+						<LocalProvider>
+							<UploadProvider>
+								<PermissionsProvider>
+									<SidebarProvider>
+										<div className='min-h-screen flex flex-col'>
+											<Header />
+											{children}
+										</div>
+									</SidebarProvider>
+								</PermissionsProvider>
+							</UploadProvider>
+						</LocalProvider>
 					</ThemeProvider>
 				</SessionProvider>
 			</body>
