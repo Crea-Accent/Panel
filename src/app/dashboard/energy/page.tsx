@@ -33,7 +33,7 @@ export default function Page() {
 
 	const mqttProduction = mqttSolar;
 
-	const mqttConsumption = mqttSolar !== null && mqttGrid !== null ? mqttSolar + mqttGrid : null;
+	const mqttConsumption = mqttSolar !== null && mqttGrid !== null ? Math.abs(mqttSolar + mqttGrid) : null;
 
 	const mqttImport = mqttGrid !== null && mqttGrid > 0 ? mqttGrid : null;
 
@@ -192,13 +192,27 @@ function PhaseCard({ title, smappee, modbus, showSmappee, showFusionSolar }: { t
 	const grid = smappee?.lines?.[0];
 	const solar = smappee?.lines?.[1];
 
+	const gridPower = (modbus?.grid?.voltage ?? 0) * (modbus?.grid?.current ?? 0);
+
+	const solarPower = (modbus?.solar?.voltage ?? 0) * (modbus?.solar?.current ?? 0);
+
+	function displayValue(...values: (number | null | undefined)[]) {
+		const valid = values.filter((v): v is number => typeof v === 'number');
+
+		if (!valid.length) return '—';
+
+		if (valid.length === 1) return Math.round(valid[0]).toLocaleString();
+
+		return `${Math.round(valid[0]).toLocaleString()} ~ ${Math.round(valid[1]).toLocaleString()}`;
+	}
+
 	return (
 		<Card className='p-6 space-y-6'>
 			<div className='flex items-center justify-between'>
 				<div>
 					<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>{title}</h2>
 
-					<p className='text-sm text-zinc-500 dark:text-zinc-400'>{smappee?.voltage ?? modbus?.grid?.voltage ?? '—'}V</p>
+					<p className='text-sm text-zinc-500 dark:text-zinc-400'>{displayValue(showSmappee ? smappee?.voltage : undefined, showFusionSolar ? modbus?.grid?.voltage : undefined)}V</p>
 				</div>
 
 				<div
@@ -213,26 +227,26 @@ function PhaseCard({ title, smappee, modbus, showSmappee, showFusionSolar }: { t
 				</div>
 			</div>
 
-			{showSmappee && (
-				<div className='space-y-4'>
-					<LineRow label='Grid' power={grid?.power} current={grid?.current / 10} cosphi={grid?.cosPhi} />
+			<div className='space-y-4'>
+				<CombinedRow
+					label='Grid'
+					power={displayValue(showSmappee ? Math.abs(grid?.power ?? 0) : undefined, showFusionSolar ? gridPower : undefined)}
+					voltage={displayValue(showSmappee ? smappee?.voltage : undefined, showFusionSolar ? modbus?.grid?.voltage : undefined)}
+					current={displayValue(showSmappee ? grid?.current / 10 : undefined, showFusionSolar ? modbus?.grid?.current : undefined)}
+				/>
 
-					<LineRow label='Solar' power={solar?.power} current={solar?.current / 10} cosphi={solar?.cosPhi} />
-				</div>
-			)}
-
-			{showFusionSolar && modbus && (
-				<div className='space-y-4'>
-					<FusionRow label='Grid' voltage={modbus.grid?.voltage} current={modbus.grid?.current} />
-
-					<FusionRow label='Solar' voltage={modbus.solar?.voltage} current={modbus.solar?.current} />
-				</div>
-			)}
+				<CombinedRow
+					label='Solar'
+					power={displayValue(showSmappee ? Math.abs(solar?.power ?? 0) : undefined, showFusionSolar ? solarPower : undefined)}
+					voltage={displayValue(showSmappee ? smappee?.voltage : undefined, showFusionSolar ? modbus?.solar?.voltage : undefined)}
+					current={displayValue(showSmappee ? solar?.current / 10 : undefined, showFusionSolar ? modbus?.solar?.current : undefined)}
+				/>
+			</div>
 		</Card>
 	);
 }
 
-function LineRow({ label, power, current, cosphi }: { label: string; power?: number; current?: number; cosphi?: number }) {
+function CombinedRow({ label, power, voltage, current }: { label: string; power: string; voltage: string; current: string }) {
 	return (
 		<div
 			className='
@@ -241,55 +255,22 @@ function LineRow({ label, power, current, cosphi }: { label: string; power?: num
 				border border-zinc-200 dark:border-zinc-800
 				p-4
 			'>
-			<div className='flex items-center justify-between mb-3'>
-				<p className='font-medium text-zinc-900 dark:text-zinc-100'>{label}</p>
+			<p className='font-medium text-zinc-900 dark:text-zinc-100 mb-3'>{label}</p>
 
-				<p className='text-xs text-zinc-500 dark:text-zinc-400'>cosφ {(cosphi ?? 0) / 100}</p>
-			</div>
-
-			<div className='grid grid-cols-2 gap-4'>
+			<div className='grid grid-cols-3 gap-4'>
 				<div>
-					<p className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>Power</p>
-
-					<p className='text-xl font-semibold text-zinc-900 dark:text-zinc-100'>{Math.abs(power ?? 0).toLocaleString()}W</p>
+					<p className='text-xs text-zinc-500 mb-1'>Power</p>
+					<p className='text-xl font-semibold'>{power}W</p>
 				</div>
 
-				<div>
-					<p className='text-xs text-zinc-500 dark:text-zinc-400 mb-1'>Current</p>
-
-					<p className='text-xl font-semibold text-zinc-900 dark:text-zinc-100'>{current ?? 0}A</p>
-				</div>
-			</div>
-		</div>
-	);
-}
-
-function FusionRow({ label, voltage, current }: { label: string; voltage?: number; current?: number }) {
-	return (
-		<div
-			className='
-				rounded-xl
-				bg-zinc-50 dark:bg-zinc-800/50
-				border border-zinc-200 dark:border-zinc-800
-				p-4
-			'>
-			<div className='flex items-center justify-between mb-3'>
-				<p className='font-medium text-zinc-900 dark:text-zinc-100'>{label}</p>
-
-				<span className='text-xs text-zinc-500'>FusionSolar</span>
-			</div>
-
-			<div className='grid grid-cols-2 gap-4'>
 				<div>
 					<p className='text-xs text-zinc-500 mb-1'>Voltage</p>
-
-					<p className='text-xl font-semibold'>{voltage ?? 0}V</p>
+					<p className='text-xl font-semibold'>{voltage}V</p>
 				</div>
 
 				<div>
 					<p className='text-xs text-zinc-500 mb-1'>Current</p>
-
-					<p className='text-xl font-semibold'>{current ?? 0}A</p>
+					<p className='text-xl font-semibold'>{current}A</p>
 				</div>
 			</div>
 		</div>
