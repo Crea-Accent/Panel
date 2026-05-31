@@ -120,7 +120,7 @@ if (!global.modbusStarted) {
 						battery: {
 							state: batterySoc,
 
-							load: batteryPower,
+							load: batteryPower / 10,
 
 							charge: batteryCharge,
 

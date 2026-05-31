@@ -310,7 +310,7 @@ function BatteryCard({ data }: { data: any }) {
 				<div>
 					<p className='text-xs text-zinc-500 mb-1'>Power</p>
 
-					<p className='text-3xl font-semibold'>{data.battery.load}W</p>
+					<p className='text-3xl font-semibold'>{data.battery.load.toLocaleString()}W</p>
 				</div>
 
 				<div>
