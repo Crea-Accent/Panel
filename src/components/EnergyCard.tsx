@@ -15,9 +15,9 @@ export default function EnergyCard() {
 			try {
 				const res = await fetch('/api/energy');
 
-				const data = await res.json();
+				const { mqtt } = await res.json();
 
-				setEnergy(data.data);
+				setEnergy(mqtt);
 			} catch (err) {
 				console.error(err);
 			}

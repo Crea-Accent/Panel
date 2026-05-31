@@ -34,9 +34,7 @@ export default function ProceduresPage() {
 
 			setLoading(true);
 
-			const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}&recursive=1`);
-
-			console.log(res);
+			const res = await fetch(`/api/files?view=${encodeURIComponent(s?.path)}&recursive=1`);
 
 			if (!res.ok) {
 				throw new Error('Failed to load procedures');
