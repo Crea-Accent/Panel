@@ -1,14 +1,14 @@
 /** @format */
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { Clock, FolderKanban, HardDrive, Plus, Search, TrendingUp } from 'lucide-react';
+import { Clock, FolderKanban, Search, TrendingUp } from 'lucide-react';
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 
 import Card from '@/components/ui/Card';
 import EnergyCard from '@/components/EnergyCard';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
 
 type FileEntry = {
 	path: string;
