@@ -13,7 +13,7 @@ type FileEntry = {
 	type: string;
 };
 
-const SCHEMA_EXTENSIONS = ['.pdf', '.schrack', '.trikker'];
+const SCHEMA_EXTENSIONS = ['.pdf', '.schrack', '.trik'];
 
 export default function Schemas({ basePath, client }: { basePath: string; client: string }) {
 	const { uploading, uploadFile } = useUpload();
@@ -66,11 +66,11 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 				</div>
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Schemas</h2>
-					<p className='text-sm text-gray-500 dark:text-zinc-400'>PDF, .schrack, .trikker files</p>
+					<p className='text-sm text-gray-500 dark:text-zinc-400'>PDF, .schrack, .trik files</p>
 				</div>
 			</header>
 
-			<input ref={inputRef} type='file' accept='.pdf,.schrack,.trikker' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
+			<input ref={inputRef} type='file' accept='.pdf,.schrack,.trik' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
 
 			<div className={section}>
 				{/* Collapse Header */}
