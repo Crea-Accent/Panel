@@ -43,9 +43,9 @@ export default function Page() {
 
 	const modbusConsumption = modbus?.consumption ?? null;
 
-	const modbusImport = modbus?.meterPower < 0 ? Math.abs(modbus.meterPower) : null;
+	const modbusImport = modbus?.meterPower > 0 ? Math.abs(modbus.meterPower) : null;
 
-	const modbusExport = modbus?.meterPower > 0 ? modbus.meterPower : null;
+	const modbusExport = modbus?.meterPower < 0 ? modbus.meterPower : null;
 
 	function rangeValue(...values: (number | null | undefined)[]) {
 		const valid = values.filter((v): v is number => typeof v === 'number');
