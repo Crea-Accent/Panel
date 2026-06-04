@@ -3,6 +3,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Download, File, Upload } from 'lucide-react';
+import { FaFileExcel, FaFilePdf, FaFileWord } from 'react-icons/fa6';
 import { useEffect, useRef, useState } from 'react';
 
 import { useUpload } from '@/providers/UploadProvider';
@@ -55,6 +56,57 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 		document.body.removeChild(a);
 	};
 
+	const getExtension = (name: string) => {
+		const idx = name.lastIndexOf('.');
+		return idx === -1 ? '' : name.slice(idx).toLowerCase();
+	};
+
+	const getDocumentGroup = (name: string) => {
+		const ext = getExtension(name);
+
+		if (ext === '.pdf') return 'PDF';
+		if (['.doc', '.docx'].includes(ext)) return 'Word';
+		if (['.xls', '.xlsx', '.xlsm'].includes(ext)) return 'Excel';
+
+		return 'Other';
+	};
+
+	const groupedFiles = files.reduce<Record<string, FileEntry[]>>((acc, file) => {
+		const group = getDocumentGroup(file.name);
+
+		if (!acc[group]) {
+			acc[group] = [];
+		}
+
+		acc[group].push(file);
+
+		return acc;
+	}, {});
+
+	const groupOrder = ['PDF', 'Word', 'Excel', 'Other'];
+
+	const sortedGroups = Object.entries(groupedFiles).sort(([a], [b]) => {
+		return groupOrder.indexOf(a) - groupOrder.indexOf(b);
+	});
+
+	const getFileIcon = (name: string) => {
+		const ext = getExtension(name);
+
+		if (ext === '.pdf') {
+			return <FaFilePdf className='w-4 h-4 text-red-500' />;
+		}
+
+		if (['.doc', '.docx'].includes(ext)) {
+			return <FaFileWord className='w-4 h-4 text-blue-500' />;
+		}
+
+		if (['.xls', '.xlsx', '.xlsm'].includes(ext)) {
+			return <FaFileExcel className='w-4 h-4 text-green-500' />;
+		}
+
+		return <File className='w-4 h-4 text-gray-400 dark:text-zinc-500' />;
+	};
+
 	const sectionBase = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
 
 	return (
@@ -63,13 +115,14 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
 					<File className='w-5 h-5 text-(--accent) dark:text-(--accent)' strokeWidth={1.8} />
 				</div>
+
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Documents</h2>
 					<p className='text-sm text-gray-500 dark:text-zinc-400'>PDF, Word and Excel files</p>
 				</div>
 			</header>
 
-			<input ref={inputRef} type='file' accept='.pdf,.doc,.docx,.xls,.xlsx' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
+			<input ref={inputRef} type='file' accept='.pdf,.doc,.docx,.xls,.xlsx,.xlsm' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
 
 			<div className={sectionBase}>
 				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center px-5 py-4 text-sm font-medium text-gray-900 dark:text-zinc-100'>
@@ -102,25 +155,34 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 							)}
 
 							{!loading &&
-								files.map((file, index) => (
-									<motion.div
-										key={file.path}
-										initial={{ opacity: 0, y: 4 }}
-										animate={{ opacity: 1, y: 0 }}
-										transition={{ delay: index * 0.03 }}
-										className='flex items-center justify-between h-12 px-4 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-white dark:hover:bg-zinc-700 hover:shadow-sm transition'>
-										<div className='flex items-center gap-3 min-w-0'>
-											<File className='w-4 h-4 text-gray-400 dark:text-zinc-500' />
-											<span className='truncate text-sm text-gray-800 dark:text-zinc-200'>{file.name}</span>
+								sortedGroups.map(([groupName, group]) => (
+									<div key={groupName} className='space-y-2'>
+										<div className='px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400'>
+											{groupName} ({group.length})
 										</div>
 
-										<button
-											onClick={() => download(file.path)}
-											className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition-colors'>
-											<Download className='w-4 h-4' />
-											Download
-										</button>
-									</motion.div>
+										{group.map((file, index) => (
+											<motion.div
+												key={file.path}
+												initial={{ opacity: 0, y: 4 }}
+												animate={{ opacity: 1, y: 0 }}
+												transition={{ delay: index * 0.03 }}
+												className='flex items-center justify-between h-12 px-4 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-white dark:hover:bg-zinc-700 hover:shadow-sm transition'>
+												<div className='flex items-center gap-3 min-w-0'>
+													{getFileIcon(file.name)}
+
+													<span className='truncate text-sm text-gray-800 dark:text-zinc-200'>{file.name}</span>
+												</div>
+
+												<button
+													onClick={() => download(file.path)}
+													className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition-colors'>
+													<Download className='w-4 h-4' />
+													Download
+												</button>
+											</motion.div>
+										))}
+									</div>
 								))}
 						</motion.div>
 					)}
