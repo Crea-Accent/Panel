@@ -69,9 +69,9 @@ if (!global.modbusStarted) {
 
 					const exportLifetime = (await readRegister(client, 37121, 2, 1)) / 100;
 
-					const inverterPower = (await readRegister(client, 32080, 2, 1)) / 100;
+					const inverterPower = (await readRegister(client, 32080, 2, 1)) / 10;
 
-					const meterPower = (await readRegister(client, 37113, 2, 1)) / 100;
+					const meterPower = (await readRegister(client, 37113, 2, 1)) / 10;
 
 					const batteryPower = (await readRegister(client, 37001, 2, 1)) / 10;
 
