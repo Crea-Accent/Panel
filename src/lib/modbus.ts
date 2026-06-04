@@ -115,7 +115,7 @@ if (!global.modbusStarted) {
 
 						production: inverterPower + batteryPower,
 
-						consumption: inverterPower - meterPower,
+						consumption: inverterPower - meterPower || null,
 
 						battery: {
 							state: batterySoc,
