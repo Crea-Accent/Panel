@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Download, File, FileText, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { FaFilePdf } from 'react-icons/fa6';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -55,15 +56,61 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 		document.body.removeChild(a);
 	};
 
+	const getExtension = (name: string) => {
+		const idx = name.lastIndexOf('.');
+		return idx === -1 ? 'other' : name.slice(idx).toLowerCase();
+	};
+
+	const groupedFiles = files.reduce<Record<string, FileEntry[]>>((acc, file) => {
+		const ext = getExtension(file.name);
+
+		if (!acc[ext]) {
+			acc[ext] = [];
+		}
+
+		acc[ext].push(file);
+
+		return acc;
+	}, {});
+
+	const extensionOrder = ['.pdf', '.schrack', '.trik'];
+
+	const sortedGroups = Object.entries(groupedFiles).sort(([a], [b]) => {
+		const ai = extensionOrder.indexOf(a);
+		const bi = extensionOrder.indexOf(b);
+
+		if (ai === -1 && bi === -1) return a.localeCompare(b);
+		if (ai === -1) return 1;
+		if (bi === -1) return -1;
+
+		return ai - bi;
+	});
+
+	const getFileIcon = (extension: string) => {
+		switch (extension) {
+			case '.pdf':
+				return <FaFilePdf className='w-4 h-4 text-red-500' />;
+
+			case '.schrack':
+				return <FileText className='w-4 h-4 text-orange-500' />;
+
+			case '.trik':
+				return <FileText className='w-4 h-4 text-cyan-500' />;
+
+			default:
+				return <File className='w-4 h-4 text-gray-400 dark:text-zinc-500' />;
+		}
+	};
+
 	const section = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
 
 	return (
 		<section className='space-y-6'>
-			{/* Header */}
 			<header className='flex items-center gap-3'>
 				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
 					<FileText className='w-5 h-5 text-(--accent) dark:text-(--accent)' />
 				</div>
+
 				<div>
 					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Schemas</h2>
 					<p className='text-sm text-gray-500 dark:text-zinc-400'>PDF, .schrack, .trik files</p>
@@ -73,16 +120,15 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 			<input ref={inputRef} type='file' accept='.pdf,.schrack,.trik' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
 
 			<div className={section}>
-				{/* Collapse Header */}
 				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center px-5 py-4 text-sm font-medium text-gray-900 dark:text-zinc-100'>
 					<span>Files ({files.length})</span>
+
 					{open ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
 				</button>
 
 				<AnimatePresence>
 					{open && (
 						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className='px-5 pb-5 space-y-4'>
-							{/* Upload Button */}
 							<div className='flex justify-end'>
 								<button
 									onClick={() => inputRef.current?.click()}
@@ -94,44 +140,50 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 								</button>
 							</div>
 
-							{/* Loading */}
 							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading schemas…</div>}
 
-							{/* Empty */}
 							{!loading && files.length === 0 && (
 								<div className='text-sm text-gray-500 dark:text-zinc-400 border border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-6 text-center'>No schema files found.</div>
 							)}
 
-							{/* Files */}
 							{!loading &&
-								files.map((file, index) => (
-									<motion.div
-										key={file.path}
-										initial={{ opacity: 0, y: 4 }}
-										animate={{ opacity: 1, y: 0 }}
-										transition={{ delay: index * 0.03 }}
-										className='
-											flex items-center justify-between
-											h-12 px-4
-											rounded-2xl
-											border border-gray-200 dark:border-zinc-700
-											bg-gray-50 dark:bg-zinc-800
-											hover:bg-white dark:hover:bg-zinc-700
-											hover:shadow-sm
-											transition
-										'>
-										<div className='flex items-center gap-3 min-w-0'>
-											<File className='w-4 h-4 text-gray-400 dark:text-zinc-500' />
-											<span className='truncate text-sm text-gray-800 dark:text-zinc-100'>{file.name}</span>
+								sortedGroups.map(([extension, group]) => (
+									<div key={extension} className='space-y-2'>
+										<div className='px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400'>
+											{extension.replace('.', '')} ({group.length})
 										</div>
 
-										<button
-											onClick={() => download(file.path)}
-											className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
-											<Download className='w-4 h-4' />
-											Download
-										</button>
-									</motion.div>
+										{group.map((file, index) => (
+											<motion.div
+												key={file.path}
+												initial={{ opacity: 0, y: 4 }}
+												animate={{ opacity: 1, y: 0 }}
+												transition={{ delay: index * 0.03 }}
+												className='
+													flex items-center justify-between
+													h-12 px-4
+													rounded-2xl
+													border border-gray-200 dark:border-zinc-700
+													bg-gray-50 dark:bg-zinc-800
+													hover:bg-white dark:hover:bg-zinc-700
+													hover:shadow-sm
+													transition
+												'>
+												<div className='flex items-center gap-3 min-w-0'>
+													{getFileIcon(extension)}
+
+													<span className='truncate text-sm text-gray-800 dark:text-zinc-100'>{file.name}</span>
+												</div>
+
+												<button
+													onClick={() => download(file.path)}
+													className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
+													<Download className='w-4 h-4' />
+													Download
+												</button>
+											</motion.div>
+										))}
+									</div>
 								))}
 						</motion.div>
 					)}
