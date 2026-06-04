@@ -141,7 +141,7 @@ if (!global.modbusStarted) {
 							grid: {
 								voltage: (await readRegister(client, 37101, 2, 1)) / 10,
 
-								current: (await readRegister(client, 37107, 2, 1)) / 100,
+								current: (await readRegister(client, 37107, 2, 1)) / 10000,
 							},
 
 							solar: {
@@ -155,7 +155,7 @@ if (!global.modbusStarted) {
 							grid: {
 								voltage: (await readRegister(client, 37103, 2, 1)) / 10,
 
-								current: (await readRegister(client, 37109, 2, 1)) / 100,
+								current: (await readRegister(client, 37109, 2, 1)) / 10000,
 							},
 
 							solar: {
@@ -169,7 +169,7 @@ if (!global.modbusStarted) {
 							grid: {
 								voltage: (await readRegister(client, 37105, 2, 1)) / 10,
 
-								current: (await readRegister(client, 37111, 2, 1)) / 100,
+								current: (await readRegister(client, 37111, 2, 1)) / 10000,
 							},
 
 							solar: {
