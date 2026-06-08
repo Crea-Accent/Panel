@@ -109,10 +109,20 @@ export default function Page() {
 
 	const filteredProjects = useMemo(() => {
 		let list = [...projects];
+
+		console.log(list);
 		const q = query.toLowerCase().trim();
 
 		list = list.filter((p) => {
-			if (q && !p.name.toLowerCase().includes(q)) return false;
+			if (
+				q &&
+				!p.name.toLowerCase().includes(q) &&
+				!p.label?.toLowerCase().includes(q) &&
+				!p.address?.street?.toLowerCase().includes(q) &&
+				!p.address?.country?.toLowerCase().includes(q) &&
+				!p.address?.city?.toLowerCase().includes(q)
+			)
+				return false;
 			if (labelFilter && p.label !== labelFilter) return false;
 			return true;
 		});
