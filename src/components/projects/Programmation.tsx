@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp, Code, Download, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, Code, Download, Loader2, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
 import { usePermissions } from '@/providers/PermissionsProvider';
@@ -73,6 +73,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 	const [items, setItems] = useState<FileEntry[]>([]);
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(true);
+	const [downloadingFile, setDownloadingFile] = useState<string | null>(null);
 	const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 	const inputRef = useRef<HTMLInputElement | null>(null);
 	const [dateFormat, setDateFormat] = useState('DDMMYYYY');
@@ -113,13 +114,24 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		if (success) await load();
 	};
 
-	const download = (path: string) => {
-		const url = `/api/files/download?path=${encodeURIComponent(path)}`;
-		const a = document.createElement('a');
-		a.href = url;
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
+	const download = async (path: string) => {
+		try {
+			setDownloadingFile(path);
+
+			const url = `/api/files/download?path=${encodeURIComponent(path)}`;
+
+			const a = document.createElement('a');
+			a.href = url;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+
+			setTimeout(() => {
+				setDownloadingFile((current) => (current === path ? null : current));
+			}, 5000);
+		} catch {
+			setDownloadingFile(null);
+		}
 	};
 
 	const grouped = {
@@ -194,8 +206,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 												<button
 													onClick={() => download(latest.path)}
 													className='flex items-center gap-1 text-sm font-medium text-(--accent) dark:text-(--accent) hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
-													<Download className='w-4 h-4' />
-													Download
+													{downloadingFile === latest.path ? <Loader2 className='w-4 h-4 animate-spin' /> : <Download className='w-4 h-4' />}
 												</button>
 											</div>
 
@@ -245,8 +256,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 																		<button
 																			onClick={() => download(item.path)}
 																			className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
-																			<Download className='w-4 h-4' />
-																			Download
+																			{downloadingFile === latest.path ? <Loader2 className='w-4 h-4 animate-spin' /> : <Download className='w-4 h-4' />}
 																		</button>
 																	</motion.div>
 																))}
