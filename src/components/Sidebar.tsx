@@ -16,9 +16,12 @@ export default function Sidebar() {
 	const { open, setOpen, toggle } = useSidebar();
 	const { data: session } = useSession();
 	const { has, loading } = usePermissions();
-
-	if (loading || !session) {
+	if (!session) {
 		setOpen(false);
+		return null;
+	}
+
+	if (loading) {
 		return null;
 	}
 
