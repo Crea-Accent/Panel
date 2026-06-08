@@ -226,7 +226,6 @@ export default function Metadata({ client }: { client: string }) {
 
 	return (
 		<section className='space-y-6'>
-			{String(hasWrite)}
 			<header className='flex items-center justify-between gap-4 flex-wrap'>
 				<div className='flex items-center gap-3 min-w-0'>
 					<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
