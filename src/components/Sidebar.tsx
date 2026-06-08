@@ -14,9 +14,10 @@ import { useSidebar } from '../providers/SidebarProvider';
 export default function Sidebar() {
 	const pathname = usePathname() || '';
 	const { open, setOpen, toggle } = useSidebar();
-	const { data: session } = useSession();
+	const { data: session, status } = useSession();
 	const { has, loading } = usePermissions();
-	if (!session) {
+
+	if (!session && status !== 'loading') {
 		setOpen(false);
 		return null;
 	}
