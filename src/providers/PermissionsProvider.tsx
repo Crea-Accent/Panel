@@ -80,6 +80,7 @@ export function NotPermitted({
 	children,
 	fallback,
 	message,
+	shareAccess,
 }: {
 	permission?: Permission;
 	any?: string[];
@@ -87,6 +88,7 @@ export function NotPermitted({
 	children?: ReactNode;
 	fallback?: ReactNode;
 	message?: string;
+	shareAccess?: boolean;
 }) {
 	const { has, hasAny, hasAll, loading } = usePermissions();
 
@@ -97,6 +99,7 @@ export function NotPermitted({
 	if (permission) allowed = has(permission);
 	if (any) allowed = hasAny(any);
 	if (all) allowed = hasAll(all);
+	if (shareAccess) allowed = shareAccess;
 
 	if (allowed) return <>{children}</>;
 

@@ -13,11 +13,14 @@ import { useSidebar } from '../providers/SidebarProvider';
 
 export default function Sidebar() {
 	const pathname = usePathname() || '';
-	const { open, toggle } = useSidebar();
+	const { open, setOpen, toggle } = useSidebar();
 	const { data: session } = useSession();
 	const { has, loading } = usePermissions();
 
-	if (loading) return null;
+	if (loading || !session) {
+		setOpen(false);
+		return null;
+	}
 
 	const navItems = [
 		{ href: '/dashboard', label: 'Home', icon: Home },

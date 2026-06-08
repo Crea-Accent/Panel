@@ -116,13 +116,29 @@ export async function GET(req: NextRequest) {
 /* ================= PATCH ================= */
 
 export async function PATCH(req: NextRequest) {
-	const { client, data } = await req.json();
+	const body = await req.json();
+
+	const { client, data, createShareCode } = body;
 
 	const base = loadProjectsPath();
 	const folder = resolveProjectFolder(client, base);
 	const file = metadataPath(folder);
 
 	const existing = JSON.parse(fs.readFileSync(file, 'utf8'));
+
+	// Share link request
+	if (createShareCode) {
+		if (!existing.shareCode) {
+			existing.shareCode = crypto.randomUUID();
+
+			fs.writeFileSync(file, JSON.stringify(existing, null, 2));
+		}
+
+		return NextResponse.json({
+			ok: true,
+			shareCode: existing.shareCode,
+		});
+	}
 
 	const updated = {
 		...existing,

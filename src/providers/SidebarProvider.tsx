@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 
 type SidebarContextType = {
 	open: boolean;
+	setOpen: any;
 	toggle: () => void;
 };
 
@@ -43,7 +44,7 @@ export function SidebarProvider({ children }: { children: React.ReactNode }) {
 
 	const toggle = () => setOpen((o) => !o);
 
-	return <SidebarContext.Provider value={{ open, toggle }}>{children}</SidebarContext.Provider>;
+	return <SidebarContext.Provider value={{ open, setOpen, toggle }}>{children}</SidebarContext.Provider>;
 }
 
 export function useSidebar() {

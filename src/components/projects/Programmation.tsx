@@ -5,6 +5,7 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronUp, Code, Download, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import { usePermissions } from '@/providers/PermissionsProvider';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -65,6 +66,9 @@ function detectProgrammationType(entry: FileEntry): 'DuoTecno' | 'DALI' | 'Loxon
 }
 
 export default function Programmation({ basePath, client }: { basePath: string; client: string }) {
+	const { has } = usePermissions();
+
+	const hasWrite = has('projects.write');
 	const { uploading, uploadFile } = useUpload();
 	const [items, setItems] = useState<FileEntry[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -155,14 +159,16 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className='px-5 pb-6 space-y-6'>
 							{/* Upload */}
 							<div className='flex justify-end'>
-								<button
-									onClick={() => inputRef.current?.click()}
-									disabled={uploading}
-									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
+								{hasWrite && (
+									<button
+										onClick={() => inputRef.current?.click()}
+										disabled={uploading}
+										className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
 										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}`}>
-									<Upload className='w-4 h-4' />
-									{uploading ? 'Uploading…' : 'Upload'}
-								</button>
+										<Upload className='w-4 h-4' />
+										{uploading ? 'Uploading…' : 'Upload'}
+									</button>
+								)}
 							</div>
 
 							{/* Loading */}

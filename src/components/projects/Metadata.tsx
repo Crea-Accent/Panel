@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 
 import Link from 'next/link';
 import { User } from 'next-auth';
+import { usePermissions } from '@/providers/PermissionsProvider';
+import { useSession } from 'next-auth/react';
 
 type Login = {
 	label?: string;
@@ -43,6 +45,11 @@ type MetadataType = {
 };
 
 export default function Metadata({ client }: { client: string }) {
+	const { has } = usePermissions();
+	const { data: session } = useSession();
+
+	const hasWrite = !has('projects.write');
+
 	const [metadata, setMetadata] = useState<MetadataType | null>(null);
 	const [initialMetadata, setInitialMetadata] = useState<MetadataType | null>(null);
 
@@ -63,6 +70,34 @@ export default function Metadata({ client }: { client: string }) {
 				client: data.logins?.client?.map((l) => ({ ...l, password: undefined })),
 			},
 		};
+	};
+
+	const [copied, setCopied] = useState(false);
+
+	const share = async () => {
+		const res = await fetch('/api/projects/metadata', {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				client,
+				createShareCode: true,
+			}),
+		});
+
+		if (!res.ok) return;
+
+		const { shareCode } = await res.json();
+
+		const url = new URL(window.location.href);
+
+		url.searchParams.set('code', shareCode);
+
+		await navigator.clipboard.writeText(url.toString());
+
+		setCopied(true);
+		setTimeout(() => setCopied(false), 2000);
 	};
 
 	const hasChanges = JSON.stringify(normalize(metadata)) !== JSON.stringify(normalize(initialMetadata));
@@ -191,6 +226,7 @@ export default function Metadata({ client }: { client: string }) {
 
 	return (
 		<section className='space-y-6'>
+			{String(hasWrite)}
 			<header className='flex items-center justify-between gap-4 flex-wrap'>
 				<div className='flex items-center gap-3 min-w-0'>
 					<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
@@ -208,6 +244,7 @@ export default function Metadata({ client }: { client: string }) {
 					<div className='flex items-center gap-2'>
 						<select
 							value={metadata.label ?? ''}
+							disabled={hasWrite}
 							onChange={(e) =>
 								setMetadata({
 									...metadata,
@@ -230,12 +267,13 @@ export default function Metadata({ client }: { client: string }) {
 							))}
 						</select>
 					</div>
-
-					{/* SAVE BUTTON */}
-					<button
-						onClick={save}
-						disabled={!hasChanges || saving}
-						className='
+					{session && (
+						<>
+							{/* SAVE BUTTON */}
+							<button
+								onClick={save}
+								disabled={!hasChanges || (saving && hasWrite)}
+								className='
 				h-9 px-4 rounded-lg
 				bg-(--accent) text-white
 				text-sm font-medium
@@ -243,8 +281,22 @@ export default function Metadata({ client }: { client: string }) {
 				disabled:opacity-50
 				transition
 			'>
-						{saving ? 'Saving…' : saved ? <Check size={16} /> : 'Save'}
-					</button>
+								{saving ? 'Saving…' : saved ? <Check size={16} /> : 'Save'}
+							</button>
+
+							<button
+								onClick={share}
+								className='
+		h-9 px-4 rounded-lg
+		bg-(--accent) text-white
+		text-sm font-medium
+		hover:bg-(--hover-accent)
+		transition
+	'>
+								{copied ? 'Copied share URL' : 'Share'}
+							</button>
+						</>
+					)}
 				</div>
 			</header>
 
@@ -263,6 +315,7 @@ export default function Metadata({ client }: { client: string }) {
 									className={input}
 									placeholder={f}
 									value={(metadata.address as any)?.[f] ?? ''}
+									disabled={hasWrite}
 									onChange={(e) =>
 										setMetadata({
 											...metadata,
@@ -304,7 +357,11 @@ export default function Metadata({ client }: { client: string }) {
 												})
 											}
 											className='text-xs flex items-center gap-1 text-zinc-500 hover:text-(--hover-accent) transition'>
-											<Plus size={14} /> Add
+											{!hasWrite && (
+												<span className='flex gap-2'>
+													<Plus size={14} /> Add
+												</span>
+											)}
 										</button>
 									</div>
 
@@ -313,6 +370,7 @@ export default function Metadata({ client }: { client: string }) {
 											<input
 												className={input}
 												value={v}
+												disabled={hasWrite}
 												onChange={(e) => {
 													const updated = [...(metadata.contact?.[type] ?? [])];
 													updated[i] = e.target.value;
@@ -338,7 +396,7 @@ export default function Metadata({ client }: { client: string }) {
 													})
 												}
 												className={dangerButton}>
-												<Trash2 size={16} />
+												{!hasWrite && <Trash2 size={16} />}
 											</button>
 										</div>
 									))}
@@ -361,7 +419,11 @@ export default function Metadata({ client }: { client: string }) {
 						{openSections.includes(group) && (
 							<motion.div className='px-5 pb-5 space-y-4'>
 								<button onClick={() => addLogin(group)} className='text-xs flex items-center gap-1 text-zinc-500 hover:text-(--hover-accent)'>
-									<Plus size={14} /> Add Login
+									{!hasWrite && (
+										<span className='flex gap-2'>
+											<Plus size={14} /> Add Login
+										</span>
+									)}
 								</button>
 
 								{metadata.logins?.[group]?.map((login, i) => {
@@ -370,16 +432,17 @@ export default function Metadata({ client }: { client: string }) {
 
 									return (
 										<div key={i} className='flex gap-3 p-4 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-800'>
-											<input className={input} placeholder='Label' value={login.label ?? ''} onChange={(e) => updateLogin(group, i, 'label', e.target.value)} />
+											<input className={input} disabled={hasWrite} placeholder='Label' value={login.label ?? ''} onChange={(e) => updateLogin(group, i, 'label', e.target.value)} />
 
-											<input className={input} placeholder='Link' value={login.link ?? ''} onChange={(e) => updateLogin(group, i, 'link', e.target.value)} />
+											<input className={input} disabled={hasWrite} placeholder='Link' value={login.link ?? ''} onChange={(e) => updateLogin(group, i, 'link', e.target.value)} />
 
-											<input className={input} placeholder='Username' value={login.username ?? ''} onChange={(e) => updateLogin(group, i, 'username', e.target.value)} />
+											<input className={input} disabled={hasWrite} placeholder='Username' value={login.username ?? ''} onChange={(e) => updateLogin(group, i, 'username', e.target.value)} />
 
 											<div className='relative'>
 												<input
 													type={isVisible ? `text` : `password`}
 													className={input}
+													disabled={hasWrite}
 													placeholder='Password'
 													value={login.password ?? ''}
 													onChange={(e) => updateLogin(group, i, 'password', e.target.value)}
@@ -407,7 +470,7 @@ export default function Metadata({ client }: { client: string }) {
 												)}
 
 												<button onClick={() => removeLogin(group, i)} className={dangerButton}>
-													<Trash2 size={16} />
+													{!hasWrite && <Trash2 size={16} />}
 												</button>
 											</div>
 										</div>
@@ -419,29 +482,31 @@ export default function Metadata({ client }: { client: string }) {
 				</div>
 			))}
 
-			<div className={section}>
-				<button onClick={() => toggleSection('access')} className={sectionButton}>
-					<span>Access</span>
-					{openSections.includes('access') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
-				</button>
+			{!hasWrite && (
+				<div className={section}>
+					<button onClick={() => toggleSection('access')} className={sectionButton}>
+						<span>Access</span>
+						{openSections.includes('access') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+					</button>
 
-				<AnimatePresence>
-					{openSections.includes('access') && (
-						<motion.div className='px-5 pb-5 space-y-4'>
-							<AccessPicker
-								users={users}
-								value={(metadata as any).access ?? []}
-								onChange={(next: string[]) =>
-									setMetadata({
-										...metadata,
-										access: next,
-									} as any)
-								}
-							/>
-						</motion.div>
-					)}
-				</AnimatePresence>
-			</div>
+					<AnimatePresence>
+						{openSections.includes('access') && (
+							<motion.div className='px-5 pb-5 space-y-4'>
+								<AccessPicker
+									users={users}
+									value={(metadata as any).access ?? []}
+									onChange={(next: string[]) =>
+										setMetadata({
+											...metadata,
+											access: next,
+										} as any)
+									}
+								/>
+							</motion.div>
+						)}
+					</AnimatePresence>
+				</div>
+			)}
 
 			{/* NOTES */}
 			<div className={section}>
@@ -455,6 +520,7 @@ export default function Metadata({ client }: { client: string }) {
 						<motion.div className='px-5 pb-5'>
 							<textarea
 								className={`${input} h-50`}
+								disabled={hasWrite}
 								value={metadata.notes ?? ''}
 								onChange={(e) =>
 									setMetadata({

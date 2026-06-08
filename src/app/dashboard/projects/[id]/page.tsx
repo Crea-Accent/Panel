@@ -24,6 +24,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 	const [settings, setSettings] = useState<Settings | null>(null);
 	const [tab, setTab] = useState<Tab>('info');
 	const [loading, setLoading] = useState(true);
+	const [shareAccess, setShareAccess] = useState(false);
 
 	useEffect(() => {
 		(async () => {
@@ -35,6 +36,17 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
 			if (s?.path) {
 				await fetch(`/api/files?view=${encodeURIComponent(`${s.path}/${id}`)}`);
+			}
+
+			const code = new URL(window.location.href).searchParams.get('code');
+
+			if (code) {
+				const res = await fetch(`/api/projects/metadata?client=${encodeURIComponent(id)}&reveal=true`);
+				const data = await res.json();
+
+				const shareCode = data.shareCode;
+
+				setShareAccess(shareCode == code);
 			}
 
 			setLoading(false);
@@ -56,7 +68,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 	] as const;
 
 	return (
-		<NotPermitted permission='projects.read'>
+		<NotPermitted permission='projects.read' shareAccess={shareAccess}>
 			<div className='space-y-6'>
 				{/* Header */}
 

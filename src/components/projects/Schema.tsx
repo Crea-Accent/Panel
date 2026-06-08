@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Download, File, FileText, Upload } from 'lucide
 import { useEffect, useRef, useState } from 'react';
 
 import { FaFilePdf } from 'react-icons/fa6';
+import { usePermissions } from '@/providers/PermissionsProvider';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -22,6 +23,9 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(true);
 	const inputRef = useRef<HTMLInputElement | null>(null);
+	const { has } = usePermissions();
+
+	const hasWrite = has('projects.write');
 
 	const load = async () => {
 		setLoading(true);
@@ -130,14 +134,16 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 					{open && (
 						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className='px-5 pb-5 space-y-4'>
 							<div className='flex justify-end'>
-								<button
-									onClick={() => inputRef.current?.click()}
-									disabled={uploading}
-									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
+								{hasWrite && (
+									<button
+										onClick={() => inputRef.current?.click()}
+										disabled={uploading}
+										className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
 										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}`}>
-									<Upload className='w-4 h-4' />
-									{uploading ? 'Uploading…' : 'Upload'}
-								</button>
+										<Upload className='w-4 h-4' />
+										{uploading ? 'Uploading…' : 'Upload'}
+									</button>
+								)}
 							</div>
 
 							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading schemas…</div>}

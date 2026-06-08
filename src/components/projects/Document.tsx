@@ -6,6 +6,7 @@ import { ChevronDown, ChevronUp, Download, File, Upload } from 'lucide-react';
 import { FaFileExcel, FaFilePdf, FaFileWord } from 'react-icons/fa6';
 import { useEffect, useRef, useState } from 'react';
 
+import { usePermissions } from '@/providers/PermissionsProvider';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -22,6 +23,9 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 	const [loading, setLoading] = useState(true);
 	const [open, setOpen] = useState(true);
 	const inputRef = useRef<HTMLInputElement | null>(null);
+	const { has } = usePermissions();
+
+	const hasWrite = has('projects.write');
 
 	const load = async () => {
 		setLoading(true);
@@ -135,17 +139,19 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 					{open && (
 						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className='px-5 pb-5 space-y-4'>
 							<div className='flex justify-end'>
-								<button
-									onClick={() => inputRef.current?.click()}
-									disabled={uploading}
-									className={`
+								{hasWrite && (
+									<button
+										onClick={() => inputRef.current?.click()}
+										disabled={uploading}
+										className={`
 										h-10 px-4 flex items-center gap-2 rounded-xl
 										text-sm font-medium transition-colors
 										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}
 									`}>
-									<Upload className='w-4 h-4' />
-									{uploading ? 'Uploading…' : 'Upload'}
-								</button>
+										<Upload className='w-4 h-4' />
+										{uploading ? 'Uploading…' : 'Upload'}
+									</button>
+								)}
 							</div>
 
 							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading documents…</div>}

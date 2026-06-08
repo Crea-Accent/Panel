@@ -10,6 +10,7 @@ import { DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/co
 import { useEffect, useRef, useState } from 'react';
 
 import Image from 'next/image';
+import { usePermissions } from '@/providers/PermissionsProvider';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -68,6 +69,9 @@ function DroppableFolder({ id, children, enabled }: { id: string; children: Reac
 }
 
 export default function Pictures({ basePath, client }: { basePath: string; client: string }) {
+	const { has } = usePermissions();
+
+	const hasWrite = has('projects.write');
 	const { uploading, uploadFile } = useUpload();
 
 	const [groups, setGroups] = useState<FolderGroup[]>([]);
@@ -286,10 +290,12 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 		<>
 			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6'>
 				<div className='flex justify-between'>
-					<button onClick={() => inputRef.current?.click()} disabled={uploading} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white'>
-						<Upload className='w-4 h-4' />
-						Upload
-					</button>
+					{hasWrite && (
+						<button onClick={() => inputRef.current?.click()} disabled={uploading} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white'>
+							<Upload className='w-4 h-4' />
+							Upload
+						</button>
+					)}
 				</div>
 
 				{loading && <div className='text-sm text-gray-500'>Loading images...</div>}

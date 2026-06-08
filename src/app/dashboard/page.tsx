@@ -9,6 +9,7 @@ import EnergyCard from '@/components/EnergyCard';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { useSession } from 'next-auth/react';
 
 type FileEntry = {
 	path: string;
