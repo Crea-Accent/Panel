@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { ChevronDown, Code, File, FileText, Folder, Image as ImageIcon } from 'lucide-react';
+import { ChevronDown, Code, File, FileText, Folder, Image as ImageIcon, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import Documents from '@/components/projects/Document';
@@ -10,9 +10,10 @@ import { NotPermitted } from '@/providers/PermissionsProvider';
 import Pictures from '@/components/projects/Picture';
 import Programmation from '@/components/projects/Programmation';
 import Schemas from '@/components/projects/Schema';
+import Solar from '@/components/projects/Solar';
 import { motion } from 'framer-motion';
 
-type Tab = 'info' | 'schemas' | 'documents' | 'programmation' | 'pictures';
+type Tab = 'info' | 'schemas' | 'documents' | 'programmation' | 'pictures' | 'solar';
 
 type Settings = {
 	path: string;
@@ -61,6 +62,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
 	const tabs = [
 		{ key: 'info', label: 'Info', icon: Folder },
+		{ key: 'solar', label: 'Solar', icon: Sun },
 		{ key: 'schemas', label: 'Schemas', icon: FileText },
 		{ key: 'documents', label: 'Documents', icon: File },
 		{ key: 'programmation', label: 'Programmation', icon: Code },
@@ -157,6 +159,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
 				<motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
 					{tab === 'info' && <Metadata client={client} />}
+					{tab === 'solar' && <Solar client={client} />}
 					{tab === 'schemas' && <Schemas basePath={settings.path} client={client} />}
 					{tab === 'documents' && <Documents basePath={settings.path} client={client} />}
 					{tab === 'programmation' && <Programmation basePath={settings.path} client={client} />}

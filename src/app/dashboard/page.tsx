@@ -1,15 +1,18 @@
 /** @format */
 'use client';
 
-import { Clock, FolderKanban, Search, TrendingUp } from 'lucide-react';
+import { APIProvider, AdvancedMarker, ColorScheme, Map } from '@vis.gl/react-google-maps';
+import { Clock, FolderKanban, MapPin, Search, TrendingUp } from 'lucide-react';
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 
+import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import EnergyCard from '@/components/EnergyCard';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
+import Modal from '@/components/ui/Modal';
 import { motion } from 'framer-motion';
-import { useSession } from 'next-auth/react';
+import { useTheme } from '@/providers/ThemeProvider';
 
 type FileEntry = {
 	path: string;
@@ -24,13 +27,29 @@ type Settings = {
 	requiredFolders: string[];
 };
 
+type ProjectMapEntry = {
+	name: string;
+	label: string | null;
+	color: string;
+	lat: number;
+	lng: number;
+	contacts: number;
+	updatedAt: string | null;
+	panels: number | null;
+	yield: number | null;
+};
+
 export default function Home() {
+	const searchRef = useRef<HTMLInputElement | null>(null);
+	const { resolvedTheme } = useTheme();
+
 	const [settings, setSettings] = useState<Settings | null>(null);
 	const [projects, setProjects] = useState<FileEntry[]>([]);
+	const [mapProjects, setMapProjects] = useState<ProjectMapEntry[]>([]);
 	const [query, setQuery] = useState('');
 	const [loading, setLoading] = useState(true);
 	const [recentOpened, setRecentOpened] = useState<string[]>([]);
-	const searchRef = useRef<HTMLInputElement | null>(null);
+	const [selectedProject, setSelectedProject] = useState<ProjectMapEntry | null>(null);
 
 	useEffect(() => {
 		(async () => {
@@ -47,6 +66,10 @@ export default function Home() {
 				const data: FileEntry[] = await res.json();
 
 				setProjects(data.filter((f) => f.type === 'directory'));
+
+				const mapData = await fetch('/api/projects/map').then((r) => r.json());
+
+				setMapProjects(mapData);
 			} finally {
 				setLoading(false);
 			}
@@ -144,6 +167,125 @@ export default function Home() {
 				<StatCard icon={<TrendingUp size={18} />} label='Updated last 7 days' value={loading ? '—' : updatedLast7Days} />
 				<EnergyCard />
 			</section>
+
+			<Card className='overflow-hidden'>
+				<div className='p-6 border-b border-zinc-200 dark:border-zinc-800'>
+					<h2 className='text-base font-semibold flex items-center gap-2'>
+						<MapPin size={16} className='text-(--accent)' />
+						Installation Map
+					</h2>
+
+					<p className='text-sm text-zinc-500 mt-1'>{mapProjects.length} projects with locations</p>
+				</div>
+
+				<div style={{ height: 500 }}>
+					<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+						<Map
+							mapId={'map'}
+							colorScheme={(resolvedTheme.toUpperCase() as ColorScheme) ?? 'DARK'}
+							defaultCenter={{
+								lat: 50.85,
+								lng: 4.35,
+							}}
+							defaultZoom={8}
+							gestureHandling='greedy'
+							style={{
+								width: '100%',
+								height: '100%',
+							}}>
+							{mapProjects.map((project) => (
+								<AdvancedMarker
+									key={project.name}
+									position={{
+										lat: project.lat,
+										lng: project.lng,
+									}}>
+									<div onClick={() => setSelectedProject(project)} className='relative cursor-pointer'>
+										{/* Pulse */}
+										<div
+											className='absolute animate-ping'
+											style={{
+												width: 28,
+												height: 28,
+												left: -4,
+												top: -4,
+												background: project.color,
+												borderRadius: '999px',
+												opacity: 0.25,
+											}}
+										/>
+
+										{/* Pin */}
+										<div
+											className='flex items-center justify-center text-white text-[9px] font-bold select-none'
+											style={{
+												width: 24,
+												height: 24,
+												background: project.color,
+												borderRadius: '50% 50% 50% 0',
+												transform: 'rotate(-45deg)',
+												border: '2px solid white',
+												boxShadow: '0 4px 12px rgba(0,0,0,0.35)',
+											}}>
+											<span
+												style={{
+													transform: 'rotate(45deg)',
+												}}>
+												{project.name
+													.replace(/[^a-zA-Z0-9]/g, '')
+													.substring(0, 2)
+													.toUpperCase()}
+											</span>
+										</div>
+									</div>
+								</AdvancedMarker>
+							))}
+						</Map>
+					</APIProvider>
+				</div>
+			</Card>
+
+			<Modal
+				open={!!selectedProject}
+				title={selectedProject?.name ?? 'Project'}
+				onClose={() => setSelectedProject(null)}
+				size='md'
+				footer={
+					selectedProject && (
+						<Link href={`/dashboard/projects/${encodeURIComponent(selectedProject.name)}`}>
+							<Button>Open Project</Button>
+						</Link>
+					)
+				}>
+				{selectedProject && (
+					<div className='space-y-4'>
+						<div className='flex items-center gap-3'>
+							<div
+								style={{
+									width: 14,
+									height: 14,
+									borderRadius: 999,
+									background: selectedProject.color,
+								}}
+							/>
+
+							<div>
+								<div className='font-medium'>{selectedProject.label ?? 'No Label'}</div>
+
+								<div className='text-sm text-zinc-500'>Project Status</div>
+							</div>
+						</div>
+
+						{selectedProject.updatedAt && (
+							<div>
+								<div className='text-sm text-zinc-500'>Last Updated</div>
+
+								<div>{new Date(selectedProject.updatedAt).toLocaleDateString()}</div>
+							</div>
+						)}
+					</div>
+				)}
+			</Modal>
 
 			{recentProjectsResolved.length > 0 && (
 				<Card className='p-6 space-y-4'>

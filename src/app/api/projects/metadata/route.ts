@@ -52,34 +52,27 @@ function metadataPath(folder: string) {
 
 /* ================= LOGIN PROCESS ================= */
 
-function processLogins(existing: any, incoming: any) {
-	const result: any = { company: [], client: [] };
+function processLogins(existing: any[] = [], incoming: any[] = []) {
+	return incoming.map((current) => {
+		const old = existing.find((x) => x.id === current.id);
 
-	for (const type of ['company', 'client']) {
-		const prev = existing[type] ?? [];
-		const next = incoming?.[type] ?? prev;
+		let passwordEncrypted = old?.passwordEncrypted;
 
-		result[type] = next.map((current: any, i: number) => {
-			const old = prev[i];
+		if (current.password === '') {
+			passwordEncrypted = undefined;
+		} else if (current.password) {
+			passwordEncrypted = encrypt(current.password);
+		}
 
-			let passwordEncrypted = old?.passwordEncrypted;
-
-			if (current.password === '') {
-				passwordEncrypted = undefined;
-			} else if (current.password) {
-				passwordEncrypted = encrypt(current.password);
-			}
-
-			return {
-				label: current.label ?? '',
-				link: current.link ?? '',
-				username: current.username ?? '',
-				passwordEncrypted,
-			};
-		});
-	}
-
-	return result;
+		return {
+			id: current.id,
+			label: current.label ?? '',
+			link: current.link ?? '',
+			username: current.username ?? '',
+			visibleToClient: current.visibleToClient ?? false,
+			passwordEncrypted,
+		};
+	});
 }
 
 /* ================= GET ================= */
@@ -94,18 +87,31 @@ export async function GET(req: NextRequest) {
 
 	const data = JSON.parse(fs.readFileSync(file, 'utf8'));
 
-	if (reveal) {
-		for (const type of ['company', 'client']) {
-			for (const login of data.logins[type]) {
-				if (login.passwordEncrypted) {
-					login.password = decrypt(login.passwordEncrypted);
-				}
+	if (data.logins && !Array.isArray(data.logins)) {
+		data.logins = [
+			...(data.logins.company ?? []).map((login: any) => ({
+				...login,
+				id: crypto.randomUUID(),
+				visibleToClient: false,
+			})),
+			...(data.logins.client ?? []).map((login: any) => ({
+				...login,
+				id: crypto.randomUUID(),
+				visibleToClient: true,
+			})),
+		];
+	}
+
+	if (reveal && Array.isArray(data.logins)) {
+		for (const login of data.logins) {
+			if (login.passwordEncrypted) {
+				login.password = decrypt(login.passwordEncrypted);
 			}
 		}
 	}
 
-	for (const type of ['company', 'client']) {
-		for (const login of data.logins[type]) {
+	if (Array.isArray(data.logins)) {
+		for (const login of data.logins) {
 			delete login.passwordEncrypted;
 		}
 	}
@@ -143,7 +149,7 @@ export async function PATCH(req: NextRequest) {
 	const updated = {
 		...existing,
 		...data,
-		logins: processLogins(existing.logins, data.logins),
+		logins: processLogins(Array.isArray(existing.logins) ? existing.logins : [], data.logins ?? []),
 		updatedAt: new Date().toISOString(),
 	};
 
