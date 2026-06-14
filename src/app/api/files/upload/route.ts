@@ -43,15 +43,17 @@ function getInitials(name?: string | null) {
 		.join('');
 }
 
-function resolveUniquePath(dir: string, project: string, stamp: string, initials: string, ext = '') {
+function resolveUniquePath(dir: string, baseName: string, ext = '') {
 	let index = 0;
 
 	while (true) {
-		const name = index === 0 ? `${project} ${stamp} ${initials}${ext}` : `${project} ${stamp}_${index} ${initials}${ext}`;
+		const name = index === 0 ? `${baseName}${ext}` : `${baseName}_${index}${ext}`;
 
 		const full = path.join(dir, name);
 
-		if (!fs.existsSync(full)) return full;
+		if (!fs.existsSync(full)) {
+			return full;
+		}
 
 		index++;
 	}
@@ -110,6 +112,11 @@ export async function POST(request: NextRequest) {
 	const file = formData.get('file') as File | null;
 	const rawClient = formData.get('client') as string | null;
 	const kind = formData.get('kind') as string | null;
+	const customName = (formData.get('name') as string | null)?.trim() ?? '';
+
+	const comment = (formData.get('comment') as string | null)?.trim() ?? '';
+
+	const collaborators = formData.getAll('collaborators').map(String).filter(Boolean);
 
 	if (!file || !rawClient || !kind) {
 		return NextResponse.json({ error: 'Missing file, client or kind' }, { status: 400 });
@@ -123,33 +130,39 @@ export async function POST(request: NextRequest) {
 
 	const buffer = Buffer.from(await file.arrayBuffer());
 	const stamp = formatDate(settings.dateFormat);
-	const initials = getInitials(session.user.name);
-	const projectName = path.basename(client);
+
+	const uploader = getInitials(session.user.name);
 
 	const ext = path.extname(file.name).toLowerCase();
 
+	const sanitize = (value: string) => value.replace(/[<>:"/\\|?*]/g, '').trim();
+
+	const baseName = [sanitize(customName || path.basename(file.name, ext)), stamp, ...collaborators.map(sanitize), sanitize(uploader), sanitize(comment).replace(/\s+/g, '__')]
+		.filter(Boolean)
+		.join('__');
+
 	if (kind === 'programmation' && ext === '.zip') {
-		const uniqueDir = resolveUniquePath(targetDir, projectName, stamp, initials);
+		const uniquePath = resolveUniquePath(targetDir, baseName, ext);
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-programmation-'));
 
 		try {
-			fs.mkdirSync(uniqueDir, { recursive: true });
+			fs.mkdirSync(uniquePath, { recursive: true });
 
 			const zip = new AdmZip(buffer);
 			zip.extractAllTo(tempDir, true);
 
-			copyDirectoryRecursive(tempDir, uniqueDir);
+			copyDirectoryRecursive(tempDir, uniquePath);
 
 			return NextResponse.json({
 				ok: true,
-				savedAs: uniqueDir,
-				name: path.basename(uniqueDir),
+				savedAs: uniquePath,
+				name: path.basename(uniquePath),
 				kind,
 			});
 		} catch (error) {
 			console.error('ZIP extraction failed:', error);
 			console.error('Temporary extraction folder:', tempDir);
-			console.error('Final target folder:', uniqueDir);
+			console.error('Final target folder:', uniquePath);
 
 			return NextResponse.json(
 				{
@@ -167,7 +180,7 @@ export async function POST(request: NextRequest) {
 		}
 	}
 
-	const uniquePath = resolveUniquePath(targetDir, projectName, stamp, initials, ext);
+	const uniquePath = resolveUniquePath(targetDir, baseName, ext);
 
 	try {
 		fs.writeFileSync(uniquePath, buffer);

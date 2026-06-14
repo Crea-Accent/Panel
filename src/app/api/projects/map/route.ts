@@ -40,29 +40,31 @@ export async function GET() {
 					const lat = metadata?.address?.lat;
 					const lng = metadata?.address?.lng;
 
-					if (typeof lat !== 'number' || typeof lng !== 'number' || lat === 0 || lng === 0) {
-						return null;
-					}
+					const hasLocation = typeof lat === 'number' && typeof lng === 'number' && lat !== 0 && lng !== 0;
 
 					const label = labels.find((x: any) => x.name === metadata.label);
 
 					return {
 						name: folder.name,
+						path: `${settings.path}/${folder.name}`,
+						type: 'directory',
 
 						label: metadata.label ?? null,
-
 						color: label?.color ?? '#6b7280',
 
-						lat,
-						lng,
+						address: metadata.address ?? null,
 
-						updatedAt: metadata.updatedAt ?? null,
+						updatedAt: metadata.updatedAt ?? fs.statSync(path.join(basePath, folder.name)).mtime.toISOString(),
 
 						contacts: metadata.contacts?.length ?? 0,
 
 						panels: metadata.solar?.recommended?.panelsCount ?? metadata.solar?.maximum?.panelsCount ?? null,
 
 						yield: metadata.solar?.recommended?.yearlyEnergyDcKwh ?? metadata.solar?.maximum?.yearlyEnergyDcKwh ?? null,
+
+						hasLocation,
+						lat: hasLocation ? lat : null,
+						lng: hasLocation ? lng : null,
 					};
 				} catch (error) {
 					console.error(`Failed to load ${folder.name}`, error);

@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ChevronDown, ChevronUp, Folder } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 import Login, { LoginEntry } from './metadata/Login';
 import { useEffect, useState } from 'react';
 
@@ -49,9 +49,24 @@ export type MetadataType = {
 	};
 };
 
-export default function Metadata({ client }: { client: string }) {
+type MetadataActions = {
+	save: () => Promise<void>;
+	share: () => Promise<void>;
+	hasChanges: boolean;
+	saving: boolean;
+	saved: boolean;
+	label: string;
+	setLabel: (label: string) => void;
+	labels: Label[];
+};
+
+type Props = {
+	client: string;
+	onActionsChange?: (actions: MetadataActions) => void;
+};
+
+export default function Metadata({ client, onActionsChange }: Props) {
 	const { has } = usePermissions();
-	const { data: session } = useSession();
 
 	const hasWrite = !has('projects.write');
 
@@ -104,6 +119,27 @@ export default function Metadata({ client }: { client: string }) {
 	const hasChanges = JSON.stringify(normalize(metadata)) !== JSON.stringify(normalize(initialMetadata));
 
 	useEffect(() => {
+		if (!metadata) {
+			return;
+		}
+
+		onActionsChange?.({
+			save,
+			share,
+			hasChanges,
+			saving,
+			saved,
+			label: metadata.label ?? '',
+			setLabel: (label: string) =>
+				setMetadata((prev) => ({
+					...prev!,
+					label,
+				})),
+			labels,
+		});
+	}, [onActionsChange, hasChanges, saving, saved, metadata, labels]);
+
+	useEffect(() => {
 		(async () => {
 			const res = await fetch(`/api/projects/metadata?client=${encodeURIComponent(client)}&reveal=true`);
 			const data = await res.json();
@@ -143,6 +179,24 @@ export default function Metadata({ client }: { client: string }) {
 	/* ---------- STYLES ---------- */
 
 	const section = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6';
+
+	const collapseAnimation = {
+		initial: {
+			height: 0,
+			opacity: 0,
+		},
+		animate: {
+			height: 'auto',
+			opacity: 1,
+		},
+		exit: {
+			height: 0,
+			opacity: 0,
+		},
+		transition: {
+			duration: 0.15,
+		},
+	};
 
 	/* ---------- LOGIC ---------- */
 
@@ -191,83 +245,54 @@ export default function Metadata({ client }: { client: string }) {
 
 	return (
 		<section className='space-y-6'>
-			<header className='flex items-center justify-between gap-4 flex-wrap'>
-				<div className='flex items-center gap-3 min-w-0'>
-					<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
-						<Folder size={16} className='text-(--accent)' />
-					</div>
-
-					<div className='min-w-0'>
-						<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100 truncate'>Project Information</h2>
-						<p className='text-xs text-zinc-500 dark:text-zinc-400'>Last updated: {metadata.updatedAt ? new Date(metadata.updatedAt).toLocaleString() : '—'}</p>
-					</div>
-				</div>
-
-				<div className='flex items-center gap-2 flex-wrap justify-end'>
-					{/* LABEL SELECTOR */}
-					<div className='flex items-center gap-2'>
-						<select
-							value={metadata.label ?? ''}
-							disabled={hasWrite}
-							onChange={(e) =>
-								setMetadata({
-									...metadata,
-									label: e.target.value,
-								})
-							}
-							className='
-					h-9 px-3 rounded-lg text-sm
-					bg-white dark:bg-zinc-900
-					border border-zinc-200 dark:border-zinc-800
-					text-zinc-900 dark:text-zinc-100
-					focus:outline-none
-					focus:ring-2 focus:ring-(--accent)/30
-				'>
-							<option value=''>No status</option>
-							{labels.map((l) => (
-								<option key={l.name} value={l.name}>
-									{l.name}
-								</option>
-							))}
-						</select>
-					</div>
-					{session && (
-						<>
-							{/* SAVE BUTTON */}
-							<Button onClick={save} disabled={!hasChanges || (saving && hasWrite)}>
-								{saving ? 'Saving…' : saved ? <Check size={16} /> : 'Save'}
-							</Button>
-
-							<Button onClick={share}>{copied ? 'Copied share URL' : 'Share'}</Button>
-						</>
-					)}
-				</div>
-			</header>
-
 			<div className={section}>
-				<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={['places']}>
-					<Address
-						value={metadata.address}
-						onChange={(address) =>
-							setMetadata({
-								...metadata,
-								address,
-							})
-						}
-					/>
-				</APIProvider>
+				<Button onClick={() => toggleSection('address')} className='w-full text-left justify-start' variant='secondary'>
+					<span>Address</span>
+
+					{openSections.includes('address') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+				</Button>
+
+				<AnimatePresence initial={false}>
+					{openSections.includes('address') && (
+						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
+							<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={['places']}>
+								<Address
+									value={metadata.address}
+									onChange={(address) =>
+										setMetadata({
+											...metadata,
+											address,
+										})
+									}
+								/>
+							</APIProvider>
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</div>
 
 			<div className={section}>
-				<Contact
-					contacts={metadata.contacts ?? []}
-					onChange={(contacts) =>
-						setMetadata({
-							...metadata,
-							contacts,
-						})
-					}
-				/>
+				<Button onClick={() => toggleSection('contact')} className='w-full text-left justify-start' variant='secondary'>
+					<span>Contact</span>
+
+					{openSections.includes('contact') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+				</Button>
+
+				<AnimatePresence initial={false}>
+					{openSections.includes('contact') && (
+						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
+							<Contact
+								contacts={metadata.contacts ?? []}
+								onChange={(contacts) =>
+									setMetadata({
+										...metadata,
+										contacts,
+									})
+								}
+							/>
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</div>
 
 			{/* LOGINS */}
@@ -278,22 +303,9 @@ export default function Metadata({ client }: { client: string }) {
 					{openSections.includes('logins') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
 				</Button>
 
-				<AnimatePresence>
+				<AnimatePresence initial={false}>
 					{openSections.includes('logins') && (
-						<motion.div
-							initial={{
-								height: 0,
-								opacity: 0,
-							}}
-							animate={{
-								height: 'auto',
-								opacity: 1,
-							}}
-							exit={{
-								height: 0,
-								opacity: 0,
-							}}
-							className='pt-5 overflow-hidden'>
+						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
 							<Login
 								value={metadata.logins ?? []}
 								onChange={(logins) =>
@@ -312,12 +324,13 @@ export default function Metadata({ client }: { client: string }) {
 				<div className={section}>
 					<Button onClick={() => toggleSection('access')} className='w-full text-left justify-start' variant='secondary'>
 						<span>Access</span>
+
 						{openSections.includes('access') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
 					</Button>
 
-					<AnimatePresence>
+					<AnimatePresence initial={false}>
 						{openSections.includes('access') && (
-							<motion.div className='pt-5'>
+							<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
 								<Access
 									users={users}
 									value={(metadata as any).access ?? []}
@@ -338,12 +351,13 @@ export default function Metadata({ client }: { client: string }) {
 			<div className={section}>
 				<Button onClick={() => toggleSection('notes')} className='w-full text-left justify-start' variant='secondary'>
 					<span>Notes</span>
+
 					{openSections.includes('notes') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
 				</Button>
 
-				<AnimatePresence>
+				<AnimatePresence initial={false}>
 					{openSections.includes('notes') && (
-						<motion.div className='pt-5'>
+						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
 							<textarea
 								className={'w-full'}
 								disabled={hasWrite}

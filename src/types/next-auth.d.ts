@@ -2,23 +2,34 @@
 
 import { DefaultSession } from 'next-auth';
 import { JWT as DefaultJWT } from 'next-auth/jwt';
+export type Role = {
+	id: string;
+	name: string;
+	defaultPermissions: string[];
+};
 
+export type Theme = 'light' | 'dark' | 'system';
+
+export type BaseUser = {
+	id: string;
+	name: string;
+	email: string;
+	passwordHash?: string;
+	roleId?: string;
+	permissions?: string[];
+	theme?: Theme;
+	projects?: string[];
+	preferences?: {
+		projectPrompts?: boolean;
+		defaultView?: 'list' | 'grid';
+	};
+};
 declare module 'next-auth' {
 	interface Session {
-		user: {
-			roleId?: string;
-			permissions?: string[];
-			theme?: 'light' | 'dark' | 'system';
-			projects: string[];
-		} & DefaultSession['user'];
+		user: BaseUser & DefaultSession['user'];
 	}
 
-	interface User {
-		roleId?: string;
-		permissions?: string[];
-		theme?: 'light' | 'dark' | 'system';
-		projects: string[];
-	}
+	interface User extends BaseUser {}
 }
 
 declare module 'next-auth/jwt' {
@@ -27,5 +38,9 @@ declare module 'next-auth/jwt' {
 		permissions?: string[];
 		theme?: 'light' | 'dark' | 'system';
 		projects: string[];
+		preferences: {
+			projectPrompts?: boolean;
+			defaultView?: 'list' | 'grid';
+		};
 	}
 }

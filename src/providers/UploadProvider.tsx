@@ -5,11 +5,16 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { createContext, useContext, useState } from 'react';
 
 type Toast = { type: 'success'; message: string } | { type: 'error'; message: string } | null;
-
+type UploadMetadata = {
+	name?: string;
+	comment?: string;
+	collaborators?: string[];
+};
 type UploadContextType = {
 	uploading: boolean;
 	progress: number;
-	uploadFile: (file: File, client: string, kind: 'picture' | 'schema' | 'programmation' | 'documents') => Promise<boolean>;
+
+	uploadFile: (file: File, client: string, kind: 'picture' | 'schema' | 'programmation' | 'documents', metadata?: UploadMetadata) => Promise<boolean>;
 };
 
 const UploadContext = createContext<UploadContextType | null>(null);
@@ -19,7 +24,7 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
 	const [progress, setProgress] = useState(0);
 	const [toast, setToast] = useState<Toast>(null);
 
-	async function uploadFile(file: File, client: string, kind: 'picture' | 'schema' | 'programmation' | 'documents'): Promise<boolean> {
+	async function uploadFile(file: File, client: string, kind: 'picture' | 'schema' | 'programmation' | 'documents', metadata?: UploadMetadata): Promise<boolean> {
 		setUploading(true);
 		setProgress(0);
 
@@ -66,9 +71,22 @@ export function UploadProvider({ children }: { children: React.ReactNode }) {
 			};
 
 			const formData = new FormData();
+
 			formData.append('file', file);
 			formData.append('client', encodeURIComponent(client));
 			formData.append('kind', kind);
+
+			if (metadata?.name) {
+				formData.append('name', metadata.name);
+			}
+
+			if (metadata?.comment) {
+				formData.append('comment', metadata.comment);
+			}
+
+			for (const collaborator of metadata?.collaborators ?? []) {
+				formData.append('collaborators', collaborator);
+			}
 
 			xhr.send(formData);
 		});

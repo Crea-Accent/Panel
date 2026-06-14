@@ -6,6 +6,7 @@ import Header from '@/components/Header';
 import { LocalProvider } from '@/providers/LocalProvider';
 import type { Metadata } from 'next';
 import { PermissionsProvider } from '@/providers/PermissionsProvider';
+import { ProjectPromptProvider } from '@/providers/ProjectPromptProvider';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { SidebarProvider } from '@/providers/SidebarProvider';
 import { ThemeProvider } from '@/providers/ThemeProvider';
@@ -42,18 +43,20 @@ export default async function RootLayout({
 				'>
 				<SessionProvider>
 					<ThemeProvider sessionTheme={session?.user?.theme}>
-						<LocalProvider>
-							<UploadProvider>
-								<PermissionsProvider>
-									<SidebarProvider>
-										<div className='min-h-screen flex flex-col'>
-											<Header />
-											{children}
-										</div>
-									</SidebarProvider>
-								</PermissionsProvider>
-							</UploadProvider>
-						</LocalProvider>
+						<PermissionsProvider>
+							<LocalProvider>
+								<ProjectPromptProvider>
+									<UploadProvider>
+										<SidebarProvider>
+											<div className='min-h-screen flex flex-col'>
+												<Header />
+												{children}
+											</div>
+										</SidebarProvider>
+									</UploadProvider>
+								</ProjectPromptProvider>
+							</LocalProvider>
+						</PermissionsProvider>
 					</ThemeProvider>
 				</SessionProvider>
 			</body>

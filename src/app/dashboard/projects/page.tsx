@@ -11,9 +11,12 @@ import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
 import Modal from '@/components/ui/Modal';
+import MultiSelector from '@/components/ui/MultiSelector';
 import PageHeader from '@/components/ui/PageHeader';
+import ViewToggle from '@/components/ui/ViewToggle';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 
 type LabelSetting = {
 	name: string;
@@ -44,6 +47,7 @@ type Settings = {
 type SortKey = 'name' | 'updated';
 
 export default function Page() {
+	const { data: session } = useSession();
 	const { has, loading } = usePermissions();
 	const router = useRouter();
 
@@ -58,45 +62,24 @@ export default function Page() {
 	const [renameTarget, setRenameTarget] = useState('');
 
 	const [query, setQuery] = useState('');
-	const [labelFilter, setLabelFilter] = useState('');
+	const [labelFilters, setLabelFilters] = useState<string[]>([]);
+	const [view, setView] = useState<'grid' | 'list'>(session?.user?.preferences?.defaultView ?? 'list');
 
 	const [sortKey, setSortKey] = useState<SortKey>('name');
 	const [sortAsc, setSortAsc] = useState(true);
 
 	useEffect(() => {
 		async function load() {
-			const s = await fetch('/api/settings/projects').then((r) => r.json());
-			setSettings(s);
+			const [settings, projects] = await Promise.all([fetch('/api/settings/projects').then((r) => r.json()), fetch('/api/projects/map').then((r) => r.json())]);
 
-			if (!s?.path) return;
+			setSettings(settings);
+			setProjects(projects);
 
-			const res = await fetch(`/api/files?view=${encodeURIComponent(s.path)}`);
-			const data = await res.json();
-
-			const foldersOnly = data.filter((f: Project) => f.type === 'directory');
-
-			const withMetadata = await Promise.all(
-				foldersOnly.map(async (p: Project) => {
-					try {
-						const meta = await fetch(`/api/projects/metadata?client=${encodeURIComponent(p.name)}`).then((r) => r.json());
-
-						return {
-							...p,
-							label: meta?.label,
-							updatedAt: meta?.updatedAt,
-							address: meta?.address,
-						};
-					} catch {
-						return p;
-					}
-				})
-			);
-
-			setProjects(withMetadata);
+			if (session) setView(session?.user?.preferences?.defaultView ?? 'list');
 		}
 
 		load();
-	}, []);
+	}, [session]);
 
 	function toggleSort(key: SortKey) {
 		if (sortKey === key) {
@@ -110,7 +93,6 @@ export default function Page() {
 	const filteredProjects = useMemo(() => {
 		let list = [...projects];
 
-		console.log(list);
 		const q = query.toLowerCase().trim();
 
 		list = list.filter((p) => {
@@ -123,7 +105,9 @@ export default function Page() {
 				!p.address?.city?.toLowerCase().includes(q)
 			)
 				return false;
-			if (labelFilter && p.label !== labelFilter) return false;
+			if (labelFilters.length > 0 && (!p.label || !labelFilters.includes(p.label))) {
+				return false;
+			}
 			return true;
 		});
 
@@ -143,7 +127,7 @@ export default function Page() {
 		});
 
 		return list;
-	}, [projects, query, labelFilter, sortKey, sortAsc]);
+	}, [projects, query, labelFilters, sortKey, sortAsc]);
 
 	async function createProject() {
 		if (!settings?.path || !newProjectName.trim()) return;
@@ -225,97 +209,136 @@ export default function Page() {
 			<motion.div className='space-y-6'>
 				{/* Header */}
 
-				<PageHeader
-					icon={<Folder size={20} />}
-					title='Projects'
-					description='Browse and manage projects'
-					action={
-						has('projects.write') ? (
-							<Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
-								New Project
-							</Button>
-						) : undefined
-					}
-				/>
+				<PageHeader icon={<Folder size={20} />} title='Projects' description='Browse and manage projects' />
 
 				{/* Search + Filter */}
 
-				<div className='flex items-center gap-3 max-w-2xl'>
-					<div className='flex-1'>
+				<div className='flex flex-wrap items-center gap-3'>
+					{has('projects.write') && (
+						<Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
+							New Project
+						</Button>
+					)}
+
+					<div className='flex-1 min-w-75'>
 						<Input icon={<Search size={16} />} placeholder='Search projects...' value={query} onChange={(e) => setQuery(e.target.value)} />
 					</div>
 
-					<select value={labelFilter} onChange={(e) => setLabelFilter(e.target.value)} className='h-9 px-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 text-sm'>
-						<option value=''>All labels</option>
+					<div
+						className='flex overflow-hidden rounded-lg'
+						style={{
+							border: '1px solid var(--border)',
+						}}>
+						<ViewToggle value={view} onChange={setView} />
+					</div>
 
-						{settings?.labels?.map((l) => (
-							<option key={l.name} value={l.name}>
-								{l.name}
-							</option>
-						))}
-					</select>
+					<div className='flex flex-wrap gap-2'>
+						<MultiSelector
+							placeholder='All Labels'
+							value={labelFilters}
+							onChange={setLabelFilters}
+							options={
+								settings?.labels?.map((label) => ({
+									label: label.name,
+									value: label.name,
+									color: label.color,
+								})) || []
+							}
+						/>
+					</div>
 				</div>
 
 				{/* Table */}
 
 				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-					<Card className='overflow-hidden'>
-						<div className='grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
-							<button onClick={() => toggleSort('name')} className='text-left'>
-								Name
-							</button>
+					{view === 'list' ? (
+						<Card className='overflow-hidden'>
+							<div className='grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
+								<button onClick={() => toggleSort('name')} className='text-left'>
+									Name
+								</button>
 
-							<span className='text-center md:text-left'>Label</span>
+								<span className='text-center md:text-left'>Label</span>
 
-							<button onClick={() => toggleSort('updated')} className='hidden md:block text-left'>
-								Updated
-							</button>
+								<button onClick={() => toggleSort('updated')} className='hidden md:block text-left'>
+									Updated
+								</button>
 
-							<span className='text-right'>Actions</span>
-						</div>
+								<span className='text-right'>Actions</span>
+							</div>
 
-						{filteredProjects.map((p, index) => (
-							<motion.div
-								layout
-								key={p.path}
-								className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-11 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
-									index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
-								}`}>
-								<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
-									<Folder size={16} className='text-zinc-400' />
-									<span className='truncate font-medium'>{p.name}</span>
-								</Link>
+							{filteredProjects.map((p, index) => (
+								<motion.div
+									layout
+									key={p.path}
+									className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-14 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
+										index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
+									}`}>
+									<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
+										<div
+											className='w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-semibold shrink-0'
+											style={{
+												background: p.label ? labelColor(p.label) : '#6b7280',
+											}}>
+											{p.name.slice(0, 2).toUpperCase()}
+										</div>
+										<div className='min-w-0'>
+											<div className='truncate font-medium'>{p.name}</div>
 
-								{/* Label */}
-								<div className='flex justify-center md:justify-start'>
-									{p.label && (
-										<>
-											<span
-												className='w-2.5 h-2.5 rounded-full md:hidden'
-												style={{
-													backgroundColor: labelColor(p.label),
-												}}
-											/>
+											<div className='truncate text-xs text-zinc-500 h-4'>{p.address?.city || ''}</div>
+										</div>
+									</Link>
 
-											<div className='hidden md:block'>
-												<Badge color={labelColor(p.label)}>{p.label}</Badge>
+									{/* Label */}
+									<div className='flex justify-center md:justify-start'>
+										{p.label && (
+											<>
+												<span
+													className='w-2.5 h-2.5 rounded-full md:hidden'
+													style={{
+														backgroundColor: labelColor(p.label),
+													}}
+												/>
+
+												<div className='hidden md:block'>{p.label}</div>
+											</>
+										)}
+									</div>
+
+									{/* Updated */}
+									<div className='text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '—'}</div>
+									{/* Actions */}
+									<div className='flex justify-end gap-1'>
+										{p.address?.city && <Button size='sm' variant='ghost' icon={<MapPin size={16} />} onClick={() => openMaps(p)} />}
+
+										{has('projects.write') && <Button size='sm' variant='ghost' icon={<Pencil size={16} />} onClick={() => renameProject(p.name)} />}
+									</div>
+								</motion.div>
+							))}
+						</Card>
+					) : (
+						<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
+							{filteredProjects.map((p, i) => (
+								<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} key={i}>
+									<Card key={p.path} className='p-5 hover:shadow-lg transition min-h-40'>
+										<div className='flex items-start justify-between mb-4'>
+											<div>
+												<div className='font-semibold'>{p.name || ''}</div>
+
+												<div className='text-sm text-zinc-500'>{p.address?.city || ''}</div>
 											</div>
-										</>
-									)}
-								</div>
 
-								{/* Updated */}
-								<div className='hidden md:block text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : ''}</div>
+											{p.label ? <Badge color={labelColor(p.label)}>{p.label}</Badge> : <></>}
+										</div>
 
-								{/* Actions */}
-								<div className='flex justify-end gap-1'>
-									{p.address?.city && <Button size='sm' variant='ghost' icon={<MapPin size={16} />} onClick={() => openMaps(p)} />}
+										<div className='text-xs text-zinc-500 mb-4'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : 'No updates'}</div>
 
-									{has('projects.write') && <Button size='sm' variant='ghost' icon={<Pencil size={16} />} onClick={() => renameProject(p.name)} />}
-								</div>
-							</motion.div>
-						))}
-					</Card>
+										<div className='flex gap-2'>{p.address?.city && <Button size='sm' variant='secondary' icon={<MapPin size={14} />} onClick={() => openMaps(p)} />}</div>
+									</Card>
+								</Link>
+							))}
+						</div>
+					)}
 				</motion.div>
 			</motion.div>
 

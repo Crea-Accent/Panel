@@ -1,15 +1,18 @@
 /** @format */
 'use client';
 
-import { ChevronDown, Code, File, FileText, Folder, Image as ImageIcon, Sun } from 'lucide-react';
+import { Check, ChevronDown, Clipboard, ClipboardCheck, Code, File, FileText, Folder, Image as ImageIcon, Save, SaveOff, Share, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import Button from '@/components/ui/Button';
 import Documents from '@/components/projects/Document';
+import { FaFloppyDisk } from 'react-icons/fa6';
 import Metadata from '@/components/projects/Metadata';
 import { NotPermitted } from '@/providers/PermissionsProvider';
 import Pictures from '@/components/projects/Picture';
 import Programmation from '@/components/projects/Programmation';
 import Schemas from '@/components/projects/Schema';
+import Selector from '@/components/ui/Selector';
 import Solar from '@/components/projects/Solar';
 import { motion } from 'framer-motion';
 
@@ -20,12 +23,27 @@ type Settings = {
 	requiredFolders: string[];
 };
 
+type MetadataActions = {
+	save: () => Promise<void>;
+	share: () => Promise<void>;
+	hasChanges: boolean;
+	saving: boolean;
+	saved: boolean;
+	label: string;
+	setLabel: (label: string) => void;
+	labels: {
+		name: string;
+		color: string;
+	}[];
+};
+
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
-	const [client, setClient] = useState<string | null>(null);
 	const [settings, setSettings] = useState<Settings | null>(null);
+	const [client, setClient] = useState<string | null>(null);
 	const [tab, setTab] = useState<Tab>('info');
 	const [loading, setLoading] = useState(true);
 	const [shareAccess, setShareAccess] = useState(false);
+	const [metadataActions, setMetadataActions] = useState<MetadataActions | null>(null);
 
 	useEffect(() => {
 		(async () => {
@@ -33,21 +51,14 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 			setClient(id);
 
 			const s = await fetch('/api/settings/projects').then((r) => r.json());
-			setSettings(s);
+			const m = await fetch(`/api/projects/metadata?client=${encodeURIComponent(id)}&reveal=true`).then((r) => r.json());
 
-			if (s?.path) {
-				await fetch(`/api/files?view=${encodeURIComponent(`${s.path}/${id}`)}`);
-			}
+			setSettings(s);
 
 			const code = new URL(window.location.href).searchParams.get('code');
 
 			if (code) {
-				const res = await fetch(`/api/projects/metadata?client=${encodeURIComponent(id)}&reveal=true`);
-				const data = await res.json();
-
-				const shareCode = data.shareCode;
-
-				setShareAccess(shareCode == code);
+				setShareAccess(m.shareCode === code);
 			}
 
 			setLoading(false);
@@ -80,85 +91,81 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 					<p className='text-sm text-zinc-500 dark:text-zinc-400 mt-1'>Project dashboard</p>
 				</div>
 
-				{/* Mobile Dropdown */}
+				{/* Navigation + Actions */}
 
-				<div className='sm:hidden w-full'>
-					<div className='relative'>
-						<select
+				<div
+					className='
+		flex flex-col sm:flex-row
+		sm:items-center sm:justify-between
+		gap-2
+		bg-zinc-100 dark:bg-zinc-900
+		p-1
+		rounded-xl
+		border border-zinc-200 dark:border-zinc-800
+	'>
+					{/* Mobile Navigation */}
+
+					<div className='sm:hidden w-full'>
+						<Selector
+							className='w-full'
 							value={tab}
-							onChange={(e) => setTab(e.target.value as Tab)}
-							className='
-								w-full h-9
-								appearance-none
-								bg-white dark:bg-zinc-900
-								border border-zinc-200 dark:border-zinc-800
-								rounded-lg
-								px-3 pr-9
-								text-sm font-medium
-								text-zinc-900 dark:text-zinc-100
-								focus:outline-none
-								focus:ring-2 focus:ring-(--accent)/30
-								transition
-							'>
-							{tabs.map((t) => (
-								<option key={t.key} value={t.key}>
-									{t.label}
-								</option>
-							))}
-						</select>
-
-						<ChevronDown size={16} className='absolute right-3 top-1/2 -translate-y-1/2 text-zinc-400 pointer-events-none' />
+							options={tabs.map((t) => ({
+								label: t.label,
+								value: t.key,
+							}))}
+							onChange={(value) => setTab(value as Tab)}
+						/>
 					</div>
-				</div>
 
-				{/* Desktop Tabs */}
+					{/* Desktop Tabs */}
 
-				<div className='hidden sm:block'>
-					<div className='flex gap-1 bg-zinc-100 dark:bg-zinc-900 p-1 rounded-xl w-fit border border-zinc-200 dark:border-zinc-800'>
+					<div className='hidden sm:flex gap-1'>
 						{tabs.map((t) => {
 							const active = tab === t.key;
 							const Icon = t.icon;
 
 							return (
-								<button
-									key={t.key}
-									onClick={() => setTab(t.key)}
-									className={`
-										relative
-										h-9
-										px-4
-										rounded-lg
-										text-sm font-medium
-										flex items-center gap-2
-										transition-colors
-										${active ? 'text-zinc-900 dark:text-zinc-100' : 'text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'}
-									`}>
-									{active && (
-										<motion.div
-											layoutId='project-tab'
-											className='absolute inset-0 bg-white dark:bg-zinc-800 rounded-lg shadow-sm'
-											transition={{
-												type: 'spring',
-												stiffness: 350,
-												damping: 30,
-											}}
-										/>
-									)}
-
-									<span className='relative z-10 flex items-center gap-2'>
-										<Icon size={16} />
-										{t.label}
-									</span>
-								</button>
+								<Button key={t.key} icon={<Icon size={16} />} onClick={() => setTab(t.key)} variant={active ? 'primary' : 'secondary'}>
+									{t.label}
+								</Button>
 							);
 						})}
+					</div>
+
+					{/* Actions */}
+
+					<div className='flex gap-1 w-full sm:w-auto'>
+						<Button icon={metadataActions?.saved ? <Check size={16} /> : <Save size={16} />} disabled={!metadataActions?.hasChanges || metadataActions?.saving} onClick={() => metadataActions?.save()}>
+							<span className='hidden sm:inline'>{metadataActions?.saving ? 'Saving...' : metadataActions?.saved ? 'Saved' : 'Save'}</span>
+						</Button>
+
+						<Button icon={<Share size={16} />} onClick={() => metadataActions?.share()}>
+							<span className='hidden sm:inline'>Share</span>
+						</Button>
+
+						<Selector
+							className='flex-1 sm:flex-none min-w-45'
+							value={metadataActions?.label ?? ''}
+							options={[
+								{
+									label: 'No status',
+									value: '',
+								},
+								...(metadataActions?.labels ?? []).map((label) => ({
+									label: label.name,
+									value: label.name,
+									color: label.color,
+								})),
+							]}
+							onChange={(value) => metadataActions?.setLabel(value)}
+						/>
 					</div>
 				</div>
 
 				{/* Content */}
 
 				<motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-					{tab === 'info' && <Metadata client={client} />}
+					{tab === 'info' && <Metadata client={client} onActionsChange={setMetadataActions} />}
 					{tab === 'solar' && <Solar client={client} />}
 					{tab === 'schemas' && <Schemas basePath={settings.path} client={client} />}
 					{tab === 'documents' && <Documents basePath={settings.path} client={client} />}

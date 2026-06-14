@@ -1,12 +1,20 @@
 /** @format */
 'use client';
 
+'use client';
+
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp, Download, File, FileText, Upload } from 'lucide-react';
+import { ChevronDown, ChevronUp, FileText, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import { FaFilePdf } from 'react-icons/fa6';
+import FileGrid from '../ui/FileGrid';
+import FileList from '../ui/FileList';
+import FileUploadModal from '../files/FileUploadModal';
+import ProjectFile from '@/components/ui/File';
+import { User } from 'next-auth';
+import ViewToggle from '../ui/ViewToggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
+import { useSession } from 'next-auth/react';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -18,183 +26,141 @@ type FileEntry = {
 const SCHEMA_EXTENSIONS = ['.pdf', '.schrack', '.trik'];
 
 export default function Schemas({ basePath, client }: { basePath: string; client: string }) {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	const { data: session } = useSession();
+
 	const { uploading, uploadFile } = useUpload();
-	const [files, setFiles] = useState<FileEntry[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [open, setOpen] = useState(true);
-	const inputRef = useRef<HTMLInputElement | null>(null);
 	const { has } = usePermissions();
 
-	const hasWrite = has('projects.write');
+	const [files, setFiles] = useState<FileEntry[]>([]);
+	const [users, setUsers] = useState<User[]>([]);
+
+	const [loading, setLoading] = useState(true);
+	const [open, setOpen] = useState(true);
+	const [view, setView] = useState<'grid' | 'list'>('list');
+
+	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+	const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
+	const canWrite = has('projects.write');
+
+	useEffect(() => {
+		if (!session?.user?.preferences?.defaultView) return;
+
+		setView(session.user.preferences.defaultView);
+	}, [session]);
 
 	const load = async () => {
-		setLoading(true);
+		try {
+			setLoading(true);
 
-		const schemasPath = `${basePath}/${client}/schema`;
-		const res = await fetch(`/api/files?view=${encodeURIComponent(schemasPath)}`);
-		const data: FileEntry[] = await res.json();
+			const schemasPath = `${basePath}/${client}/schema`;
 
-		const filtered = data.filter((f) => f.type === 'file' && SCHEMA_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext)));
+			const [filesRes, usersRes] = await Promise.all([fetch(`/api/files?view=${encodeURIComponent(schemasPath)}`), fetch('/api/users')]);
 
-		setFiles(filtered);
-		setLoading(false);
+			const fileData: FileEntry[] = await filesRes.json();
+			const userData = await usersRes.json();
+
+			setUsers(userData.users ?? []);
+
+			setFiles(fileData.filter((file) => file.type === 'file' && SCHEMA_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext))));
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	useEffect(() => {
-		(() => {
-			load();
-		})();
+		load();
 	}, [basePath, client]);
 
-	const upload = async (file: File) => {
-		const success = await uploadFile(file, client, 'schema');
-		if (success) await load();
-	};
-
 	const download = (path: string) => {
-		const url = `/api/files/download?path=${encodeURIComponent(path)}`;
 		const a = document.createElement('a');
-		a.href = url;
+
+		a.href = `/api/files/download?path=${encodeURIComponent(path)}`;
+
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
 	};
 
-	const getExtension = (name: string) => {
-		const idx = name.lastIndexOf('.');
-		return idx === -1 ? 'other' : name.slice(idx).toLowerCase();
+	const uploadWithMetadata = async (file: File, name: string, comment: string, collaborators: string[]) => {
+		await uploadFile(file, client, 'schema', {
+			name,
+			comment,
+			collaborators,
+		});
 	};
-
-	const groupedFiles = files.reduce<Record<string, FileEntry[]>>((acc, file) => {
-		const ext = getExtension(file.name);
-
-		if (!acc[ext]) {
-			acc[ext] = [];
-		}
-
-		acc[ext].push(file);
-
-		return acc;
-	}, {});
-
-	const extensionOrder = ['.pdf', '.schrack', '.trik'];
-
-	const sortedGroups = Object.entries(groupedFiles).sort(([a], [b]) => {
-		const ai = extensionOrder.indexOf(a);
-		const bi = extensionOrder.indexOf(b);
-
-		if (ai === -1 && bi === -1) return a.localeCompare(b);
-		if (ai === -1) return 1;
-		if (bi === -1) return -1;
-
-		return ai - bi;
-	});
-
-	const getFileIcon = (extension: string) => {
-		switch (extension) {
-			case '.pdf':
-				return <FaFilePdf className='w-4 h-4 text-red-500' />;
-
-			case '.schrack':
-				return <FileText className='w-4 h-4 text-orange-500' />;
-
-			case '.trik':
-				return <FileText className='w-4 h-4 text-cyan-500' />;
-
-			default:
-				return <File className='w-4 h-4 text-gray-400 dark:text-zinc-500' />;
-		}
-	};
-
-	const section = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
 
 	return (
 		<section className='space-y-6'>
-			<header className='flex items-center gap-3'>
-				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
-					<FileText className='w-5 h-5 text-(--accent) dark:text-(--accent)' />
+			<input
+				ref={inputRef}
+				type='file'
+				multiple
+				accept='.pdf,.schrack,.trik'
+				className='hidden'
+				onChange={(e) => {
+					const files = Array.from(e.target.files ?? []);
+
+					if (!files.length) return;
+
+					setSelectedFiles(files);
+					setUploadModalOpen(true);
+
+					e.target.value = '';
+				}}
+			/>
+
+			<div
+				className='rounded-3xl p-6 space-y-6'
+				style={{
+					background: 'var(--container)',
+					border: '1px solid var(--border)',
+				}}>
+				<div className='flex items-center justify-between'>
+					<div>
+						<div className='font-semibold'>Files</div>
+
+						<div className='text-sm text-zinc-500'>
+							{files.length} file{files.length !== 1 ? 's' : ''}
+						</div>
+					</div>
+					<div className='flex gap-2'>
+						<ViewToggle value={view ?? 'list'} onChange={setView} />
+
+						{canWrite && (
+							<button
+								onClick={() => inputRef.current?.click()}
+								disabled={uploading}
+								className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white hover:bg-(--hover-accent) transition'>
+								<Upload size={16} />
+
+								{uploading ? 'Uploading...' : 'Upload'}
+							</button>
+						)}
+					</div>
 				</div>
 
-				<div>
-					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Schemas</h2>
-					<p className='text-sm text-gray-500 dark:text-zinc-400'>PDF, .schrack, .trik files</p>
-				</div>
-			</header>
+				{loading && <div className='text-sm text-zinc-500'>Loading schemas...</div>}
 
-			<input ref={inputRef} type='file' accept='.pdf,.schrack,.trik' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
+				{!loading && files.length === 0 && <div className='border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-10 text-center text-sm text-zinc-500'>No schema files found</div>}
 
-			<div className={section}>
-				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center px-5 py-4 text-sm font-medium text-gray-900 dark:text-zinc-100'>
-					<span>Files ({files.length})</span>
-
-					{open ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
-				</button>
-
-				<AnimatePresence>
-					{open && (
-						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className='px-5 pb-5 space-y-4'>
-							<div className='flex justify-end'>
-								{hasWrite && (
-									<button
-										onClick={() => inputRef.current?.click()}
-										disabled={uploading}
-										className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
-										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}`}>
-										<Upload className='w-4 h-4' />
-										{uploading ? 'Uploading…' : 'Upload'}
-									</button>
-								)}
-							</div>
-
-							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading schemas…</div>}
-
-							{!loading && files.length === 0 && (
-								<div className='text-sm text-gray-500 dark:text-zinc-400 border border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-6 text-center'>No schema files found.</div>
-							)}
-
-							{!loading &&
-								sortedGroups.map(([extension, group]) => (
-									<div key={extension} className='space-y-2'>
-										<div className='px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400'>
-											{extension.replace('.', '')} ({group.length})
-										</div>
-
-										{group.map((file, index) => (
-											<motion.div
-												key={file.path}
-												initial={{ opacity: 0, y: 4 }}
-												animate={{ opacity: 1, y: 0 }}
-												transition={{ delay: index * 0.03 }}
-												className='
-													flex items-center justify-between
-													h-12 px-4
-													rounded-2xl
-													border border-gray-200 dark:border-zinc-700
-													bg-gray-50 dark:bg-zinc-800
-													hover:bg-white dark:hover:bg-zinc-700
-													hover:shadow-sm
-													transition
-												'>
-												<div className='flex items-center gap-3 min-w-0'>
-													{getFileIcon(extension)}
-
-													<span className='truncate text-sm text-gray-800 dark:text-zinc-100'>{file.name}</span>
-												</div>
-
-												<button
-													onClick={() => download(file.path)}
-													className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition'>
-													<Download className='w-4 h-4' />
-													Download
-												</button>
-											</motion.div>
-										))}
-									</div>
-								))}
-						</motion.div>
-					)}
-				</AnimatePresence>
+				{view === 'grid' ? <FileGrid files={files} users={users} onDownload={download} /> : <FileList files={files} users={users} onDownload={download} />}
 			</div>
+
+			<FileUploadModal
+				open={uploadModalOpen}
+				files={selectedFiles}
+				users={users}
+				onUpload={uploadWithMetadata}
+				onClose={async () => {
+					setUploadModalOpen(false);
+					setSelectedFiles([]);
+
+					await load();
+				}}
+			/>
 		</section>
 	);
 }

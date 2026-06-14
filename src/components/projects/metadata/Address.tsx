@@ -151,7 +151,7 @@ export default function Address({ value, onChange }: Props) {
 				}}>
 				<Map
 					colorScheme={resolvedTheme.toUpperCase() as ColorScheme}
-					center={position}
+					defaultCenter={position}
 					defaultZoom={15}
 					gestureHandling='greedy'
 					onClick={handleClick}

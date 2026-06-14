@@ -1,34 +1,18 @@
 /** @format */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { Session, getServerSession } from 'next-auth';
 
+import { Role } from '@/types/next-auth';
 import bcrypt from 'bcryptjs';
 import fs from 'fs';
-import { getServerSession } from 'next-auth';
 import path from 'path';
 
 const DATA_DIR = path.join(process.cwd(), 'data');
 const USERS_PATH = path.join(DATA_DIR, 'users.json');
 const ROLES_PATH = path.join(DATA_DIR, 'roles.json');
 
-type Role = {
-	id: string;
-	name: string;
-	defaultPermissions: string[];
-};
-
-type Theme = 'light' | 'dark' | 'system';
-
-type User = {
-	id: string;
-	name: string;
-	email: string;
-	passwordHash: string;
-	roleId: string;
-	permissions: string[];
-	theme?: Theme;
-	projects?: string[];
-};
+type User = Session['user'];
 
 function ensureFiles() {
 	if (!fs.existsSync(DATA_DIR)) {
@@ -95,6 +79,10 @@ export async function POST(request: NextRequest) {
 		roleId,
 		permissions: [...role.defaultPermissions],
 		theme: 'system',
+		preferences: {
+			projectPrompts: true,
+			defaultView: 'list',
+		},
 	};
 
 	users.push(newUser);
@@ -107,7 +95,8 @@ export async function POST(request: NextRequest) {
 // ---------- PATCH (ADMIN EDIT USER) ----------
 export async function PATCH(request: NextRequest) {
 	const body = await request.json();
-	const { id, name, email, roleId, password, permissions, theme, projects } = body || {};
+
+	const { id, name, email, roleId, password, permissions, theme, projects, preferences } = body || {};
 
 	if (!id) {
 		return NextResponse.json({ error: 'Missing user id' }, { status: 400 });
@@ -115,6 +104,7 @@ export async function PATCH(request: NextRequest) {
 
 	const users = loadUsers();
 	const roles = loadRoles();
+
 	const index = users.findIndex((u) => u.id === id);
 
 	if (index === -1) {
@@ -123,8 +113,14 @@ export async function PATCH(request: NextRequest) {
 
 	if (email) {
 		const exists = users.some((u) => u.email.toLowerCase() === email.toLowerCase() && u.id !== id);
+
 		if (exists) {
-			return NextResponse.json({ error: 'Another user already has this email' }, { status: 409 });
+			return NextResponse.json(
+				{
+					error: 'Another user already has this email',
+				},
+				{ status: 409 }
+			);
 		}
 	}
 
@@ -133,9 +129,11 @@ export async function PATCH(request: NextRequest) {
 
 	if (roleId) {
 		const role = roles.find((r) => r.id === roleId);
+
 		if (!role) {
 			return NextResponse.json({ error: 'Invalid role' }, { status: 400 });
 		}
+
 		users[index].roleId = roleId;
 	}
 
@@ -151,6 +149,13 @@ export async function PATCH(request: NextRequest) {
 		users[index].theme = theme;
 	}
 
+	if (preferences) {
+		users[index].preferences = {
+			...users[index].preferences,
+			...preferences,
+		};
+	}
+
 	if (password) {
 		users[index].passwordHash = await bcrypt.hash(password, 12);
 	}
@@ -158,20 +163,26 @@ export async function PATCH(request: NextRequest) {
 	saveUsers(users);
 
 	const safeUsers = users.map(({ passwordHash, ...rest }) => rest);
-	return NextResponse.json({ users: safeUsers });
+
+	return NextResponse.json({
+		users: safeUsers,
+	});
 }
 
 // ---------- PATCH SELF (Theme + Password) ----------
 export async function PUT(request: NextRequest) {
 	const session = await getServerSession();
+
 	if (!session?.user?.email) {
 		return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 	}
 
 	const body = await request.json();
-	const { theme, currentPassword, newPassword } = body || {};
+
+	const { theme, currentPassword, newPassword, preferences } = body || {};
 
 	const users = loadUsers();
+
 	const index = users.findIndex((u) => u.email.toLowerCase() === session.user?.email?.toLowerCase());
 
 	if (index === -1) {
@@ -182,12 +193,19 @@ export async function PUT(request: NextRequest) {
 		users[index].theme = theme;
 	}
 
+	if (preferences) {
+		users[index].preferences = {
+			...users[index].preferences,
+			...preferences,
+		};
+	}
+
 	if (newPassword) {
 		if (!currentPassword) {
 			return NextResponse.json({ error: 'Current password required' }, { status: 400 });
 		}
 
-		const valid = await bcrypt.compare(currentPassword, users[index].passwordHash);
+		const valid = await bcrypt.compare(currentPassword, users[index].passwordHash as string);
 
 		if (!valid) {
 			return NextResponse.json({ error: 'Current password incorrect' }, { status: 401 });
@@ -198,7 +216,13 @@ export async function PUT(request: NextRequest) {
 
 	saveUsers(users);
 
-	return NextResponse.json({ success: true });
+	return NextResponse.json({
+		success: true,
+		user: {
+			...users[index],
+			passwordHash: undefined,
+		},
+	});
 }
 
 // ---------- DELETE ----------

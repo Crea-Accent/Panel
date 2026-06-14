@@ -6,6 +6,7 @@ import { MapPin, PanelTop, Sun, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import Button from '@/components/ui/Button';
+import { motion } from 'framer-motion';
 
 type Props = {
 	client: string;
@@ -90,7 +91,22 @@ export default function Solar({ client }: Props) {
 		loadMetadata();
 	}, [client]);
 
-	const selectedConfig = solar?.configs?.find((x: any) => x.panelsCount === selectedPanels) ?? solar?.recommended;
+	const configs = solar?.configs ?? [];
+
+	const [selectedConfigIndex, setSelectedConfigIndex] = useState(0);
+
+	useEffect(() => {
+		if (!solar?.recommended) return;
+
+		const index = configs.findIndex((x: any) => x?.panelsCount === solar.recommended?.panelsCount);
+
+		if (index >= 0) {
+			setSelectedConfigIndex(index);
+		}
+	}, [solar]);
+
+	const selectedConfig = configs[selectedConfigIndex] ?? solar?.recommended;
+
 	function getDirection(azimuth: number) {
 		if (azimuth >= 337.5 || azimuth < 22.5) return 'North';
 		if (azimuth < 67.5) return 'North-East';
@@ -114,15 +130,44 @@ export default function Solar({ client }: Props) {
 
 			const indexInSegment = panelsInSegment.indexOf(panel);
 
-			return indexInSegment < summary.panelsCount;
+			return indexInSegment < summary?.panelsCount;
 		}) ?? [];
 
 	if (loading) {
 		return null;
 	}
 
-	if (error) {
-		return <>{error}</>;
+	const hasAnalysis = Boolean(solar?.recommended && solar?.configs?.length && solar?.solarPanels?.length);
+
+	if (!hasAnalysis) {
+		return (
+			<div className='flex flex-col gap-6'>
+				<div className='flex items-center justify-between'>
+					<div>
+						<div className='text-xl font-semibold'>Solar Analysis</div>
+
+						<div className='text-sm text-zinc-500'>
+							{address.lat.toFixed(6)}, {address.lng.toFixed(6)}
+						</div>
+					</div>
+
+					<Button loading={calculating} onClick={analyzeRoof}>
+						<Sun size={16} />
+						Analyze Roof
+					</Button>
+				</div>
+
+				<div className='rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-12 text-center'>
+					<Sun size={48} className='mx-auto mb-4 text-zinc-400' />
+
+					<h2 className='text-lg font-semibold mb-2'>No Solar Analysis Available</h2>
+
+					<p className='text-sm text-zinc-500 max-w-md mx-auto'>
+						{error ? error : 'Run a roof analysis to calculate possible panel layouts, yearly production estimates and optimal panel placement.'}
+					</p>
+				</div>
+			</div>
+		);
 	}
 
 	return (
@@ -137,6 +182,12 @@ export default function Solar({ client }: Props) {
 							color: 'var(--text-muted)',
 						}}>
 						{address.lat.toFixed(6)}, {address.lng.toFixed(6)}
+						{solar?.maxSunshineHoursPerYear && (
+							<>
+								{' • '}
+								{Math.round(solar.maxSunshineHoursPerYear).toLocaleString()} sun hours/year
+							</>
+						)}
 					</div>
 				</div>
 
@@ -146,68 +197,48 @@ export default function Solar({ client }: Props) {
 				</Button>
 			</div>
 
-			{solar?.recommended && (
-				<div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
-					<div
-						className='rounded-xl p-4'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-							border: '1px solid color-mix(in srgb, var(--accent) 20%, var(--border))',
-						}}>
-						<div className='text-sm mb-2'>Recommended</div>
-
-						<div className='text-3xl font-bold'>{solar.recommended.panelsCount}</div>
-
-						<div
-							className='text-sm'
+			{solar?.solarPanels?.length > 0 && (
+				<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+					<motion.div
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.25 }}
+						className='rounded-2xl		overflow-hidden		shadow-xl		border		border-zinc-200		dark:border-zinc-800	'>
+						<Map
+							mapId={'map'}
+							defaultCenter={address}
+							defaultZoom={20.5}
+							mapTypeId='satellite'
 							style={{
-								color: 'var(--text-muted)',
+								width: '100%',
+								height: '600px',
 							}}>
-							{Math.round(solar.recommended.yearlyEnergyDcKwh).toLocaleString()} kWh/year
-						</div>
-					</div>
+							{visiblePanels.map((panel: any, index: number) => {
+								const segment = selectedConfig?.roofSegmentSummaries?.find((x: any) => x.segmentIndex === panel.segmentIndex);
 
-					<div
-						className='rounded-xl p-4'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-							border: '1px solid color-mix(in srgb, var(--accent) 20%, var(--border))',
-						}}>
-						<div className='text-sm mb-2'>Maximum</div>
+								const azimuth = segment?.azimuthDegrees ?? 0;
 
-						<div className='text-3xl font-bold'>{solar.maximum.panelsCount}</div>
-
-						<div
-							className='text-sm'
-							style={{
-								color: 'var(--text-muted)',
-							}}>
-							{Math.round(solar.maximum.yearlyEnergyDcKwh).toLocaleString()} kWh/year
-						</div>
-					</div>
-
-					<div
-						className='rounded-xl p-4'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-							border: '1px solid color-mix(in srgb, var(--accent) 20%, var(--border))',
-						}}>
-						<div className='text-sm mb-2'>Roof Area</div>
-
-						<div className='text-3xl font-bold'>
-							{Math.round(solar.roofArea ?? 0)}
-							m²
-						</div>
-
-						<div
-							className='text-sm'
-							style={{
-								color: 'var(--text-muted)',
-							}}>
-							{Math.round(solar.maxSunshineHoursPerYear ?? 0)} sun hours
-						</div>
-					</div>
-				</div>
+								return (
+									<AdvancedMarker
+										key={index}
+										position={{
+											lat: panel.center.latitude,
+											lng: panel.center.longitude,
+										}}>
+										<div
+											className='bg-blue-950 border-2 border-white rounded-sm'
+											style={{
+												width: 20,
+												height: 40,
+												transform: `rotate(${Math.abs(azimuth + 90)}deg)`,
+											}}
+										/>
+									</AdvancedMarker>
+								);
+							})}
+						</Map>
+					</motion.div>
+				</APIProvider>
 			)}
 
 			{solar?.configs?.length > 0 && (
@@ -217,135 +248,156 @@ export default function Solar({ client }: Props) {
 						background: 'var(--container)',
 						border: '1px solid var(--border)',
 					}}>
-					<div className='flex items-center justify-between mb-4'>
-						<div className='font-medium'>System Size</div>
+					<div className='space-y-4'>
+						<input
+							type='range'
+							min={0}
+							max={Math.max(configs.length - 1, 0)}
+							step={1}
+							value={selectedConfigIndex}
+							onChange={(e) => setSelectedConfigIndex(Number(e.target.value))}
+							className='solar-slider w-full'
+						/>
 
-						{solar?.recommended && (
-							<div
-								className='px-3 py-1 rounded-lg text-sm'
-								style={{
-									background: 'color-mix(in srgb, var(--accent) 12%, transparent)',
-									border: '1px solid color-mix(in srgb, var(--accent) 20%, var(--border))',
-								}}>
-								Recommended: {solar.recommended.panelsCount} panels
-							</div>
-						)}
-					</div>
+						<div className='flex justify-between text-xs text-zinc-500'>
+							<span>{configs[0]?.panelsCount ?? 0}</span>
 
-					<select
-						value={selectedPanels}
-						onChange={(e) => setSelectedPanels(Number(e.target.value))}
-						className='w-full rounded-xl px-3 h-10'
-						style={{
-							background: 'var(--bg-main)',
-							border: '1px solid var(--border)',
-						}}>
-						{solar.configs.map((config: any) => (
-							<option key={config.panelsCount} value={config.panelsCount}>
-								{config.panelsCount} panels • {Math.round(config.yearlyEnergyDcKwh).toLocaleString()}
-								kWh/year
-								{config.panelsCount === solar.recommended?.panelsCount ? ' ⭐ Recommended' : ''}
-							</option>
-						))}
-					</select>
-
-					{selectedConfig && (
-						<div className='mt-4'>
-							<div className='text-3xl font-bold'>{selectedConfig.panelsCount} Panels</div>
-
-							<div
-								className='text-sm'
-								style={{
-									color: 'var(--text-muted)',
-								}}>
-								{Math.round(selectedConfig.yearlyEnergyDcKwh).toLocaleString()}
-								kWh/year
-							</div>
+							<span>{configs.at(-1)?.panelsCount ?? 0}</span>
 						</div>
-					)}
+					</div>
 				</div>
 			)}
 
-			{solar?.solarPanels?.length > 0 && (
-				<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-					<div
-						className='rounded-xl overflow-hidden'
-						style={{
-							border: '1px solid var(--border)',
-						}}>
-						<Map
-							mapId={'map'}
-							center={address}
-							defaultZoom={21}
-							mapTypeId='satellite'
-							style={{
-								width: '100%',
-								height: '600px',
-							}}>
-							{visiblePanels.map((panel: any, index: number) => (
-								<AdvancedMarker
-									key={index}
-									position={{
-										lat: panel.center.latitude,
-										lng: panel.center.longitude,
-									}}>
-									<div className='bg-blue-950 border-2 border-white h-10 w-5'></div>
-								</AdvancedMarker>
-							))}
-						</Map>
+			<div className='grid grid-cols-1 md:grid-cols-2 gap-4 mt-6'>
+				<div
+					className='rounded-xl p-5 border'
+					style={{
+						borderColor: 'var(--border)',
+					}}>
+					<div className='flex items-center gap-2 mb-4'>
+						<PanelTop size={18} />
+						<span>Selected System</span>
 					</div>
-				</APIProvider>
-			)}
+
+					<div
+						className='mt-3 text-xs px-2 py-1 rounded-full w-fit'
+						style={{
+							background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+						}}>
+						{Math.round((selectedConfig?.panelsCount / solar.recommended?.panelsCount - 1) * 100)}% vs recommendation
+					</div>
+
+					<div className='text-4xl font-bold'>{selectedConfig?.panelsCount}</div>
+
+					<div className='text-sm'>Panels</div>
+
+					<div className='mt-3 font-medium'>
+						{Math.round(selectedConfig?.yearlyEnergyDcKwh).toLocaleString()}
+						kWh/year
+					</div>
+
+					<div className='text-sm text-zinc-500'>
+						≈ {((selectedConfig?.panelsCount * 440) / 1000).toFixed(1)}
+						kWp
+					</div>
+				</div>
+
+				<div
+					className='rounded-xl p-5 border'
+					style={{
+						borderColor: 'color-mix(in srgb, var(--accent) 30%, var(--border))',
+						background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
+					}}>
+					<div className='flex items-center gap-2 mb-4'>
+						<Zap size={18} />
+						<span>Recommended</span>
+					</div>
+
+					<div className='text-4xl font-bold'>{solar.recommended.panelsCount}</div>
+
+					<div className='text-sm'>Panels</div>
+
+					<div className='mt-3 font-medium'>
+						{Math.round(solar.recommended.yearlyEnergyDcKwh).toLocaleString()}
+						kWh/year
+					</div>
+
+					<div className='text-sm text-zinc-500'>
+						≈ {((solar.recommended.panelsCount * 440) / 1000).toFixed(1)}
+						kWp
+					</div>
+				</div>
+			</div>
 
 			{selectedConfig?.roofSegmentSummaries?.length > 0 && (
-				<div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'>
-					{selectedConfig.roofSegmentSummaries.map((segment: any, index: number) => (
-						<div
-							key={index}
-							className='rounded-xl p-4'
-							style={{
-								background: 'var(--container)',
-								border: '1px solid var(--border)',
-							}}>
-							<div className='font-medium'>{getDirection(segment.azimuthDegrees)}</div>
+				<div className='space-y-4'>
+					<div className='flex items-center gap-2'>
+						<Sun size={18} className='text-(--accent)' />
 
-							<div
-								className='text-sm mt-2'
+						<h3 className='text-lg font-semibold'>Panel Distribution</h3>
+					</div>
+
+					<div className='grid gap-3 md:grid-cols-2 xl:grid-cols-3'>
+						{selectedConfig.roofSegmentSummaries.map((segment: any, index: number) => (
+							<motion.div
+								layout
+								key={index}
+								initial={{
+									opacity: 0,
+									y: 10,
+								}}
+								animate={{
+									opacity: 1,
+									y: 0,
+								}}
+								className='rounded-xl border p-4'
 								style={{
-									color: 'var(--text-muted)',
+									borderColor: 'var(--border)',
 								}}>
-								<div>{segment.panelsCount} panels</div>
+								<div className='flex items-center justify-between'>
+									<div>
+										<div className='font-semibold'>{getDirection(segment.azimuthDegrees)}</div>
 
-								<div>{Math.round(segment.yearlyEnergyDcKwh).toLocaleString()} kWh/year</div>
+										<div className='text-xs text-zinc-500'>Roof Segment</div>
+									</div>
 
-								<div>
-									Orientation:
-									{segment.azimuthDegrees?.toFixed(0)}°
+									<PanelTop size={18} className='text-(--accent)' />
 								</div>
 
-								<div>
-									Roof Pitch:
-									{segment.pitchDegrees?.toFixed(0)}°
+								<div className='grid grid-cols-3 gap-3 mt-5'>
+									<div>
+										<div className='text-xs text-zinc-500'>Panels</div>
+
+										<div className='text-lg font-semibold'>{segment.panelsCount}</div>
+									</div>
+
+									<div>
+										<div className='text-xs text-zinc-500'>Yield</div>
+
+										<div className='text-lg font-semibold'>{Math.round(segment.yearlyEnergyDcKwh).toLocaleString()}</div>
+									</div>
+
+									<div>
+										<div className='text-xs text-zinc-500'>Pitch</div>
+
+										<div className='text-lg font-semibold'>{segment.pitchDegrees?.toFixed(0)}°</div>
+									</div>
 								</div>
-							</div>
-						</div>
-					))}
+
+								<div className='mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800'>
+									<div className='text-xs text-zinc-500'>
+										Facing <strong className='text-zinc-900 dark:text-zinc-100'>{getDirection(segment.azimuthDegrees)}</strong>
+									</div>
+
+									<div className='text-xs text-zinc-500 mt-1'>Orientation: {segment.azimuthDegrees?.toFixed(0)}°</div>
+
+									<div className='text-xs text-zinc-500 mt-1'>Estimated production: {Math.round(segment.yearlyEnergyDcKwh).toLocaleString()} kWh/year</div>
+								</div>
+							</motion.div>
+						))}
+					</div>
 				</div>
 			)}
-
-			<details>
-				<summary>Raw Google Data</summary>
-
-				<pre
-					className='mt-4 p-4 rounded-xl overflow-auto text-xs'
-					style={{
-						background: 'var(--container)',
-						border: '1px solid var(--border)',
-						maxHeight: 500,
-					}}>
-					{JSON.stringify(solar?.raw, null, 2)}
-				</pre>
-			</details>
 		</div>
 	);
 }

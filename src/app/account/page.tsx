@@ -1,200 +1,232 @@
 /** @format */
 'use client';
 
-import { Lock, Moon, User } from 'lucide-react';
+import { Lock, Moon, Settings2, User } from 'lucide-react';
+import { useEffect, useState } from 'react';
 
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Toggle from '@/components/ui/Toggle';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
-import { useState } from 'react';
 import { useTheme } from '@/providers/ThemeProvider';
 
-export default function AccountPage() {
+export default function Page() {
 	const { data: session } = useSession();
 	const { theme, setTheme } = useTheme();
 
 	const [currentPassword, setCurrentPassword] = useState('');
 	const [newPassword, setNewPassword] = useState('');
+
 	const [saving, setSaving] = useState(false);
 	const [message, setMessage] = useState<string | null>(null);
 
-	if (!session) return null;
+	const [projectPromptEnabled, setProjectPromptEnabled] = useState<boolean>(session?.user?.preferences?.projectPrompts ?? true);
+	const [defaultView, setDefaultView] = useState<'grid' | 'list'>((session?.user?.preferences?.defaultView as 'grid' | 'list') ?? 'grid');
 
-	function updateTheme(next: 'light' | 'dark' | 'system') {
-		setTheme(next);
+	useEffect(() => {
+		setProjectPromptEnabled(session?.user?.preferences?.projectPrompts ?? true);
+
+		setDefaultView((session?.user?.preferences?.defaultView as 'grid' | 'list') ?? 'grid');
+	}, [session]);
+
+	if (!session) {
+		return null;
 	}
 
 	async function changePassword() {
 		setSaving(true);
 		setMessage(null);
 
-		const res = await fetch('/api/users', {
-			method: 'PUT',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				currentPassword,
-				newPassword,
-			}),
-		});
+		try {
+			const res = await fetch('/api/users', {
+				method: 'PUT',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					currentPassword,
+					newPassword,
+				}),
+			});
 
-		const data = await res.json();
+			const data = await res.json();
 
-		if (!res.ok) {
-			setMessage(data.error || 'Failed');
-		} else {
+			if (!res.ok) {
+				setMessage(data.error || 'Failed');
+				return;
+			}
+
 			setMessage('Password updated successfully');
 			setCurrentPassword('');
 			setNewPassword('');
+		} finally {
+			setSaving(false);
 		}
-
-		setSaving(false);
 	}
 
 	return (
 		<div className='space-y-8'>
-			<div className='grid gap-6 md:grid-cols-2'>
-				{/* Account Info */}
-				<motion.div
-					initial={{ opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					className='
-						bg-white dark:bg-zinc-900
-						border border-zinc-200 dark:border-zinc-800
-						rounded-xl
-						p-6
-						shadow-sm
-						space-y-4
-					'>
-					<div className='flex items-center gap-3'>
-						<User size={18} className='text-(--accent) dark:text-(--accent)' />
-						<h1 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Account</h1>
+			<div className='grid gap-6 lg:grid-cols-2'>
+				<Card className='p-6'>
+					<div className='flex items-center gap-3 mb-4'>
+						<User size={18} className='text-(--accent)' />
+
+						<h2 className='text-lg font-semibold'>Account</h2>
 					</div>
 
-					<div className='text-sm space-y-2 text-zinc-600 dark:text-zinc-400'>
-						<p>
-							<strong className='text-zinc-900 dark:text-zinc-100'>Name:</strong> {session.user?.name}
-						</p>
-						<p>
-							<strong className='text-zinc-900 dark:text-zinc-100'>Email:</strong> {session.user?.email}
-						</p>
-					</div>
-				</motion.div>
+					<div className='space-y-3 text-sm'>
+						<div>
+							<div className='text-zinc-500'>Name</div>
 
-				{/* Theme */}
-				<motion.div
-					initial={{ opacity: 0, y: 8 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ delay: 0.05 }}
-					className='
-						bg-white dark:bg-zinc-900
-						border border-zinc-200 dark:border-zinc-800
-						rounded-xl
-						p-6
-						shadow-sm
-						space-y-4
-					'>
-					<div className='flex items-center gap-3'>
-						<Moon size={18} className='text-(--accent) dark:text-(--accent)' />
-						<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Appearance</h2>
+							<div className='font-medium'>{session.user?.name}</div>
+						</div>
+
+						<div>
+							<div className='text-zinc-500'>Email</div>
+
+							<div className='font-medium'>{session.user?.email}</div>
+						</div>
+					</div>
+				</Card>
+
+				<Card className='p-6'>
+					<div className='flex items-center gap-3 mb-4'>
+						<Moon size={18} className='text-(--accent)' />
+
+						<h2 className='text-lg font-semibold'>Appearance</h2>
 					</div>
 
-					<div className='flex gap-2 flex-wrap'>
-						{(['light', 'dark', 'system'] as const).map((t) => (
-							<button
-								key={t}
-								onClick={() => updateTheme(t)}
-								className={`
-									h-9 px-4
-									rounded-lg
-									text-sm capitalize
-									font-medium
-									transition-colors
-									${theme === t ? 'bg-(--accent) text-white' : 'bg-zinc-100 dark:bg-zinc-800 text-zinc-700 dark:text-zinc-300 hover:bg-zinc-200 dark:hover:bg-zinc-700'}
-								`}>
-								{t}
-							</button>
+					<div className='flex flex-wrap gap-2'>
+						{(['light', 'dark', 'system'] as const).map((mode) => (
+							<Button key={mode} variant={theme === mode ? 'primary' : 'secondary'} onClick={() => setTheme(mode)}>
+								{mode}
+							</Button>
 						))}
 					</div>
-				</motion.div>
+				</Card>
 			</div>
 
-			{/* Change Password */}
-			<motion.div
-				initial={{ opacity: 0, y: 8 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ delay: 0.1 }}
-				className='
-					bg-white dark:bg-zinc-900
-					border border-zinc-200 dark:border-zinc-800
-					rounded-xl
-					p-6
-					shadow-sm
-					space-y-4
-				'>
-				<div className='flex items-center gap-3'>
-					<Lock size={18} className='text-(--accent) dark:text-(--accent)' />
-					<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>Change Password</h2>
+			<Card className='p-6'>
+				<div className='flex items-center gap-3 mb-6'>
+					<Settings2 size={18} className='text-(--accent)' />
+
+					<h2 className='text-lg font-semibold'>Preferences</h2>
 				</div>
 
-				<div className='grid gap-4 md:grid-cols-2'>
-					<input
-						type='password'
-						placeholder='Current password'
-						value={currentPassword}
-						onChange={(e) => setCurrentPassword(e.target.value)}
-						className='
-							w-full h-10 px-3
-							rounded-lg
-							bg-zinc-50 dark:bg-zinc-900
-							border border-zinc-200 dark:border-zinc-800
-							text-sm
-							text-zinc-900 dark:text-zinc-100
-							placeholder:text-zinc-400 dark:placeholder:text-zinc-500
-							focus:outline-none
-							focus:ring-2 focus:ring-(--accent)/30
-							transition
-						'
+				<div className='space-y-8'>
+					<Toggle
+						label='Nearby Project Detection'
+						description='Prompt to open a project when arriving at a known installation location.'
+						checked={projectPromptEnabled}
+						onChange={async (value) => {
+							setProjectPromptEnabled(value);
+
+							try {
+								await fetch('/api/users', {
+									method: 'PUT',
+									headers: {
+										'Content-Type': 'application/json',
+									},
+									body: JSON.stringify({
+										preferences: {
+											projectPrompts: value,
+										},
+									}),
+								});
+							} catch (error) {
+								console.error(error);
+							}
+						}}
 					/>
 
-					<input
-						type='password'
-						placeholder='New password'
-						value={newPassword}
-						onChange={(e) => setNewPassword(e.target.value)}
-						className='
-							w-full h-10 px-3
-							rounded-lg
-							bg-zinc-50 dark:bg-zinc-900
-							border border-zinc-200 dark:border-zinc-800
-							text-sm
-							text-zinc-900 dark:text-zinc-100
-							placeholder:text-zinc-400 dark:placeholder:text-zinc-500
-							focus:outline-none
-							focus:ring-2 focus:ring-(--accent)/30
-							transition
-						'
-					/>
-				</div>
+					<div>
+						<div className='font-medium mb-1'>Default View</div>
 
-				<div className='flex items-center gap-4'>
-					<button
-						onClick={changePassword}
-						disabled={saving}
-						className='
-							h-9 px-4
-							rounded-lg
-							bg-(--accent)
-							text-white
-							text-sm font-medium
-							hover:bg-(--accent)
-							active:scale-[0.98]
-							disabled:opacity-60 disabled:cursor-not-allowed
-							transition-all
-						'>
-						{saving ? 'Saving...' : 'Update Password'}
-					</button>
+						<div
+							className='text-sm mb-4'
+							style={{
+								color: 'var(--text-muted)',
+							}}>
+							Preferred layout used throughout the platform.
+						</div>
 
-					{message && <p className='text-sm text-zinc-500 dark:text-zinc-400'>{message}</p>}
+						<div className='flex gap-2'>
+							<Button
+								variant={defaultView === 'list' ? 'primary' : 'secondary'}
+								onClick={async () => {
+									setDefaultView('list');
+
+									try {
+										await fetch('/api/users', {
+											method: 'PUT',
+											headers: {
+												'Content-Type': 'application/json',
+											},
+											body: JSON.stringify({
+												preferences: {
+													defaultView: 'list',
+												},
+											}),
+										});
+									} catch (error) {
+										console.error(error);
+									}
+								}}>
+								List
+							</Button>
+
+							<Button
+								variant={defaultView === 'grid' ? 'primary' : 'secondary'}
+								onClick={async () => {
+									setDefaultView('grid');
+
+									try {
+										await fetch('/api/users', {
+											method: 'PUT',
+											headers: {
+												'Content-Type': 'application/json',
+											},
+											body: JSON.stringify({
+												preferences: {
+													defaultView: 'grid',
+												},
+											}),
+										});
+									} catch (error) {
+										console.error(error);
+									}
+								}}>
+								Grid
+							</Button>
+						</div>
+					</div>
 				</div>
+			</Card>
+
+			<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}>
+				<Card className='p-6 space-y-4'>
+					<div className='flex items-center gap-3'>
+						<Lock size={18} className='text-(--accent)' />
+
+						<h2 className='text-lg font-semibold'>Security</h2>
+					</div>
+
+					<div className='grid gap-4 md:grid-cols-2'>
+						<Input type='password' placeholder='Current password' value={currentPassword} onChange={(e) => setCurrentPassword(e.target.value)} />
+
+						<Input type='password' placeholder='New password' value={newPassword} onChange={(e) => setNewPassword(e.target.value)} />
+					</div>
+
+					<div className='flex items-center gap-4'>
+						<Button loading={saving} onClick={changePassword}>
+							Update Password
+						</Button>
+
+						{message && <span className='text-sm text-zinc-500'>{message}</span>}
+					</div>
+				</Card>
 			</motion.div>
 		</div>
 	);

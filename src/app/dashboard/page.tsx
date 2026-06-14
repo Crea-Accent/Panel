@@ -69,7 +69,7 @@ export default function Home() {
 
 				const mapData = await fetch('/api/projects/map').then((r) => r.json());
 
-				setMapProjects(mapData);
+				setMapProjects(mapData.filter((p: any) => p.hasLocation));
 			} finally {
 				setLoading(false);
 			}

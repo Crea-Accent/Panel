@@ -50,7 +50,6 @@ export async function POST(request: NextRequest) {
 		}
 
 		const configs = potential.solarPanelConfigs ?? [];
-		console.log(configs);
 
 		const bestYield = configs.length > 0 ? configs[0].yearlyEnergyDcKwh / configs[0].panelsCount : 0;
 
