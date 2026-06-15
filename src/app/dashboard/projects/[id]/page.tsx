@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { Check, ChevronDown, Clipboard, ClipboardCheck, Code, File, FileText, Folder, Image as ImageIcon, Save, SaveOff, Share, Sun } from 'lucide-react';
+import { Check, ChevronDown, Clipboard, ClipboardCheck, Code, File, FileText, Folder, Image as ImageIcon, Save, SaveOff, Settings, Share, Sun } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import Button from '@/components/ui/Button';
@@ -13,10 +13,11 @@ import Pictures from '@/components/projects/Picture';
 import Programmation from '@/components/projects/Programmation';
 import Schemas from '@/components/projects/Schema';
 import Selector from '@/components/ui/Selector';
+import Setup from '@/components/projects/Setup';
 import Solar from '@/components/projects/Solar';
 import { motion } from 'framer-motion';
 
-type Tab = 'info' | 'schemas' | 'documents' | 'programmation' | 'pictures' | 'solar';
+type Tab = 'info' | 'schemas' | 'documents' | 'programmation' | 'pictures' | 'solar' | 'setup';
 
 type Settings = {
 	path: string;
@@ -77,6 +78,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 		{ key: 'schemas', label: 'Schemas', icon: FileText },
 		{ key: 'documents', label: 'Documents', icon: File },
 		{ key: 'programmation', label: 'Programmation', icon: Code },
+		{ key: 'setup', label: 'Setup', icon: Settings },
 		{ key: 'pictures', label: 'Pictures', icon: ImageIcon },
 	] as const;
 
@@ -170,6 +172,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 					{tab === 'schemas' && <Schemas basePath={settings.path} client={client} />}
 					{tab === 'documents' && <Documents basePath={settings.path} client={client} />}
 					{tab === 'programmation' && <Programmation basePath={settings.path} client={client} />}
+					{tab === 'setup' && <Setup basePath={settings.path} client={client} />}
 					{tab === 'pictures' && <Pictures basePath={settings.path} client={client} />}
 				</motion.div>
 			</div>

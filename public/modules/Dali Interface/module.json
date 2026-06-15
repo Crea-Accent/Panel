@@ -1,0 +1,22 @@
+{
+	"name": "DALI Interface",
+	"description": "Gateway between CAN and DALI",
+
+	"inputs": [
+		{
+			"name": "CAN IN",
+			"description": "Incoming CAN bus"
+		}
+	],
+
+	"outputs": [
+		{
+			"name": "CAN OUT",
+			"description": "Continue CAN bus"
+		},
+		{
+			"name": "DALI BUS",
+			"description": "Lighting network"
+		}
+	]
+}
