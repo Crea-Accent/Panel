@@ -1,0 +1,9 @@
+{
+	"id": "DT04-06",
+	"name": "6 channel 10A UP/DOWN module",
+	"description": "Operating 6 motors for shutters, curtains, blinds",
+	"signature": {
+		"type": 4,
+		"profile": 6
+	}
+}

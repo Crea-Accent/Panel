@@ -1,22 +1,9 @@
 {
-	"name": "DALI Interface",
-	"description": "Gateway between CAN and DALI",
-
-	"inputs": [
-		{
-			"name": "CAN IN",
-			"description": "Incoming CAN bus"
-		}
-	],
-
-	"outputs": [
-		{
-			"name": "CAN OUT",
-			"description": "Continue CAN bus"
-		},
-		{
-			"name": "DALI BUS",
-			"description": "Lighting network"
-		}
-	]
+	"id": "DT13-DAL",
+	"name": "Dali interface 64 kan.",
+	"description": "Interface for controlling DALI lighting.",
+	"signature": {
+		"type": 19,
+		"profile": 80
+	}
 }

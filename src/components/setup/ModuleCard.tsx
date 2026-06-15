@@ -56,7 +56,13 @@ export default function ModuleCard({ module, onDelete, onChange }: Props) {
 							<div>
 								<div className='font-semibold text-xl'>{module.name}</div>
 
-								{module.description && <div className='text-sm text-zinc-500 mt-1'>{module.description}</div>}
+								<div className='text-sm text-zinc-500 mt-1'>{module.label}</div>
+
+								<div className='text-xs text-zinc-500 mt-2'>
+									Family: {module.family ?? '-'} • Address: {module.address ?? '-'} • Profile: {module.profile ?? '-'}
+								</div>
+
+								{module.description && <div className='text-sm text-zinc-500 mt-2'>{module.description}</div>}
 							</div>
 
 							{onDelete && (
@@ -111,41 +117,22 @@ export default function ModuleCard({ module, onDelete, onChange }: Props) {
 							</div>
 						</div>
 
-						<div className='grid md:grid-cols-2 gap-8 mt-8'>
-							<div>
-								<div className='font-medium mb-3 flex items-center gap-2'>
-									<ArrowLeft size={16} />
-									Inputs
-								</div>
+						{module.units?.length > 0 && (
+							<div className='mt-8'>
+								<div className='font-medium mb-3'>Units ({module.units?.length ?? 0})</div>
 
-								<div className='space-y-2'>
-									{module.inputs.map((input) => (
-										<div key={input.name} className='rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3'>
-											<div className='text-sm font-medium'>{input.name}</div>
-
-											{input.description && <div className='text-xs text-zinc-500 mt-1'>{input.description}</div>}
+								<div className='grid md:grid-cols-2 gap-3'>
+									{module.units?.map((unit, i) => (
+										<div key={i} className='rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3'>
+											<div>{unit.name}</div>
+											<div>
+												#{unit.id} • {unit.type}
+											</div>
 										</div>
 									))}
 								</div>
 							</div>
-
-							<div>
-								<div className='font-medium mb-3 flex items-center gap-2'>
-									<ArrowRight size={16} />
-									Outputs
-								</div>
-
-								<div className='space-y-2'>
-									{module.outputs.map((output) => (
-										<div key={output.name} className='rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3'>
-											<div className='text-sm font-medium'>{output.name}</div>
-
-											{output.description && <div className='text-xs text-zinc-500 mt-1'>{output.description}</div>}
-										</div>
-									))}
-								</div>
-							</div>
-						</div>
+						)}
 
 						{!!module.logic?.length && (
 							<div className='mt-8'>
@@ -156,8 +143,8 @@ export default function ModuleCard({ module, onDelete, onChange }: Props) {
 
 								{showLogic && (
 									<div className='mt-3 space-y-2'>
-										{module.logic.map((line) => (
-											<div key={line} className='font-mono text-xs rounded-lg bg-zinc-50 dark:bg-zinc-800 p-2'>
+										{module.logic.map((line, i) => (
+											<div key={i} className='font-mono text-xs rounded-lg bg-zinc-50 dark:bg-zinc-800 p-2'>
 												{line}
 											</div>
 										))}

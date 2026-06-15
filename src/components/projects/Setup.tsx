@@ -14,32 +14,54 @@ type DuoString = {
 	value: string;
 };
 
+type ModuleDefinition = {
+	id: string;
+	name: string;
+	description?: string;
+	preview?: string;
+
+	signature?: {
+		type: number;
+		profile: number;
+	};
+
+	inputs?: {
+		name: string;
+		description?: string;
+	}[];
+
+	outputs?: {
+		name: string;
+		description?: string;
+	}[];
+};
+
+type ModuleUnit = {
+	id: number;
+	channel: number;
+	name: string;
+	type: 'temperature' | 'virtual' | 'input' | 'relay' | 'dimmer';
+};
+
 export default function Setup({ client, basePath }: Props) {
-	const [modules, setModules] = useState<ModuleInstance[]>([]);
+	const [foundModules, setFoundModules] = useState<ModuleInstance[]>([]);
+	const [topology, setTopology] = useState<ModuleInstance[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [loaded, setLoaded] = useState(false);
 
-	function dumpBytes(data: Uint8Array, offset: number, before = 16, after = 32) {
-		const start = Math.max(0, offset - before);
-		const end = Math.min(data.length, offset + after);
-
-		const slice = data.slice(start, end);
-
-		console.log(
-			offset,
-			Array.from(slice)
-				.map((x) => x.toString(16).padStart(2, '0'))
-				.join(' ')
-		);
-	}
-
-	function getSignature(bytes: Uint8Array, offset: number, name: string) {
+	function parseModuleSignature(bytes: Uint8Array, offset: number) {
 		const length = bytes[offset - 1];
-
 		const start = offset + length;
 
-		return Array.from(bytes.slice(start, start + 24))
-			.map((x) => x.toString(16).padStart(2, '0'))
-			.join(' ');
+		return {
+			family1: bytes[start + 2],
+			family2: bytes[start + 3],
+
+			instance: bytes[start + 4],
+
+			profile1: bytes[start + 8],
+			profile2: bytes[start + 9],
+		};
 	}
 
 	function extractStrings(data: Uint8Array): DuoString[] {
@@ -72,106 +94,99 @@ export default function Setup({ client, basePath }: Props) {
 		return result;
 	}
 
-	function buildModules(strings: DuoString[]): ModuleInstance[] {
-		const modules: ModuleInstance[] = [];
+	function buildModules(strings: DuoString[], bytes: Uint8Array, moduleDefinitions: ModuleDefinition[]): ModuleInstance[] {
+		const modulesByAddress = new Map<number, ModuleInstance>();
 
-		const isModuleHeader = (value: string) => value.startsWith('TB ') || value.startsWith('R ') || value.startsWith('FC ') || value.startsWith('DIM ') || value.startsWith('SB');
+		// PASS 1: discover modules
 
-		const moduleIndexes: number[] = [];
+		for (const item of strings) {
+			const signature = parseModuleSignature(bytes, item.offset);
 
-		for (let i = 0; i < strings.length; i++) {
-			if (isModuleHeader(strings[i].value)) {
-				moduleIndexes.push(i);
-			}
-		}
+			// console.log({ ...item, ...signature }); // family1 + profile1
 
-		for (let i = 0; i < moduleIndexes.length; i++) {
-			const start = moduleIndexes[i];
+			const definition = moduleDefinitions.find((module) => module.signature?.type === signature.family1 && module.signature?.profile === signature.profile1);
 
-			const end = i === moduleIndexes.length - 1 ? strings.length : moduleIndexes[i + 1];
+			if (!definition) continue;
 
-			const block = strings.slice(start, end);
-
-			if (!block.length) {
-				continue;
-			}
-
-			const header = block[0].value;
-
-			const typeMatch = header.match(/^(TB|R|FC|DIM|SB)/);
-
-			const moduleType = typeMatch?.[1] ?? 'Unknown';
-
-			const moduleName = header
-				.replace(/^(TB|R|FC|DIM|SB)\s*/, '')
-				.replace(/[A-Za-z0-9]{2}$/, '')
-				.trim();
-
-			const children = block
-				.slice(1)
-				.map((x) => x.value.replace(/^,/, '').trim())
-				.filter(Boolean);
-
-			let inputs: {
-				name: string;
-				description?: string;
-			}[] = [];
-
-			let outputs: {
-				name: string;
-				description?: string;
-			}[] = [];
-
-			const settings: Record<string, any> = {
-				type: moduleType,
-			};
-
-			if (moduleType === 'TB') {
-				inputs = children.slice(0, 4).map((name, index) => ({
-					name: `Input ${index + 1}`,
-					description: name,
-				}));
-
-				if (children[4]) {
-					settings.room = children[4];
-				}
-			} else if (moduleType === 'R') {
-				outputs = children.map((name, index) => ({
-					name: `Output ${index + 1}`,
-					description: name,
-				}));
-			} else {
-				outputs = children.map((name, index) => ({
-					name: `${moduleType} ${index + 1}`,
-					description: name,
-				}));
-			}
-
-			modules.push({
+			modulesByAddress.set(signature.instance, {
 				instanceId: crypto.randomUUID(),
 
-				moduleId: moduleType,
+				moduleId: definition.id,
 
-				name: moduleName,
+				family: signature.family1,
+				profile: signature.profile1,
 
-				label: moduleName,
+				name: definition.name,
+				label: item.value,
 
-				description: `${moduleType} discovered from DUO`,
+				address: signature.instance,
 
-				settings,
+				settings: {
+					type: signature.family1,
+					profile: signature.profile1,
+					profile2: signature.profile2,
+					instance: signature.instance,
+				},
 
-				inputs,
+				units: [],
 
-				outputs,
-
-				logic: [],
-
-				rawStrings: block.map((x) => x.value),
+				description: definition.description,
+				preview: definition.preview,
 			});
 		}
 
-		return modules;
+		// PASS 2: attach units
+
+		for (const item of strings) {
+			const unit = parseUnit(bytes, item);
+
+			if (!unit) {
+				continue;
+			}
+
+			const ownerModule = modulesByAddress.get(unit.id);
+
+			if (!ownerModule) {
+				console.warn('NO OWNER', unit);
+				continue;
+			}
+
+			ownerModule.units.push(unit);
+		}
+
+		return [...modulesByAddress.values()];
 	}
+
+	function parseUnit(bytes: Uint8Array, item: DuoString): ModuleUnit | null {
+		const length = bytes[item.offset - 1];
+		const start = item.offset + length;
+
+		const owner = bytes[start];
+		const channel = bytes[start + 1];
+
+		const type1 = bytes[start + 2];
+		const type2 = bytes[start + 3];
+
+		let type: ModuleUnit['type'] | null = null;
+
+		if (type1 === 4 && type2 === 1) type = 'temperature';
+		else if (type1 === 7 && type2 === 1) type = 'virtual';
+		else if (type1 === 3 && type2 === 1) type = 'input';
+		else if (type1 === 1 && type2 === 1) type = 'dimmer';
+		else if (type1 === 2 && type2 === 1) type = 'relay';
+
+		if (!type) {
+			return null;
+		}
+
+		return {
+			id: owner,
+			channel,
+			type,
+			name: item.value,
+		};
+	}
+
 	async function loadSetup() {
 		try {
 			setLoading(true);
@@ -187,7 +202,8 @@ export default function Setup({ client, basePath }: Props) {
 				});
 
 			if (!duoFiles.length) {
-				setModules([]);
+				setFoundModules([]);
+				setTopology([]);
 				return;
 			}
 
@@ -201,65 +217,81 @@ export default function Setup({ client, basePath }: Props) {
 
 			const strings = extractStrings(bytes);
 
-			console.table(strings);
+			const modulesRes = await fetch('/api/projects/modules');
 
-			console.log('====================================');
-			console.log('MODULE SIGNATURES');
-			console.log('====================================');
+			const modulesData = await modulesRes.json();
 
-			const moduleStrings = strings.filter((x) => x.value.startsWith('TB ') || x.value.startsWith('R ') || x.value.startsWith('FC ') || x.value.startsWith('DIM ') || x.value.startsWith('SB'));
+			const inferredModules = buildModules(strings, bytes, modulesData.modules ?? []);
 
-			console.table(
-				moduleStrings.map((module) => ({
-					name: module.value,
-					offset: module.offset,
-					signature: getSignature(bytes, module.offset, module.value),
-				}))
-			);
+			const metadataRes = await fetch(`/api/projects/metadata?client=${encodeURIComponent(client)}`);
+			const metadata = await metadataRes.json();
 
-			console.log('====================================');
-			console.log('FULL MODULE RECORDS');
-			console.log('====================================');
+			const savedSetup = metadata.setup ?? [];
 
-			moduleStrings.forEach((module) => {
-				console.group(module.value);
+			const modulesByAddress = new Map(inferredModules.map((module) => [module.address, module]));
 
-				dumpBytes(bytes, module.offset, 32, 64);
+			const restoredTopology: ModuleInstance[] = [];
 
-				console.log('SIGNATURE:', getSignature(bytes, module.offset, module.value));
+			for (const entry of savedSetup) {
+				if (entry.moduleId === 'DT00-24') {
+					restoredTopology.push({
+						instanceId: entry.instanceId ?? crypto.randomUUID(),
 
-				console.groupEnd();
-			});
+						moduleId: 'powersupply',
 
-			strings
-				.filter((x) => x.value.startsWith('TB ') || x.value.startsWith('R ') || x.value.startsWith('FC ') || x.value.startsWith('DIM ') || x.value.startsWith('SB'))
-				.forEach((x) => {
-					console.group(x.value);
+						name: 'Power Supply',
 
-					dumpBytes(bytes, x.offset);
+						family: 0,
+						profile: 0,
 
-					console.groupEnd();
-				});
+						address: undefined,
 
-			const inferredModules = buildModules(strings);
+						settings: {},
 
-			console.table(
-				inferredModules.map((module) => ({
-					type: module.settings?.type,
-					name: module.name,
-					inputs: module.inputs.length,
-					outputs: module.outputs.length,
-					room: module.settings?.room,
-				}))
-			);
+						units: [],
+					});
 
-			console.log('INFERRED MODULES', inferredModules);
+					continue;
+				}
 
-			setModules(inferredModules);
+				const found = modulesByAddress.get(entry.address);
+
+				if (found) {
+					restoredTopology.push(found);
+				}
+			}
+
+			setFoundModules(inferredModules);
+
+			setTopology(restoredTopology);
 		} catch (error) {
 			console.error(error);
 		} finally {
 			setLoading(false);
+			setLoaded(true);
+		}
+	}
+
+	async function saveTopology() {
+		try {
+			await fetch('/api/projects/metadata', {
+				method: 'PATCH',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					client,
+					data: {
+						setup: topology.map((module) => ({
+							instanceId: module.instanceId,
+							moduleId: module.moduleId,
+							address: module.address ?? null,
+						})),
+					},
+				}),
+			});
+		} catch (error) {
+			console.error(error);
 		}
 	}
 
@@ -267,9 +299,17 @@ export default function Setup({ client, basePath }: Props) {
 		loadSetup();
 	}, [client, basePath]);
 
+	useEffect(() => {
+		if (!loaded) {
+			return;
+		}
+
+		saveTopology();
+	}, [topology, loaded]);
+
 	if (loading) {
 		return null;
 	}
 
-	return <ModuleBuilder modules={modules} setModules={setModules} />;
+	return <ModuleBuilder foundModules={foundModules} topology={topology} setTopology={setTopology} />;
 }
