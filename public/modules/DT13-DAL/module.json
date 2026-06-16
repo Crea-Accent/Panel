@@ -1,0 +1,9 @@
+{
+	"id": "DT13-DAL",
+	"name": "Dali interface 64 kan.",
+	"description": "Interface for controlling DALI lighting.",
+	"signature": {
+		"type": 19,
+		"profile": 80
+	}
+}

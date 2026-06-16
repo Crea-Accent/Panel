@@ -2,7 +2,7 @@
 'use client';
 
 import { Cable, Plus, Trash2 } from 'lucide-react';
-import powersupply from '@/../public/modules/PowerSupply/module.json' with { type: 'json' };
+import powersupply from '@/../public/modules/DT00-24/module.json' with { type: 'json' };
 
 import ModuleCard from './ModuleCard';
 import ModulePalette from './ModulePalette';
@@ -154,6 +154,19 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 												border: '1px solid var(--border)',
 											}}>
 											<div className='p-5'>
+												{module.moduleId && (
+													<div className='mb-4 flex justify-center'>
+														{module.moduleId}
+														<img
+															src={`/modules/${module.moduleId}/drawing.svg`}
+															alt={module.name}
+															className='max-h-40 object-contain'
+															onError={(e) => {
+																e.currentTarget.style.display = 'none';
+															}}
+														/>
+													</div>
+												)}
 												<div className='flex items-start justify-between'>
 													<div>
 														<div className='font-semibold text-lg'>{module.name}</div>

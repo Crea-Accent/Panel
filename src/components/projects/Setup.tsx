@@ -102,7 +102,7 @@ export default function Setup({ client, basePath }: Props) {
 		for (const item of strings) {
 			const signature = parseModuleSignature(bytes, item.offset);
 
-			// console.log({ ...item, ...signature }); // family1 + profile1
+			// console.log(item.value, signature.family1, signature.profile1); // family1 + profile1
 
 			const definition = moduleDefinitions.find((module) => module.signature?.type === signature.family1 && module.signature?.profile === signature.profile1);
 
@@ -147,7 +147,6 @@ export default function Setup({ client, basePath }: Props) {
 			const ownerModule = modulesByAddress.get(unit.id);
 
 			if (!ownerModule) {
-				console.warn('NO OWNER', unit);
 				continue;
 			}
 
