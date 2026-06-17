@@ -29,27 +29,6 @@ export default function FileUploadModal({ files, open, onClose, onUpload, users 
 	const [entries, setEntries] = useState<UploadEntry[]>([]);
 	const [uploading, setUploading] = useState(false);
 
-	useEffect(() => {
-		if (!open) return;
-
-		setEntries(
-			files.map((file) => ({
-				file,
-				name: file.name
-					.replace(/\.[^.]+$/, '')
-					.split('__')
-					.slice(0, -2)
-					.join(' '),
-				comment: '',
-				collaborators: [],
-			}))
-		);
-	}, [files, open]);
-
-	if (!open) {
-		return null;
-	}
-
 	const collaboratorOptions = users.map((user) => {
 		const initials = user.name
 			?.split(' ')
@@ -91,6 +70,37 @@ export default function FileUploadModal({ files, open, onClose, onUpload, users 
 		}
 	};
 
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') onClose();
+		};
+
+		window.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			window.removeEventListener('keydown', onKeyDown);
+		};
+	}, [onClose]);
+
+	useEffect(() => {
+		if (!open) return;
+
+		setEntries(
+			files.map((file) => ({
+				file,
+				name: file.name
+					.replace(/\.[^.]+$/, '')
+					.split('__')
+					.slice(0, -2)
+					.join(' '),
+				comment: '',
+				collaborators: [],
+			}))
+		);
+	}, [files, open]);
+
+	if (!open) return null;
+
 	return (
 		<div
 			className='fixed inset-0 z-9999 flex items-center justify-center p-4'
@@ -111,7 +121,7 @@ export default function FileUploadModal({ files, open, onClose, onUpload, users 
 
 				<div className='overflow-y-auto p-5 space-y-4'>
 					{entries.map((entry, index) => (
-						<Card key={`${entry.file.name}-${index}`} className='p-4 space-y-4'>
+						<div key={`${entry.file.name}-${index}`} className='p-4 space-y-4'>
 							<div>
 								<div className='font-medium truncate'>{entry.file.name}</div>
 
@@ -130,6 +140,7 @@ export default function FileUploadModal({ files, open, onClose, onUpload, users 
 								/>
 
 								<MultiSelector
+									label={'Collaborators'}
 									value={entry.collaborators}
 									options={collaboratorOptions as any}
 									onChange={(collaborators) =>
@@ -167,7 +178,7 @@ export default function FileUploadModal({ files, open, onClose, onUpload, users 
 									placeholder='Optional comment'
 								/>
 							</div>
-						</Card>
+						</div>
 					))}
 				</div>
 

@@ -13,6 +13,7 @@ type Option = {
 };
 
 type Props = {
+	label?: string;
 	value: string[];
 	options: Option[];
 	onChange: (value: string[]) => void;
@@ -20,7 +21,7 @@ type Props = {
 	className?: string;
 };
 
-export default function MultiSelector({ value, options, onChange, placeholder = 'Select', className }: Props) {
+export default function MultiSelector({ value, options, onChange, placeholder = 'Select', className, label }: Props) {
 	const [open, setOpen] = useState(false);
 	const ref = useRef<HTMLDivElement>(null);
 
@@ -69,6 +70,8 @@ export default function MultiSelector({ value, options, onChange, placeholder = 
 
 	return (
 		<div ref={ref} className={`relative min-w-[220px] ${className ?? ''}`}>
+			{label && <label className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>{label}</label>}
+
 			<Button type='button' onClick={() => setOpen((v) => !v)} className='w-full justify-start'>
 				<div className='flex items-center gap-2 overflow-hidden'>
 					{value.length > 0 && (

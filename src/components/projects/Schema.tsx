@@ -1,16 +1,14 @@
 /** @format */
 'use client';
 
-'use client';
-
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp, FileText, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import FileGrid from '../ui/FileGrid';
-import FileList from '../ui/FileList';
+import FileEditModal from '../files/FileEditModal';
+import FileGrid from '../files/FileGrid';
+import FileList from '../files/FileList';
 import FileUploadModal from '../files/FileUploadModal';
-import ProjectFile from '@/components/ui/File';
+import Loading from '../ui/Loading';
+import { Upload } from 'lucide-react';
 import { User } from 'next-auth';
 import ViewToggle from '../ui/ViewToggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
@@ -43,13 +41,10 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 	const [uploadModalOpen, setUploadModalOpen] = useState(false);
 
+	const [editingFile, setEditingFile] = useState<FileEntry | null>(null);
+	const [editModalOpen, setEditModalOpen] = useState(false);
+
 	const canWrite = has('projects.write');
-
-	useEffect(() => {
-		if (!session?.user?.preferences?.defaultView) return;
-
-		setView(session.user.preferences.defaultView);
-	}, [session]);
 
 	const load = async () => {
 		try {
@@ -70,10 +65,6 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 		}
 	};
 
-	useEffect(() => {
-		load();
-	}, [basePath, client]);
-
 	const download = (path: string) => {
 		const a = document.createElement('a');
 
@@ -91,6 +82,42 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 			collaborators,
 		});
 	};
+
+	const saveFileMetadata = async (file: FileEntry, name: string, comment: string, collaborators: string[]) => {
+		const extension = file.name.split('.').pop() ?? '';
+
+		const filename = file.name.replace(new RegExp(`\\.${extension}$`), '');
+
+		const parts = filename.split('__');
+
+		const date = parts[1] ?? '';
+		const uploader = parts[2] ?? '';
+
+		const newFilename = [name.replaceAll(' ', '_'), date, uploader, collaborators.join('-'), comment].join('__') + '.' + extension;
+
+		await fetch('/api/files', {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				oldPath: file.path,
+				newName: newFilename,
+			}),
+		});
+
+		await load();
+	};
+
+	useEffect(() => {
+		if (!session?.user?.preferences?.defaultView) return;
+
+		setView(session.user.preferences.defaultView);
+	}, [session]);
+
+	useEffect(() => {
+		load();
+	}, [basePath, client]);
 
 	return (
 		<section className='space-y-6'>
@@ -119,13 +146,7 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 					border: '1px solid var(--border)',
 				}}>
 				<div className='flex items-center justify-between'>
-					<div>
-						<div className='font-semibold'>Files</div>
-
-						<div className='text-sm text-zinc-500'>
-							{files.length} file{files.length !== 1 ? 's' : ''}
-						</div>
-					</div>
+					<div></div>
 					<div className='flex gap-2'>
 						<ViewToggle value={view ?? 'list'} onChange={setView} />
 
@@ -142,11 +163,33 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 					</div>
 				</div>
 
-				{loading && <div className='text-sm text-zinc-500'>Loading schemas...</div>}
+				{loading && <Loading title="Loading schema's" />}
 
 				{!loading && files.length === 0 && <div className='border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-10 text-center text-sm text-zinc-500'>No schema files found</div>}
 
-				{view === 'grid' ? <FileGrid files={files} users={users} onDownload={download} /> : <FileList files={files} users={users} onDownload={download} />}
+				{view === 'grid' ? (
+					<FileGrid
+						files={files}
+						users={users}
+						onDownload={download}
+						onEdit={(file) => {
+							setEditingFile(file);
+							setEditModalOpen(true);
+						}}
+						permission='projects.write'
+					/>
+				) : (
+					<FileList
+						files={files}
+						users={users}
+						onDownload={download}
+						onEdit={(file) => {
+							setEditingFile(file);
+							setEditModalOpen(true);
+						}}
+						permission='projects.write'
+					/>
+				)}
 			</div>
 
 			<FileUploadModal
@@ -159,6 +202,26 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 					setSelectedFiles([]);
 
 					await load();
+				}}
+			/>
+
+			<FileEditModal
+				open={editModalOpen}
+				file={editingFile}
+				users={users}
+				onClose={() => {
+					setEditModalOpen(false);
+					setEditingFile(null);
+				}}
+				onSave={async (name, comment, collaborators) => {
+					if (!editingFile) {
+						return;
+					}
+
+					await saveFileMetadata(editingFile, name, comment, collaborators);
+
+					setEditModalOpen(false);
+					setEditingFile(null);
 				}}
 			/>
 		</section>

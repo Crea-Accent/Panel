@@ -3,6 +3,7 @@
 
 import Button from './Button';
 import Modal from './Modal';
+import { useEffect } from 'react';
 
 type Props = {
 	open: boolean;
@@ -16,6 +17,19 @@ type Props = {
 };
 
 export default function ConfirmDialog({ open, title = 'Are you sure?', description, confirmText = 'Confirm', cancelText = 'Cancel', loading = false, onClose, onConfirm }: Props) {
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') onClose();
+			if (e.key == 'Enter') onConfirm();
+		};
+
+		window.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			window.removeEventListener('keydown', onKeyDown);
+		};
+	}, [onClose]);
+
 	return (
 		<Modal
 			open={open}

@@ -1,12 +1,14 @@
 /** @format */
 'use client';
 
-import ModuleBuilder, { ModuleInstance } from '@/components/setup/ModuleBuilder';
+import ModuleBuilder, { ModuleInstance } from '@/components/canbus/ModuleBuilder';
 import { useEffect, useState } from 'react';
 import dt00_24 from '@/../public/modules/DT00-24/module.json' with { type: 'json' };
 import dt00_24sw from '@/../public/modules/DT00-24SW/module.json' with { type: 'json' };
 import dt18_gt from '@/../public/modules/DT18-GT/module.json' with { type: 'json' };
 import dt18_hs from '@/../public/modules/DT18-HS/module.json' with { type: 'json' };
+import Loading from '../ui/Loading';
+
 type Props = {
 	client: string;
 	basePath: string;
@@ -46,7 +48,7 @@ export type ModuleUnit = {
 	type: 'temperature' | 'virtual' | 'input' | 'relay' | 'dimmer' | 'motor' | 'audio' | 'ir' | 'dali';
 };
 
-export default function Setup({ client, basePath }: Props) {
+export default function Canbus({ client, basePath }: Props) {
 	const [foundModules, setFoundModules] = useState<ModuleInstance[]>([]);
 	const [topology, setTopology] = useState<ModuleInstance[]>([]);
 	const [loading, setLoading] = useState(true);
@@ -326,9 +328,7 @@ export default function Setup({ client, basePath }: Props) {
 		saveTopology();
 	}, [topology, loaded]);
 
-	if (loading) {
-		return null;
-	}
+	if (loading) return <Loading title='Loading programmation' description='Reading DUO files and building CAN bus topology' />;
 
 	return <ModuleBuilder foundModules={foundModules} topology={topology} setTopology={setTopology} />;
 }

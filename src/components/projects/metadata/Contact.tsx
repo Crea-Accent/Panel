@@ -198,7 +198,7 @@ export default function Contact({ contacts: selectedContacts, onChange }: Props)
 				{has('projects.write') && (
 					<button
 						onClick={() => setCreateOpen(true)}
-						className='rounded-xl p-4 flex flex-col items-center justify-center gap-2 min-h-[220px] transition hover:scale-[1.01]'
+						className='rounded-xl p-4 flex flex-col items-center justify-center gap-2 min-h-55 transition hover:scale-[1.01]'
 						style={{
 							background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
 							border: '1px dashed color-mix(in srgb, var(--accent) 30%, var(--border))',

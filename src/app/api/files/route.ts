@@ -196,8 +196,8 @@ export async function DELETE(request: NextRequest) {
 	const settings = loadSettings();
 	const projects = loadProjects();
 
-	const url = new URL(request.url);
-	const rawPath = url.searchParams.get('path');
+	const body = await request.json();
+	const { path: rawPath } = body || {};
 
 	if (!rawPath) {
 		return NextResponse.json({ error: 'Missing path' }, { status: 400 });

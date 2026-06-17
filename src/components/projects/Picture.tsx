@@ -1,16 +1,22 @@
 /** @format */
-
-// eslint-disable @typescript-eslint/no-explicit-any
-
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronLeft, ChevronRight, Download, Eye, Image as ImageIcon, Pencil, Trash2, Upload, X } from 'lucide-react';
-import { DndContext, DragOverlay, useDraggable, useDroppable } from '@dnd-kit/core';
+import { Download, Pencil, Trash2, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
-import Image from 'next/image';
+import Button from '../ui/Button';
+import ConfirmDialog from '../ui/ConfirmDialog';
+import FileEditModal from '../files/FileEditModal';
+import FileGrid from '../files/FileGrid';
+import FileList from '../files/FileList';
+import FileUploadModal from '../files/FileUploadModal';
+import Input from '../ui/Input';
+import Loading from '../ui/Loading';
+import Modal from '../ui/Modal';
+import { User } from 'next-auth';
+import ViewToggle from '../ui/ViewToggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
+import { useSession } from 'next-auth/react';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -19,402 +25,512 @@ type FileEntry = {
 	type: string;
 };
 
-type FolderGroup = {
-	name: string;
-	images: FileEntry[];
-};
-
 const IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.webp', '.gif'];
 
-/* ---------------- Draggable ---------------- */
+function getFolderName(file: FileEntry) {
+	const parts = file.path.split(/[\\/]/);
 
-function DraggableImage({ img, children, enabled }: { img: FileEntry; children: React.ReactNode; enabled: boolean }) {
-	const { attributes, listeners, setNodeRef } = useDraggable({
-		id: img.path,
-		disabled: !enabled,
-	});
+	const folder = parts[parts.length - 2];
 
-	if (!enabled) return <>{children}</>;
+	if (folder === 'picture') {
+		return 'Ungrouped';
+	}
 
-	return (
-		<div ref={setNodeRef}>
-			<div {...listeners} {...attributes}>
-				{children}
-			</div>
-		</div>
-	);
-}
-
-/* ---------------- Droppable Folder ---------------- */
-
-function DroppableFolder({ id, children, enabled }: { id: string; children: React.ReactNode; enabled: boolean }) {
-	const { setNodeRef, isOver } = useDroppable({
-		id,
-		disabled: !enabled,
-	});
-
-	if (!enabled) return <div className='space-y-4'>{children}</div>;
-
-	return (
-		<div
-			ref={setNodeRef}
-			className={`
-			space-y-4
-			transition
-			${isOver ? 'ring-2 ring-(--accent) rounded-xl p-2' : ''}
-		`}>
-			{children}
-		</div>
-	);
+	return folder;
 }
 
 export default function Pictures({ basePath, client }: { basePath: string; client: string }) {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	const { data: session } = useSession();
+
+	const { uploading, uploadFile } = useUpload();
 	const { has } = usePermissions();
 
-	const hasWrite = has('projects.write');
-	const { uploading, uploadFile } = useUpload();
+	const [draggingFile, setDraggingFile] = useState<FileEntry | null>(null);
+	const [files, setFiles] = useState<FileEntry[]>([]);
+	const [groups, setGroups] = useState<FileEntry[]>([]);
+	const [users, setUsers] = useState<User[]>([]);
 
-	const [groups, setGroups] = useState<FolderGroup[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [view, setView] = useState<'grid' | 'list'>('grid');
 
-	const [viewerImages, setViewerImages] = useState<FileEntry[]>([]);
-	const [viewerIndex, setViewerIndex] = useState<number | null>(null);
+	const [uploadModalOpen, setUploadModalOpen] = useState(false);
+	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-	const [draggingImage, setDraggingImage] = useState<FileEntry | null>(null);
+	const [editModalOpen, setEditModalOpen] = useState(false);
+	const [editingFile, setEditingFile] = useState<FileEntry | null>(null);
 
-	const [isMobile, setIsMobile] = useState(false);
+	const [newGroupOpen, setNewGroupOpen] = useState(false);
+	const [newGroupName, setNewGroupName] = useState('');
+	const [renameGroupOpen, setRenameGroupOpen] = useState(false);
+	const [groupToRename, setGroupToRename] = useState<FileEntry | null>(null);
+	const [deleteGroup, setDeleteGroup] = useState<FileEntry | null>(null);
+	const [deletingGroup, setDeletingGroup] = useState(false);
 
-	const inputRef = useRef<HTMLInputElement | null>(null);
-
-	const baseDir = `${basePath}/${client}/picture`;
-
-	/* ---------------- Detect mobile ---------------- */
-
-	useEffect(() => {
-		(() => {
-			const touch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-
-			setIsMobile(touch);
-		})();
-	}, []);
-
-	const dragEnabled = !isMobile;
-
-	/* ---------------- Load ---------------- */
+	const isAllowed = has('projects.write');
 
 	const load = async () => {
-		setLoading(true);
+		try {
+			setLoading(true);
 
-		const res = await fetch(`/api/files?view=${encodeURIComponent(baseDir)}&recursive=1`);
-		const data: FileEntry[] = await res.json();
+			const picturesPath = `${basePath}/${client}/picture`;
 
-		const directories = data.filter((f) => f.type === 'directory');
+			const [filesRes, usersRes] = await Promise.all([fetch(`/api/files?view=${encodeURIComponent(picturesPath)}&recursive=1`), fetch('/api/users')]);
 
-		const imageFiles = data.filter((f) => f.type === 'file' && IMAGE_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext)));
+			const fileData: FileEntry[] = await filesRes.json();
 
-		const grouped: Record<string, FileEntry[]> = {};
+			const userData = await usersRes.json();
 
-		for (const dir of directories) grouped[dir.name] = [];
+			setUsers(userData.users ?? []);
 
-		for (const file of imageFiles) {
-			const normalized = file.path.replace(/\\/g, '/');
-			const parts = normalized.split('/');
-			const idx = parts.lastIndexOf('pictures');
+			setGroups(fileData.filter((file) => file.type === 'directory'));
 
-			let folder = 'Ungrouped';
+			const dirs = fileData.filter((file) => file.type === 'directory');
 
-			if (idx !== -1 && parts.length > idx + 2) {
-				folder = parts[idx + 1];
-			}
+			const hasUngrouped = fileData.some((file) => file.type === 'file' && IMAGE_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext)) && getFolderName(file) === 'Ungrouped');
 
-			if (!grouped[folder]) grouped[folder] = [];
+			setGroups(
+				hasUngrouped
+					? [
+							{
+								name: 'Ungrouped',
+								path: '',
+								type: 'directory',
+							},
+							...dirs,
+						]
+					: dirs
+			);
 
-			grouped[folder].push(file);
+			setFiles(fileData.filter((file) => file.type === 'file' && IMAGE_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext))));
+		} finally {
+			setLoading(false);
 		}
-
-		if (!grouped['Ungrouped']?.length) delete grouped['Ungrouped'];
-
-		setGroups(
-			Object.entries(grouped).map(([name, images]) => ({
-				name,
-				images,
-			}))
-		);
-
-		setLoading(false);
-	};
-
-	useEffect(() => {
-		(() => {
-			load();
-		})();
-	}, [basePath, client]);
-
-	/* ---------------- Upload ---------------- */
-
-	const upload = async (files: FileList) => {
-		for (const file of Array.from(files)) {
-			await uploadFile(file, client, 'picture');
-		}
-
-		load();
-	};
-
-	/* ---------------- Image Actions ---------------- */
-
-	const renameFolder = async (name: string) => {
-		const newName = prompt('New folder name', name);
-		if (!newName || newName === name) return;
-
-		await fetch('/api/files', {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({
-				oldPath: `${baseDir}/${name}`,
-				newName,
-			}),
-		});
-
-		load();
-	};
-
-	const deleteFolder = async (name: string) => {
-		if (!confirm(`Delete folder "${name}" and all images?`)) return;
-
-		await fetch(`/api/files?path=${encodeURIComponent(`${baseDir}/${name}`)}`, {
-			method: 'DELETE',
-		});
-
-		load();
 	};
 
 	const download = (path: string) => {
-		const url = `/api/files/download?path=${encodeURIComponent(path)}`;
-
 		const a = document.createElement('a');
-		a.href = url;
-		a.download = path.split('/').pop() || 'file';
+
+		a.href = `/api/files/download?path=${encodeURIComponent(path)}`;
 
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
 	};
 
-	const deleteImage = async (path: string) => {
-		if (!confirm('Delete image?')) return;
-
-		await fetch(`/api/files?path=${encodeURIComponent(path)}`, {
-			method: 'DELETE',
+	const uploadWithMetadata = async (file: File, name: string, comment: string, collaborators: string[]) => {
+		await uploadFile(file, client, 'picture', {
+			name,
+			comment,
+			collaborators,
 		});
-
-		load();
 	};
 
-	const renameImage = async (path: string, name: string) => {
-		const newName = prompt('New file name', name);
-		if (!newName) return;
+	const saveFileMetadata = async (file: FileEntry, name: string, comment: string, collaborators: string[]) => {
+		const extension = file.name.split('.').pop() ?? '';
+
+		const filename = file.name.replace(new RegExp(`\\.${extension}$`), '');
+
+		const parts = filename.split('__');
+
+		const date = parts[1] ?? '';
+		const uploader = parts[2] ?? '';
+
+		const newFilename = [name.replaceAll(' ', '_'), date, uploader, collaborators.join('-'), comment].join('__') + '.' + extension;
 
 		await fetch('/api/files', {
 			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: JSON.stringify({
-				oldPath: path,
-				newName,
+				oldPath: file.path,
+				newName: newFilename,
 			}),
 		});
 
-		load();
+		await load();
 	};
 
-	const moveImage = async (path: string, folder: string) => {
+	const createGroup = async () => {
+		if (!newGroupName.trim()) {
+			return;
+		}
+
+		const picturesPath = `${basePath}/${client}/picture`;
+
+		await fetch('/api/files', {
+			method: 'POST',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				dir: picturesPath,
+				name: newGroupName.trim(),
+			}),
+		});
+
+		setNewGroupOpen(false);
+		setNewGroupName('');
+
+		await load();
+	};
+
+	const renameGroup = async () => {
+		if (!groupToRename || !newGroupName.trim()) {
+			return;
+		}
+
 		await fetch('/api/files', {
 			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: JSON.stringify({
-				oldPath: path,
-				newDir: `${baseDir}/${folder}`,
+				oldPath: groupToRename.path,
+				newName: newGroupName.trim(),
 			}),
 		});
 
+		setRenameGroupOpen(false);
+		setGroupToRename(null);
+		setNewGroupName('');
+
+		await load();
+	};
+
+	const moveFileToGroup = async (file: FileEntry | null, group: string) => {
+		if (!file) return;
+		if (getFolderName(file) === group) {
+			setDraggingFile(null);
+			return;
+		}
+
+		const targetDir = group === 'Ungrouped' ? `${basePath}/${client}/picture` : `${basePath}/${client}/picture/${group}`;
+
+		await fetch('/api/files', {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				oldPath: file.path,
+				newDir: targetDir,
+			}),
+		});
+
+		setDraggingFile(null);
+
+		await load();
+	};
+
+	const downloadGroup = (group: FileEntry) => {
+		const a = document.createElement('a');
+
+		a.href = `/api/files/download?path=${encodeURIComponent(group.path)}`;
+
+		document.body.appendChild(a);
+		a.click();
+		document.body.removeChild(a);
+	};
+
+	const deletePictureGroup = async () => {
+		if (!deleteGroup) {
+			return;
+		}
+
+		try {
+			setDeletingGroup(true);
+
+			await fetch('/api/files', {
+				method: 'DELETE',
+				headers: {
+					'Content-Type': 'application/json',
+				},
+				body: JSON.stringify({
+					path: deleteGroup.path,
+					recursive: true,
+				}),
+			});
+
+			setDeleteGroup(null);
+
+			await load();
+		} finally {
+			setDeletingGroup(false);
+		}
+	};
+
+	useEffect(() => {
+		if (!session?.user?.preferences?.defaultView) {
+			return;
+		}
+
+		setView(session.user.preferences.defaultView);
+	}, [session]);
+
+	useEffect(() => {
 		load();
-	};
-
-	/* ---------------- Drag ---------------- */
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const handleDragStart = (event: any) => {
-		const path = event.active.id;
-
-		const img = groups.flatMap((g) => g.images).find((i) => i.path === path);
-
-		if (img) setDraggingImage(img);
-	};
-
-	// eslint-disable-next-line @typescript-eslint/no-explicit-any
-	const handleDragEnd = (event: any) => {
-		if (!dragEnabled) return;
-
-		const { active, over } = event;
-
-		setDraggingImage(null);
-
-		if (!over) return;
-
-		const img = groups.flatMap((g) => g.images).find((i) => i.path === active.id);
-		if (!img) return;
-
-		const parts = img.path.replace(/\\/g, '/').split('/');
-		const currentFolder = parts[parts.length - 2];
-
-		if (currentFolder === over.id) return;
-
-		moveImage(active.id, over.id);
-	};
-
-	/* ---------------- Viewer ---------------- */
-
-	const openViewer = (images: FileEntry[], index: number) => {
-		setViewerImages(images);
-		setViewerIndex(index);
-	};
-
-	const closeViewer = () => setViewerIndex(null);
-
-	const next = () => viewerIndex !== null && setViewerIndex((viewerIndex + 1) % viewerImages.length);
-
-	const prev = () => viewerIndex !== null && setViewerIndex((viewerIndex - 1 + viewerImages.length) % viewerImages.length);
-
-	/* ---------------- UI ---------------- */
-
-	const Content = (
-		<>
-			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6'>
-				<div className='flex justify-between'>
-					{hasWrite && (
-						<button onClick={() => inputRef.current?.click()} disabled={uploading} className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white'>
-							<Upload className='w-4 h-4' />
-							Upload
-						</button>
-					)}
-				</div>
-
-				{loading && <div className='text-sm text-gray-500'>Loading images...</div>}
-
-				{groups.map((group) => (
-					<DroppableFolder key={group.name} id={group.name} enabled={dragEnabled}>
-						<div className='space-y-4'>
-							<div className='flex items-center justify-between'>
-								<h3 className='text-sm font-medium'>
-									{group.name} ({group.images.length})
-								</h3>
-
-								<div className='flex items-center gap-2'>
-									<button onClick={() => renameFolder(group.name)} className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'>
-										<Pencil size={14} />
-									</button>
-
-									<button onClick={() => deleteFolder(group.name)} className='p-1 rounded hover:bg-zinc-200 dark:hover:bg-zinc-700'>
-										<Trash2 size={14} />
-									</button>
-								</div>
-							</div>
-
-							<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4'>
-								{group.images.map((img, i) => (
-									<div key={img.path} className='bg-zinc-50 dark:bg-zinc-800 rounded-xl overflow-hidden shadow-sm'>
-										<DraggableImage img={img} enabled={dragEnabled}>
-											<div className='relative h-40 cursor-pointer' onClick={() => openViewer(group.images, i)}>
-												<Image src={`/api/files/download?path=${encodeURIComponent(img.path)}`} alt={img.name} fill className='object-cover' />
-											</div>
-										</DraggableImage>
-
-										<div className='flex items-center justify-between px-3 py-2 text-xs'>
-											<span className='truncate'>{img.name}</span>
-
-											<div className='flex gap-2'>
-												<button onClick={() => openViewer(group.images, i)}>
-													<Eye size={14} />
-												</button>
-
-												<button onClick={() => download(img.path)}>
-													<Download size={14} />
-												</button>
-
-												<button onClick={() => renameImage(img.path, img.name)}>
-													<Pencil size={14} />
-												</button>
-
-												<button onClick={() => deleteImage(img.path)}>
-													<Trash2 size={14} />
-												</button>
-											</div>
-										</div>
-									</div>
-								))}
-							</div>
-						</div>
-					</DroppableFolder>
-				))}
-			</div>
-
-			{dragEnabled && (
-				<DragOverlay>
-					{draggingImage && (
-						<div className='w-40 h-40 rounded-xl overflow-hidden shadow-xl relative'>
-							<Image src={`/api/files/download?path=${encodeURIComponent(draggingImage.path)}`} alt={draggingImage.name} fill className='object-cover' />
-						</div>
-					)}
-				</DragOverlay>
-			)}
-		</>
-	);
+	}, [basePath, client]);
 
 	return (
 		<section className='space-y-6'>
-			<header className='flex items-center gap-3'>
-				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
-					<ImageIcon className='w-5 h-5 text-(--accent) dark:text-(--accent)' />
+			<input
+				ref={inputRef}
+				type='file'
+				multiple
+				accept='image/*'
+				className='hidden'
+				onChange={(e) => {
+					const files = Array.from(e.target.files ?? []);
+
+					if (!files.length) {
+						return;
+					}
+
+					setSelectedFiles(files);
+					setUploadModalOpen(true);
+
+					e.target.value = '';
+				}}
+			/>
+
+			<div
+				className='rounded-3xl p-6 space-y-6'
+				style={{
+					background: 'var(--container)',
+					border: '1px solid var(--border)',
+				}}>
+				<div className='flex items-center justify-between'>
+					<div></div>
+
+					<div className='flex gap-2'>
+						<ViewToggle value={view} onChange={setView} />
+
+						{isAllowed && (
+							<>
+								<Button
+									onClick={() => {
+										setNewGroupName('');
+										setNewGroupOpen(true);
+									}}>
+									New Group
+								</Button>
+
+								<Button
+									onClick={() => inputRef.current?.click()}
+									disabled={uploading}
+									className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white hover:bg-(--hover-accent) transition'>
+									<Upload size={16} />
+
+									{uploading ? 'Uploading...' : 'Upload'}
+								</Button>
+							</>
+						)}
+					</div>
 				</div>
 
-				<div>
-					<h2 className='text-lg font-semibold'>Pictures</h2>
-					<p className='text-sm text-gray-500 dark:text-zinc-400'>Site images and documentation</p>
-				</div>
-			</header>
+				{loading && <Loading title='Loading pictures' />}
 
-			<input ref={inputRef} type='file' accept='image/*' multiple className='hidden' onChange={(e) => e.target.files && upload(e.target.files)} />
-
-			{dragEnabled ? (
-				<DndContext onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
-					{Content}
-				</DndContext>
-			) : (
-				Content
-			)}
-
-			<AnimatePresence>
-				{viewerIndex !== null && viewerImages[viewerIndex] && (
-					<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className='fixed inset-0 bg-black/90 z-50 flex items-center justify-center'>
-						<div className='relative w-[90vw] h-[90vh] flex items-center justify-center'>
-							<button onClick={() => setViewerIndex(null)} className='absolute top-6 right-6 text-white z-10'>
-								<X />
-							</button>
-
-							<button onClick={() => setViewerIndex((viewerIndex - 1 + viewerImages.length) % viewerImages.length)} className='absolute left-4 text-white z-10'>
-								<ChevronLeft size={40} />
-							</button>
-
-							<div className='relative w-full h-full'>
-								<Image src={`/api/files/download?path=${encodeURIComponent(viewerImages[viewerIndex].path)}`} alt={viewerImages[viewerIndex].name} fill className='object-contain' priority />
-							</div>
-
-							<button onClick={() => setViewerIndex((viewerIndex + 1) % viewerImages.length)} className='absolute right-4 text-white z-10'>
-								<ChevronRight size={40} />
-							</button>
-						</div>
-					</motion.div>
+				{!loading && groups.length === 0 && files.length == 0 && (
+					<div className='border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-10 text-center text-sm text-zinc-500'>No pictures found</div>
 				)}
-			</AnimatePresence>
+
+				{!loading && (
+					<>
+						{groups.map((group) => {
+							const folder = group.name;
+
+							const folderFiles = files.filter((file) => getFolderName(file) === folder);
+
+							return (
+								<div
+									key={folder}
+									className='space-y-4'
+									onDragOver={(e) => e.preventDefault()}
+									onDrop={async () => {
+										await moveFileToGroup(draggingFile, folder);
+									}}>
+									<div className='flex items-center justify-between'>
+										<h3 className='font-semibold'>{folder}</h3>
+
+										<div className='text-sm text-zinc-500 flex items-center gap-2'>
+											<div>
+												{folderFiles.length} image
+												{folderFiles.length !== 1 ? 's' : ''}
+											</div>
+
+											{group.name !== 'Ungrouped' && isAllowed && (
+												<>
+													<Button
+														variant='ghost'
+														onClick={() => {
+															setGroupToRename(group);
+															setNewGroupName(group.name);
+															setRenameGroupOpen(true);
+														}}>
+														<Pencil size={15} />
+													</Button>
+
+													<Button variant='ghost' onClick={() => downloadGroup(group)}>
+														<Download size={15} />
+													</Button>
+
+													<Button variant='danger-ghost' onClick={() => setDeleteGroup(group)}>
+														<Trash2 size={15} />
+													</Button>
+												</>
+											)}
+										</div>
+									</div>
+
+									{folderFiles.length === 0 && (
+										<div
+											className='rounded-2xl p-4 min-h-15 flex items-center justify-center border border-dashed'
+											style={{
+												background: 'var(--container)',
+												borderColor: 'var(--border)',
+											}}>
+											<div className='text-center'>
+												<div className='text-sm font-medium text-zinc-500'>No images</div>
+
+												<div className='text-xs text-zinc-400 mt-1'>Drag images here or upload new ones</div>
+											</div>
+										</div>
+									)}
+
+									{view === 'grid' ? (
+										<FileGrid
+											files={folderFiles}
+											users={users}
+											onDownload={download}
+											onEdit={(file) => {
+												setEditingFile(file);
+												setEditModalOpen(true);
+											}}
+											onDragStart={setDraggingFile}
+											permission='projects.write'
+										/>
+									) : (
+										<FileList
+											files={folderFiles}
+											users={users}
+											onDownload={download}
+											onEdit={(file) => {
+												setEditingFile(file);
+												setEditModalOpen(true);
+											}}
+											onDragStart={setDraggingFile}
+											permission='projects.write'
+										/>
+									)}
+								</div>
+							);
+						})}
+					</>
+				)}
+			</div>
+
+			<Modal
+				open={newGroupOpen}
+				title='New Picture Group'
+				onClose={() => {
+					setNewGroupOpen(false);
+					setNewGroupName('');
+				}}
+				footer={
+					<>
+						<Button
+							variant='secondary'
+							onClick={() => {
+								setNewGroupOpen(false);
+								setNewGroupName('');
+							}}>
+							Cancel
+						</Button>
+
+						<Button onClick={createGroup}>Create</Button>
+					</>
+				}>
+				<Input
+					value={newGroupName}
+					onChange={(e) => setNewGroupName(e.target.value)}
+					placeholder='Kitchen'
+					className='w-full rounded-xl border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-transparent'
+				/>
+			</Modal>
+
+			<Modal
+				open={renameGroupOpen}
+				title='Rename Group'
+				onClose={() => {
+					setRenameGroupOpen(false);
+					setGroupToRename(null);
+				}}
+				footer={
+					<>
+						<Button
+							variant='secondary'
+							onClick={() => {
+								setRenameGroupOpen(false);
+								setGroupToRename(null);
+							}}>
+							Cancel
+						</Button>
+
+						<Button onClick={renameGroup}>Save</Button>
+					</>
+				}>
+				<Input value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} />
+			</Modal>
+
+			<ConfirmDialog
+				open={!!deleteGroup}
+				title='Delete picture group'
+				description={`Delete "${deleteGroup?.name}" and all images inside it? This cannot be undone.`}
+				confirmText='Delete Group'
+				loading={deletingGroup}
+				onClose={() => {
+					if (!deletingGroup) {
+						setDeleteGroup(null);
+					}
+				}}
+				onConfirm={deletePictureGroup}
+			/>
+
+			<FileUploadModal
+				open={uploadModalOpen}
+				files={selectedFiles}
+				users={users}
+				onUpload={uploadWithMetadata}
+				onClose={async () => {
+					setUploadModalOpen(false);
+					setSelectedFiles([]);
+
+					await load();
+				}}
+			/>
+
+			<FileEditModal
+				open={editModalOpen}
+				file={editingFile}
+				users={users}
+				onClose={() => {
+					setEditModalOpen(false);
+					setEditingFile(null);
+				}}
+				onSave={async (name, comment, collaborators) => {
+					if (!editingFile) {
+						return;
+					}
+
+					await saveFileMetadata(editingFile, name, comment, collaborators);
+
+					setEditModalOpen(false);
+					setEditingFile(null);
+				}}
+			/>
 		</section>
 	);
 }

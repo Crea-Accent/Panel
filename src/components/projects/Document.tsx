@@ -1,12 +1,18 @@
 /** @format */
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp, Download, File, Upload } from 'lucide-react';
-import { FaFileExcel, FaFilePdf, FaFileWord } from 'react-icons/fa6';
 import { useEffect, useRef, useState } from 'react';
 
+import FileEditModal from '../files/FileEditModal';
+import FileGrid from '../files/FileGrid';
+import FileList from '../files/FileList';
+import FileUploadModal from '../files/FileUploadModal';
+import Loading from '../ui/Loading';
+import { Upload } from 'lucide-react';
+import { User } from 'next-auth';
+import ViewToggle from '../ui/ViewToggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
+import { useSession } from 'next-auth/react';
 import { useUpload } from '@/providers/UploadProvider';
 
 type FileEntry = {
@@ -18,182 +24,206 @@ type FileEntry = {
 const DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.xlsm'];
 
 export default function Documents({ basePath, client }: { basePath: string; client: string }) {
+	const inputRef = useRef<HTMLInputElement>(null);
+
+	const { data: session } = useSession();
+
 	const { uploading, uploadFile } = useUpload();
-	const [files, setFiles] = useState<FileEntry[]>([]);
-	const [loading, setLoading] = useState(true);
-	const [open, setOpen] = useState(true);
-	const inputRef = useRef<HTMLInputElement | null>(null);
 	const { has } = usePermissions();
 
-	const hasWrite = has('projects.write');
+	const [files, setFiles] = useState<FileEntry[]>([]);
+	const [users, setUsers] = useState<User[]>([]);
+
+	const [loading, setLoading] = useState(true);
+	const [open, setOpen] = useState(true);
+	const [view, setView] = useState<'grid' | 'list'>('list');
+
+	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+	const [uploadModalOpen, setUploadModalOpen] = useState(false);
+
+	const [editingFile, setEditingFile] = useState<FileEntry | null>(null);
+	const [editModalOpen, setEditModalOpen] = useState(false);
+
+	const canWrite = has('projects.write');
 
 	const load = async () => {
-		setLoading(true);
+		try {
+			setLoading(true);
 
-		const docsPath = `${basePath}/${client}/documents`;
-		const res = await fetch(`/api/files?view=${encodeURIComponent(docsPath)}&ensure=1`);
-		const data: FileEntry[] = await res.json();
+			const documentsPath = `${basePath}/${client}/documents`;
 
-		const filtered = data.filter((f) => f.type === 'file' && DOCUMENT_EXTENSIONS.some((ext) => f.name.toLowerCase().endsWith(ext)));
+			const [filesRes, usersRes] = await Promise.all([fetch(`/api/files?view=${encodeURIComponent(documentsPath)}`), fetch('/api/users')]);
 
-		setFiles(filtered);
-		setLoading(false);
-	};
+			const fileData: FileEntry[] = await filesRes.json();
+			const userData = await usersRes.json();
 
-	useEffect(() => {
-		(() => {
-			load();
-		})();
-	}, [basePath, client]);
+			setUsers(userData.users ?? []);
 
-	const upload = async (file: File) => {
-		const success = await uploadFile(file, client, 'documents');
-		if (success) await load();
+			setFiles(fileData.filter((file) => file.type === 'file' && DOCUMENT_EXTENSIONS.some((ext) => file.name.toLowerCase().endsWith(ext))));
+		} finally {
+			setLoading(false);
+		}
 	};
 
 	const download = (path: string) => {
-		const url = `/api/files/download?path=${encodeURIComponent(path)}`;
 		const a = document.createElement('a');
-		a.href = url;
+
+		a.href = `/api/files/download?path=${encodeURIComponent(path)}`;
+
 		document.body.appendChild(a);
 		a.click();
 		document.body.removeChild(a);
 	};
 
-	const getExtension = (name: string) => {
-		const idx = name.lastIndexOf('.');
-		return idx === -1 ? '' : name.slice(idx).toLowerCase();
+	const uploadWithMetadata = async (file: File, name: string, comment: string, collaborators: string[]) => {
+		await uploadFile(file, client, 'documents', {
+			name,
+			comment,
+			collaborators,
+		});
 	};
 
-	const getDocumentGroup = (name: string) => {
-		const ext = getExtension(name);
+	const saveFileMetadata = async (file: FileEntry, name: string, comment: string, collaborators: string[]) => {
+		const extension = file.name.split('.').pop() ?? '';
 
-		if (ext === '.pdf') return 'PDF';
-		if (['.doc', '.docx'].includes(ext)) return 'Word';
-		if (['.xls', '.xlsx', '.xlsm'].includes(ext)) return 'Excel';
+		const filename = file.name.replace(new RegExp(`\\.${extension}$`), '');
 
-		return 'Other';
+		const parts = filename.split('__');
+
+		const date = parts[1] ?? '';
+		const uploader = parts[2] ?? '';
+
+		const newFilename = [name.replaceAll(' ', '_'), date, uploader, collaborators.join('-'), comment].join('__') + '.' + extension;
+
+		await fetch('/api/files', {
+			method: 'PATCH',
+			headers: {
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify({
+				oldPath: file.path,
+				newName: newFilename,
+			}),
+		});
+
+		await load();
 	};
 
-	const groupedFiles = files.reduce<Record<string, FileEntry[]>>((acc, file) => {
-		const group = getDocumentGroup(file.name);
+	useEffect(() => {
+		if (!session?.user?.preferences?.defaultView) return;
 
-		if (!acc[group]) {
-			acc[group] = [];
-		}
+		setView(session.user.preferences.defaultView);
+	}, [session]);
 
-		acc[group].push(file);
-
-		return acc;
-	}, {});
-
-	const groupOrder = ['PDF', 'Word', 'Excel', 'Other'];
-
-	const sortedGroups = Object.entries(groupedFiles).sort(([a], [b]) => {
-		return groupOrder.indexOf(a) - groupOrder.indexOf(b);
-	});
-
-	const getFileIcon = (name: string) => {
-		const ext = getExtension(name);
-
-		if (ext === '.pdf') {
-			return <FaFilePdf className='w-4 h-4 text-red-500' />;
-		}
-
-		if (['.doc', '.docx'].includes(ext)) {
-			return <FaFileWord className='w-4 h-4 text-blue-500' />;
-		}
-
-		if (['.xls', '.xlsx', '.xlsm'].includes(ext)) {
-			return <FaFileExcel className='w-4 h-4 text-green-500' />;
-		}
-
-		return <File className='w-4 h-4 text-gray-400 dark:text-zinc-500' />;
-	};
-
-	const sectionBase = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
+	useEffect(() => {
+		load();
+	}, [basePath, client]);
 
 	return (
 		<section className='space-y-6'>
-			<header className='flex items-center gap-3'>
-				<div className='h-10 w-10 rounded-xl bg-(--active-accent) dark:bg-(--accent)/30 flex items-center justify-center'>
-					<File className='w-5 h-5 text-(--accent) dark:text-(--accent)' strokeWidth={1.8} />
+			<input
+				ref={inputRef}
+				type='file'
+				multiple
+				accept='.pdf,.schrack,.trik'
+				className='hidden'
+				onChange={(e) => {
+					const files = Array.from(e.target.files ?? []);
+
+					if (!files.length) return;
+
+					setSelectedFiles(files);
+					setUploadModalOpen(true);
+
+					e.target.value = '';
+				}}
+			/>
+
+			<div
+				className='rounded-3xl p-6 space-y-6'
+				style={{
+					background: 'var(--container)',
+					border: '1px solid var(--border)',
+				}}>
+				<div className='flex items-center justify-between'>
+					<div></div>
+					<div className='flex gap-2'>
+						<ViewToggle value={view ?? 'list'} onChange={setView} />
+
+						{canWrite && (
+							<button
+								onClick={() => inputRef.current?.click()}
+								disabled={uploading}
+								className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white hover:bg-(--hover-accent) transition'>
+								<Upload size={16} />
+
+								{uploading ? 'Uploading...' : 'Upload'}
+							</button>
+						)}
+					</div>
 				</div>
 
-				<div>
-					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Documents</h2>
-					<p className='text-sm text-gray-500 dark:text-zinc-400'>PDF, Word and Excel files</p>
-				</div>
-			</header>
+				{loading && <Loading title="Loading document's" />}
 
-			<input ref={inputRef} type='file' accept='.pdf,.doc,.docx,.xls,.xlsx,.xlsm' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
+				{!loading && files.length === 0 && <div className='border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-10 text-center text-sm text-zinc-500'>No document files found</div>}
 
-			<div className={sectionBase}>
-				<button onClick={() => setOpen(!open)} className='w-full flex justify-between items-center px-5 py-4 text-sm font-medium text-gray-900 dark:text-zinc-100'>
-					<span>Files ({files.length})</span>
-
-					{open ? <ChevronUp className='w-4 h-4 text-gray-400 dark:text-zinc-500' /> : <ChevronDown className='w-4 h-4 text-gray-400 dark:text-zinc-500' />}
-				</button>
-
-				<AnimatePresence>
-					{open && (
-						<motion.div initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -4 }} transition={{ duration: 0.2 }} className='px-5 pb-5 space-y-4'>
-							<div className='flex justify-end'>
-								{hasWrite && (
-									<button
-										onClick={() => inputRef.current?.click()}
-										disabled={uploading}
-										className={`
-										h-10 px-4 flex items-center gap-2 rounded-xl
-										text-sm font-medium transition-colors
-										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}
-									`}>
-										<Upload className='w-4 h-4' />
-										{uploading ? 'Uploading…' : 'Upload'}
-									</button>
-								)}
-							</div>
-
-							{loading && <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading documents…</div>}
-
-							{!loading && files.length === 0 && (
-								<div className='text-sm text-gray-500 dark:text-zinc-400 border border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-6 text-center'>No documents found.</div>
-							)}
-
-							{!loading &&
-								sortedGroups.map(([groupName, group]) => (
-									<div key={groupName} className='space-y-2'>
-										<div className='px-1 text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-zinc-400'>
-											{groupName} ({group.length})
-										</div>
-
-										{group.map((file, index) => (
-											<motion.div
-												key={file.path}
-												initial={{ opacity: 0, y: 4 }}
-												animate={{ opacity: 1, y: 0 }}
-												transition={{ delay: index * 0.03 }}
-												className='flex items-center justify-between h-12 px-4 rounded-2xl border border-gray-200 dark:border-zinc-700 bg-gray-50 dark:bg-zinc-800 hover:bg-white dark:hover:bg-zinc-700 hover:shadow-sm transition'>
-												<div className='flex items-center gap-3 min-w-0'>
-													{getFileIcon(file.name)}
-
-													<span className='truncate text-sm text-gray-800 dark:text-zinc-200'>{file.name}</span>
-												</div>
-
-												<button
-													onClick={() => download(file.path)}
-													className='flex items-center gap-1 text-sm font-medium text-gray-500 dark:text-zinc-400 hover:text-(--hover-accent) dark:hover:text-(--hover-accent) transition-colors'>
-													<Download className='w-4 h-4' />
-													Download
-												</button>
-											</motion.div>
-										))}
-									</div>
-								))}
-						</motion.div>
-					)}
-				</AnimatePresence>
+				{view === 'grid' ? (
+					<FileGrid
+						files={files}
+						users={users}
+						onDownload={download}
+						onEdit={(file) => {
+							setEditingFile(file);
+							setEditModalOpen(true);
+						}}
+						permission='projects.write'
+					/>
+				) : (
+					<FileList
+						files={files}
+						users={users}
+						onDownload={download}
+						onEdit={(file) => {
+							setEditingFile(file);
+							setEditModalOpen(true);
+						}}
+						permission='projects.write'
+					/>
+				)}
 			</div>
+
+			<FileUploadModal
+				open={uploadModalOpen}
+				files={selectedFiles}
+				users={users}
+				onUpload={uploadWithMetadata}
+				onClose={async () => {
+					setUploadModalOpen(false);
+					setSelectedFiles([]);
+
+					await load();
+				}}
+			/>
+
+			<FileEditModal
+				open={editModalOpen}
+				file={editingFile}
+				users={users}
+				onClose={() => {
+					setEditModalOpen(false);
+					setEditingFile(null);
+				}}
+				onSave={async (name, comment, collaborators) => {
+					if (!editingFile) {
+						return;
+					}
+
+					await saveFileMetadata(editingFile, name, comment, collaborators);
+
+					setEditModalOpen(false);
+					setEditingFile(null);
+				}}
+			/>
 		</section>
 	);
 }

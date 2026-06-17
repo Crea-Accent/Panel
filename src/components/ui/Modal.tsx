@@ -2,8 +2,8 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
+import { ReactNode, useEffect } from 'react';
 
-import { ReactNode } from 'react';
 import { X } from 'lucide-react';
 
 type Props = {
@@ -22,6 +22,18 @@ export default function Modal({ open, title, children, onClose, footer, size = '
 		lg: 'max-w-lg',
 		xl: 'max-w-xl',
 	};
+
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			if (e.key === 'Escape') onClose();
+		};
+
+		window.addEventListener('keydown', onKeyDown);
+
+		return () => {
+			window.removeEventListener('keydown', onKeyDown);
+		};
+	}, [onClose]);
 
 	return (
 		<AnimatePresence>

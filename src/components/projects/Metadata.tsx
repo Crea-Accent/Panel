@@ -13,7 +13,6 @@ import Button from '../ui/Button';
 import Contact from './metadata/Contact';
 import { User } from 'next-auth';
 import { usePermissions } from '@/providers/PermissionsProvider';
-import { useSession } from 'next-auth/react';
 
 type Label = {
 	name: string;

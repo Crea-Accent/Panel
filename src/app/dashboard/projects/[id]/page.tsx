@@ -1,23 +1,23 @@
 /** @format */
 'use client';
 
-import { Check, ChevronDown, Clipboard, ClipboardCheck, Code, File, FileText, Folder, Image as ImageIcon, Save, SaveOff, Settings, Share, Sun } from 'lucide-react';
+import { Cable, Check, ClipboardCheck, Code, File, FileText, Folder, ImageIcon, Save, Settings, Share, Sun } from 'lucide-react';
+import { NotPermitted, usePermissions } from '@/providers/PermissionsProvider';
 import { useEffect, useState } from 'react';
 
 import Button from '@/components/ui/Button';
+import Canbus from '@/components/projects/Canbus';
 import Documents from '@/components/projects/Document';
-import { FaFloppyDisk } from 'react-icons/fa6';
+import Loading from '@/components/ui/Loading';
 import Metadata from '@/components/projects/Metadata';
-import { NotPermitted } from '@/providers/PermissionsProvider';
 import Pictures from '@/components/projects/Picture';
 import Programmation from '@/components/projects/Programmation';
 import Schemas from '@/components/projects/Schema';
 import Selector from '@/components/ui/Selector';
-import Setup from '@/components/projects/Setup';
 import Solar from '@/components/projects/Solar';
 import { motion } from 'framer-motion';
 
-type Tab = 'info' | 'schemas' | 'documents' | 'programmation' | 'pictures' | 'solar' | 'setup';
+type Tab = 'info' | 'schemas' | 'documents' | 'programmation' | 'pictures' | 'solar' | 'canbus';
 
 type Settings = {
 	path: string;
@@ -39,12 +39,27 @@ type MetadataActions = {
 };
 
 export default function ProjectPage({ params }: { params: Promise<{ id: string }> }) {
+	const { has } = usePermissions();
+
 	const [settings, setSettings] = useState<Settings | null>(null);
 	const [client, setClient] = useState<string | null>(null);
 	const [tab, setTab] = useState<Tab>('info');
 	const [loading, setLoading] = useState(true);
 	const [shareAccess, setShareAccess] = useState(false);
+	const [shared, setShared] = useState(false);
 	const [metadataActions, setMetadataActions] = useState<MetadataActions | null>(null);
+
+	const tabs = [
+		{ key: 'info', label: 'Info', icon: Folder },
+		{ key: 'solar', label: 'Solar', icon: Sun },
+		{ key: 'schemas', label: 'Schemas', icon: FileText },
+		{ key: 'documents', label: 'Documents', icon: File },
+		{ key: 'programmation', label: 'Programmation', icon: Code },
+		{ key: 'canbus', label: 'Canbus', icon: Cable },
+		{ key: 'pictures', label: 'Pictures', icon: ImageIcon },
+	] as const;
+
+	const isAllowed = has('projects.write');
 
 	useEffect(() => {
 		(async () => {
@@ -66,21 +81,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 		})();
 	}, [params]);
 
-	if (loading || !client) return null;
+	if (loading || !client) return <Loading title={`Loading ${client || 'project'}`} />;
 
-	if (!settings?.path) {
+	if (!settings?.path)
 		return <div className='text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3'>Base path not configured.</div>;
-	}
-
-	const tabs = [
-		{ key: 'info', label: 'Info', icon: Folder },
-		{ key: 'solar', label: 'Solar', icon: Sun },
-		{ key: 'schemas', label: 'Schemas', icon: FileText },
-		{ key: 'documents', label: 'Documents', icon: File },
-		{ key: 'programmation', label: 'Programmation', icon: Code },
-		{ key: 'setup', label: 'Setup', icon: Settings },
-		{ key: 'pictures', label: 'Pictures', icon: ImageIcon },
-	] as const;
 
 	return (
 		<NotPermitted permission='projects.read' shareAccess={shareAccess}>
@@ -137,12 +141,24 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 					{/* Actions */}
 
 					<div className='flex gap-1 w-full sm:w-auto'>
-						<Button icon={metadataActions?.saved ? <Check size={16} /> : <Save size={16} />} disabled={!metadataActions?.hasChanges || metadataActions?.saving} onClick={() => metadataActions?.save()}>
+						<Button
+							icon={metadataActions?.saved ? <Check size={16} /> : <Save size={16} />}
+							disabled={!metadataActions?.hasChanges || metadataActions?.saving || !isAllowed}
+							onClick={() => metadataActions?.save()}>
 							<span className='hidden sm:inline'>{metadataActions?.saving ? 'Saving...' : metadataActions?.saved ? 'Saved' : 'Save'}</span>
 						</Button>
 
-						<Button icon={<Share size={16} />} onClick={() => metadataActions?.share()}>
-							<span className='hidden sm:inline'>Share</span>
+						<Button
+							icon={shared ? <ClipboardCheck size={16} /> : <Share size={16} />}
+							onClick={() => {
+								metadataActions?.share();
+								setShared(true);
+								setTimeout(() => {
+									setShared(false);
+								}, 1500);
+							}}
+							disabled={shared || !isAllowed}>
+							<span className='hidden sm:inline'>{shared ? 'Copied' : 'Share'}</span>
 						</Button>
 
 						<Selector
@@ -172,7 +188,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 					{tab === 'schemas' && <Schemas basePath={settings.path} client={client} />}
 					{tab === 'documents' && <Documents basePath={settings.path} client={client} />}
 					{tab === 'programmation' && <Programmation basePath={settings.path} client={client} />}
-					{tab === 'setup' && <Setup basePath={settings.path} client={client} />}
+					{tab === 'canbus' && <Canbus basePath={settings.path} client={client} />}
 					{tab === 'pictures' && <Pictures basePath={settings.path} client={client} />}
 				</motion.div>
 			</div>

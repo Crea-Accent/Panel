@@ -10,6 +10,7 @@ import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
+import Loading from '@/components/ui/Loading';
 import Modal from '@/components/ui/Modal';
 import MultiSelector from '@/components/ui/MultiSelector';
 import PageHeader from '@/components/ui/PageHeader';
@@ -202,7 +203,7 @@ export default function Page() {
 		return l?.color ?? 'var(--accent)';
 	}
 
-	if (loading) return null;
+	if (loading) return <Loading title='Loading Projects' />;
 
 	return (
 		<NotPermitted permission='projects.read'>

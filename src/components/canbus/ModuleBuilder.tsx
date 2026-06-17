@@ -10,7 +10,8 @@ import dt18_hs from '@/../public/modules/DT18-HS/module.json' with { type: 'json
 import ModulePalette from './ModulePalette';
 import { Reorder } from 'framer-motion';
 import { useState } from 'react';
-import { ModuleUnit } from '../projects/Setup';
+import { ModuleUnit } from '../projects/Canbus';
+import Card from '../ui/Card';
 
 export type ModuleDefinition = {
 	id: string;
@@ -121,7 +122,27 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 		units: [],
 	}));
 
-	if (foundModules.length <= 0) return <div></div>;
+	if (foundModules.length <= 0) {
+		return (
+			<Card className='flex items-center justify-center min-h-[500px]'>
+				<div
+					className='max-w-lg w-full rounded-3xl p-10 text-center'
+					style={{
+						background: 'var(--container)',
+						border: '1px solid var(--border)',
+					}}>
+					<div className='text-2xl font-semibold mb-2'>No Duotecno programmation found</div>
+
+					<div className='text-sm text-zinc-500 leading-relaxed'>
+						No valid <code>.duo</code> programmation file could be found for this project.
+						<br />
+						<br />
+						Upload or synchronize a Duotecno configuration before building the CAN bus topology.
+					</div>
+				</div>
+			</Card>
+		);
+	}
 
 	return (
 		<div className={`grid gap-6 ${foundAvailableModules.length > 0 || infrastructureModules.length > 0 ? 'grid-cols-[320px_1fr]' : 'grid-cols-1'}`}>

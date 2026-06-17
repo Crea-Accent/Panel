@@ -1,10 +1,19 @@
 /** @format */
 
+import { Metadata } from 'next';
 import Sidebar from '@/components/Sidebar';
 import { SidebarLayout } from '@/components/SidebarLayout';
 import { authConfig } from '@/lib/auth';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
+
+export const metadata: Metadata = {
+	title: 'Crea-Accent | Account',
+	description: '',
+	icons: {
+		icon: '/favicon.svg',
+	},
+};
 
 export default async function DashboardLayout({
 	children,

@@ -143,7 +143,7 @@ export default function Login({ value, onChange }: Props) {
 									{login.link || 'No URL'}
 								</div>
 
-								<div className='flex items-center justify-between rounded-lg px-3 py-2 border border-[var(--border)]'>
+								<div className='flex items-center justify-between rounded-lg px-3 py-2 border border-(--border)'>
 									<span>{visiblePasswords[login.id] ? login.password : '••••••••••••'}</span>
 
 									<button
@@ -191,7 +191,7 @@ export default function Login({ value, onChange }: Props) {
 				{has('projects.write') && (
 					<button
 						onClick={() => setCreateOpen(true)}
-						className='rounded-xl p-4 flex flex-col items-center justify-center gap-2 min-h-[220px] transition hover:scale-[1.01]'
+						className='rounded-xl p-4 flex flex-col items-center justify-center gap-2 min-h-55 transition hover:scale-[1.01]'
 						style={{
 							background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
 							border: '1px dashed color-mix(in srgb, var(--accent) 30%, var(--border))',

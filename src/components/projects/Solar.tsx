@@ -1,18 +1,22 @@
 /** @format */
 'use client';
 
-import { APIProvider, AdvancedMarker, Map, Marker } from '@vis.gl/react-google-maps';
-import { MapPin, PanelTop, Sun, Zap } from 'lucide-react';
+import { APIProvider, AdvancedMarker, Map } from '@vis.gl/react-google-maps';
+import { PanelTop, Sun, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import Button from '@/components/ui/Button';
+import Loading from '../ui/Loading';
 import { motion } from 'framer-motion';
+import { usePermissions } from '@/providers/PermissionsProvider';
 
 type Props = {
 	client: string;
 };
 
 export default function Solar({ client }: Props) {
+	const { has } = usePermissions();
+
 	const [solar, setSolar] = useState<any>(null);
 	const [selectedPanels, setSelectedPanels] = useState<number>(0);
 	const [loading, setLoading] = useState(true);
@@ -133,9 +137,7 @@ export default function Solar({ client }: Props) {
 			return indexInSegment < summary?.panelsCount;
 		}) ?? [];
 
-	if (loading) {
-		return null;
-	}
+	if (loading) return <Loading title={'Loading Solar Analyzer'} description='Checking for existing solar configuration.' />;
 
 	const hasAnalysis = Boolean(solar?.recommended && solar?.configs?.length && solar?.solarPanels?.length);
 
@@ -151,10 +153,12 @@ export default function Solar({ client }: Props) {
 						</div>
 					</div>
 
-					<Button loading={calculating} onClick={analyzeRoof}>
-						<Sun size={16} />
-						Analyze Roof
-					</Button>
+					{has('projects.write') && (
+						<Button loading={calculating} onClick={analyzeRoof}>
+							<Sun size={16} />
+							Analyze Roof
+						</Button>
+					)}
 				</div>
 
 				<div className='rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-12 text-center'>
@@ -191,10 +195,12 @@ export default function Solar({ client }: Props) {
 					</div>
 				</div>
 
-				<Button loading={calculating} onClick={analyzeRoof}>
-					<Sun size={16} />
-					Analyze Roof
-				</Button>
+				{has('projects.write') && (
+					<Button loading={calculating} onClick={analyzeRoof}>
+						<Sun size={16} />
+						Analyze Roof
+					</Button>
+				)}
 			</div>
 
 			{solar?.solarPanels?.length > 0 && (
@@ -230,7 +236,7 @@ export default function Solar({ client }: Props) {
 											style={{
 												width: 20,
 												height: 40,
-												transform: `rotate(${Math.abs(azimuth + 90)}deg)`,
+												transform: `rotate(${Math.abs(azimuth)}deg)`,
 											}}
 										/>
 									</AdvancedMarker>
@@ -248,23 +254,25 @@ export default function Solar({ client }: Props) {
 						background: 'var(--container)',
 						border: '1px solid var(--border)',
 					}}>
-					<div className='space-y-4'>
-						<input
-							type='range'
-							min={0}
-							max={Math.max(configs.length - 1, 0)}
-							step={1}
-							value={selectedConfigIndex}
-							onChange={(e) => setSelectedConfigIndex(Number(e.target.value))}
-							className='solar-slider w-full'
-						/>
+					{has('projects.write') && (
+						<div className='space-y-4'>
+							<input
+								type='range'
+								min={0}
+								max={Math.max(configs.length - 1, 0)}
+								step={1}
+								value={selectedConfigIndex}
+								onChange={(e) => setSelectedConfigIndex(Number(e.target.value))}
+								className='solar-slider w-full'
+							/>
 
-						<div className='flex justify-between text-xs text-zinc-500'>
-							<span>{configs[0]?.panelsCount ?? 0}</span>
+							<div className='flex justify-between text-xs text-zinc-500'>
+								<span>{configs[0]?.panelsCount ?? 0}</span>
 
-							<span>{configs.at(-1)?.panelsCount ?? 0}</span>
+								<span>{configs.at(-1)?.panelsCount ?? 0}</span>
+							</div>
 						</div>
-					</div>
+					)}
 				</div>
 			)}
 
