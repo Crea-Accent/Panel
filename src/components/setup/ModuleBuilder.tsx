@@ -121,6 +121,8 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 		units: [],
 	}));
 
+	if (foundModules.length <= 0) return <div></div>;
+
 	return (
 		<div className={`grid gap-6 ${foundAvailableModules.length > 0 || infrastructureModules.length > 0 ? 'grid-cols-[320px_1fr]' : 'grid-cols-1'}`}>
 			<div className='space-y-6'>
