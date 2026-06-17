@@ -5,11 +5,12 @@ import { ModuleInstance } from './ModuleBuilder';
 import { Plus } from 'lucide-react';
 
 type Props = {
-	modules: ModuleInstance[];
-	onAdd: (module: ModuleInstance) => void;
+	title: string;
+	modules: any[];
+	onAdd: (module: any) => void;
 };
 
-export default function ModulePalette({ modules, onAdd }: Props) {
+export default function ModulePalette({ modules, onAdd, title }: Props) {
 	return (
 		<div
 			className='rounded-3xl p-4'
@@ -17,7 +18,7 @@ export default function ModulePalette({ modules, onAdd }: Props) {
 				background: 'var(--container)',
 				border: '1px solid var(--border)',
 			}}>
-			<div className='font-semibold mb-4'>Discovered Modules</div>
+			<div className='font-semibold mb-4'>{title}</div>
 
 			<div className='space-y-3'>
 				{modules.map((module) => (

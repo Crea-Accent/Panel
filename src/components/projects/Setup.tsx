@@ -3,7 +3,10 @@
 
 import ModuleBuilder, { ModuleInstance } from '@/components/setup/ModuleBuilder';
 import { useEffect, useState } from 'react';
-
+import dt00_24 from '@/../public/modules/DT00-24/module.json' with { type: 'json' };
+import dt00_24sw from '@/../public/modules/DT00-24SW/module.json' with { type: 'json' };
+import dt18_gt from '@/../public/modules/DT18-GT/module.json' with { type: 'json' };
+import dt18_hs from '@/../public/modules/DT18-HS/module.json' with { type: 'json' };
 type Props = {
 	client: string;
 	basePath: string;
@@ -36,11 +39,11 @@ type ModuleDefinition = {
 	}[];
 };
 
-type ModuleUnit = {
+export type ModuleUnit = {
 	id: number;
 	channel: number;
 	name: string;
-	type: 'temperature' | 'virtual' | 'input' | 'relay' | 'dimmer';
+	type: 'temperature' | 'virtual' | 'input' | 'relay' | 'dimmer' | 'motor' | 'audio' | 'ir' | 'dali';
 };
 
 export default function Setup({ client, basePath }: Props) {
@@ -102,9 +105,11 @@ export default function Setup({ client, basePath }: Props) {
 		for (const item of strings) {
 			const signature = parseModuleSignature(bytes, item.offset);
 
-			// console.log(item.value, signature.family1, signature.profile1); // family1 + profile1
+			// console.log(item.value, signature); // family1 + profile1
 
-			const definition = moduleDefinitions.find((module) => module.signature?.type === signature.family1 && module.signature?.profile === signature.profile1);
+			const matches = moduleDefinitions.filter((module) => module.signature?.type === signature.family1 && module.signature?.profile === signature.profile1);
+
+			const definition = matches[0];
 
 			if (!definition) continue;
 
@@ -150,7 +155,11 @@ export default function Setup({ client, basePath }: Props) {
 				continue;
 			}
 
-			ownerModule.units.push(unit);
+			const exists = ownerModule.units.some((existing) => existing.channel === unit.channel);
+
+			if (!exists) {
+				ownerModule.units.push(unit);
+			}
 		}
 
 		return [...modulesByAddress.values()];
@@ -168,11 +177,15 @@ export default function Setup({ client, basePath }: Props) {
 
 		let type: ModuleUnit['type'] | null = null;
 
-		if (type1 === 4 && type2 === 1) type = 'temperature';
-		else if (type1 === 7 && type2 === 1) type = 'virtual';
-		else if (type1 === 3 && type2 === 1) type = 'input';
-		else if (type1 === 1 && type2 === 1) type = 'dimmer';
-		else if (type1 === 2 && type2 === 1) type = 'relay';
+		if (type1 === 4) type = 'temperature';
+		else if (type1 === 1) type = 'dimmer';
+		else if (type1 === 2) type = 'relay';
+		else if (type1 === 3) type = 'input';
+		else if (type1 === 7) type = 'virtual';
+		else if (type1 === 8) type = 'motor';
+		else if (type1 === 11) type = 'audio';
+		else if (type1 === 12) type = 'ir';
+		else if (type1 === 19) type = 'dali';
 
 		if (!type) {
 			return null;
@@ -189,6 +202,10 @@ export default function Setup({ client, basePath }: Props) {
 	async function loadSetup() {
 		try {
 			setLoading(true);
+
+			const infrastructureModules = [dt00_24, dt00_24sw, dt18_gt, dt18_hs];
+
+			const infrastructureById = new Map(infrastructureModules.map((module) => [module.id, module]));
 
 			const programmationPath = `${basePath}/${client}/programmation`;
 
@@ -232,13 +249,16 @@ export default function Setup({ client, basePath }: Props) {
 			const restoredTopology: ModuleInstance[] = [];
 
 			for (const entry of savedSetup) {
-				if (entry.moduleId === 'DT00-24') {
+				const infrastructure = infrastructureById.get(entry.moduleId);
+
+				if (infrastructure) {
 					restoredTopology.push({
 						instanceId: entry.instanceId ?? crypto.randomUUID(),
 
-						moduleId: 'powersupply',
+						moduleId: infrastructure.id,
 
-						name: 'Power Supply',
+						name: infrastructure.name,
+						description: infrastructure.description,
 
 						family: 0,
 						profile: 0,

@@ -2,11 +2,15 @@
 'use client';
 
 import { Cable, Plus, Trash2 } from 'lucide-react';
-import powersupply from '@/../public/modules/DT00-24/module.json' with { type: 'json' };
+import dt00_24 from '@/../public/modules/DT00-24/module.json' with { type: 'json' };
+import dt00_24sw from '@/../public/modules/DT00-24SW/module.json' with { type: 'json' };
+import dt18_gt from '@/../public/modules/DT18-GT/module.json' with { type: 'json' };
+import dt18_hs from '@/../public/modules/DT18-HS/module.json' with { type: 'json' };
 
-import ModuleCard from './ModuleCard';
 import ModulePalette from './ModulePalette';
 import { Reorder } from 'framer-motion';
+import { useState } from 'react';
+import { ModuleUnit } from '../projects/Setup';
 
 export type ModuleDefinition = {
 	id: string;
@@ -60,12 +64,7 @@ export type ModuleInstance = {
 		[key: string]: any;
 	};
 
-	units: {
-		id: number;
-		channel: number;
-		name: string;
-		type: 'temperature' | 'virtual' | 'input' | 'relay' | 'dimmer';
-	}[];
+	units: Array<ModuleUnit>;
 
 	logic?: string[];
 
@@ -82,6 +81,12 @@ type Props = {
 };
 
 export default function ModuleBuilder({ foundModules, topology, setTopology }: Props) {
+	const [expanded, setExpanded] = useState<string[]>([]);
+
+	function toggleExpanded(instanceId: string) {
+		setExpanded((prev) => (prev.includes(instanceId) ? prev.filter((x) => x !== instanceId) : [...prev, instanceId]));
+	}
+
 	function addModule(module: ModuleInstance) {
 		setTopology((prev) => [
 			...prev,
@@ -96,30 +101,33 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 		setTopology((prev) => prev.filter((module) => module.instanceId !== instanceId));
 	}
 
-	const availableModules = [
-		...foundModules.filter((found) => !topology.some((placed) => placed.address === found.address)),
+	const foundAvailableModules = foundModules.filter((found) => !topology.some((placed) => placed.address === found.address));
 
-		{
-			instanceId: crypto.randomUUID(),
-			moduleId: powersupply.id,
+	const infrastructureModules: ModuleInstance[] = [dt00_24, dt00_24sw, dt18_gt, dt18_hs].map((module) => ({
+		instanceId: crypto.randomUUID(),
 
-			name: powersupply.name,
-			description: powersupply.description,
+		moduleId: module.id,
 
-			family: 0,
-			profile: 0,
+		name: module.name,
+		description: module.description,
 
-			address: undefined,
+		family: 0,
+		profile: 0,
 
-			settings: {},
+		address: undefined,
 
-			units: [],
-		},
-	];
+		settings: {},
+
+		units: [],
+	}));
 
 	return (
-		<div className={`grid gap-6 ${availableModules.length > 0 ? 'grid-cols-[320px_1fr]' : 'grid-cols-1'}`}>
-			{availableModules.length > 0 && <ModulePalette modules={availableModules} onAdd={addModule} />}
+		<div className={`grid gap-6 ${foundAvailableModules.length > 0 || infrastructureModules.length > 0 ? 'grid-cols-[320px_1fr]' : 'grid-cols-1'}`}>
+			<div className='space-y-6'>
+				{foundAvailableModules.length > 0 && <ModulePalette title='Discovered Modules' modules={foundAvailableModules} onAdd={addModule} />}
+
+				{infrastructureModules.length > 0 && <ModulePalette title='Infrastructure' modules={infrastructureModules} onAdd={addModule} />}
+			</div>
 
 			<div
 				className='rounded-3xl p-6'
@@ -148,82 +156,74 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 
 									<div className='w-full max-w-5xl'>
 										<div
-											className='rounded-3xl overflow-hidden'
+											onClick={() => toggleExpanded(module.instanceId)}
+											className='rounded-3xl overflow-hidden cursor-pointer'
 											style={{
 												background: 'var(--container)',
 												border: '1px solid var(--border)',
 											}}>
 											<div className='p-5'>
-												{module.moduleId && (
-													<div className='mb-4 flex justify-center'>
-														{module.moduleId}
-														<img
-															src={`/modules/${module.moduleId}/drawing.svg`}
-															alt={module.name}
-															className='max-h-40 object-contain'
-															onError={(e) => {
-																e.currentTarget.style.display = 'none';
-															}}
-														/>
-													</div>
-												)}
 												<div className='flex items-start justify-between'>
-													<div>
-														<div className='font-semibold text-lg'>{module.name}</div>
+													<div className='flex-1'>
+														<div className='flex justify-center mb-4'>
+															<img
+																draggable={false}
+																src={`/modules/${module.moduleId}/drawing.svg`}
+																alt={module.name}
+																className='max-h-48 object-contain'
+																onError={(e) => {
+																	const placeholder = document.createElement('div');
 
-														<div className='text-sm text-zinc-500'>{module.label}</div>
+																	placeholder.className = 'w-full h-40 rounded-xl border border-dashed flex items-center justify-center text-sm text-zinc-500';
 
-														<div className='text-xs text-zinc-500 mt-1'>
-															Family: {module.family ?? '-'} | Address: {module.address ?? '-'} | Profile: {module.profile ?? '-'}
+																	placeholder.innerText = 'No image available';
+
+																	e.currentTarget.parentElement?.replaceChild(placeholder, e.currentTarget);
+																}}
+															/>
+														</div>
+
+														<div className='text-center'>
+															<div className='font-semibold text-lg'>{module.name}</div>
+
+															{module.label && <div className='text-sm text-zinc-500'>{module.label}</div>}
+
+															<div className='text-xs text-zinc-500 mt-1'>
+																Address {module.address ?? '-'}
+																{' • '}
+																Family {module.family ?? '-'}
+																{' • '}
+																Profile {module.profile ?? '-'}
+															</div>
 														</div>
 													</div>
 
-													<div className='flex items-center gap-2'>
-														<div className='text-xs px-3 py-1 rounded-full bg-zinc-100 dark:bg-zinc-800'>{module.settings?.type ?? 'Unknown'}</div>
-
-														<button onClick={() => removeModule(module.instanceId)} className='h-8 w-8 rounded-lg text-red-500 hover:bg-red-500/10 flex items-center justify-center'>
-															<Trash2 size={14} />
-														</button>
-													</div>
+													<button onClick={() => removeModule(module.instanceId)} className='h-8 w-8 rounded-lg text-red-500 hover:bg-red-500/10 flex items-center justify-center'>
+														<Trash2 size={14} />
+													</button>
 												</div>
 
-												{module.units.length > 0 && (
-													<div className='mt-5'>
-														<div className='font-medium mb-3'>Units</div>
+												{expanded.includes(module.instanceId) && module.units.length > 0 && (
+													<div className='mt-5 border-t pt-4'>
+														{expanded.includes(module.instanceId) && (
+															<div className='grid md:grid-cols-2 gap-2 mt-4'>
+																{module.units.map((unit, i) => (
+																	<div key={`${unit.type}-${unit.id}-${unit.channel}-${i}`} className='rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3'>
+																		<div className='font-medium text-sm'>
+																			#{unit.id} - {unit.name}
+																		</div>
 
-														<div className='grid md:grid-cols-2 gap-2'>
-															{module.units.map((unit, i) => (
-																<div key={`${unit.type}-${unit.id}-${unit.channel}-${i}`} className='rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3'>
-																	<div className='font-medium text-sm'>{unit.name}</div>
+																		<div className='text-xs text-zinc-500 mt-1'></div>
 
-																	<div className='text-xs text-zinc-500 mt-1'>Address #{unit.id}</div>
-
-																	<div className='text-xs text-zinc-500'>Channel {unit.channel}</div>
-
-																	<div className='text-xs text-zinc-500 capitalize'>{unit.type}</div>
-																</div>
-															))}
-														</div>
+																		<div className='text-xs text-zinc-500 capitalize'>
+																			{unit.channel} - {unit.type}
+																		</div>
+																	</div>
+																))}
+															</div>
+														)}
 													</div>
 												)}
-
-												{module.settings?.room && (
-													<div className='mt-4 text-sm'>
-														<span className='font-medium'>Room:</span> {module.settings.room}
-													</div>
-												)}
-
-												{module.rawStrings?.length ? (
-													<details className='mt-4'>
-														<summary className='cursor-pointer text-sm text-zinc-500'>Raw DUO Data</summary>
-
-														<div className='mt-3 rounded-xl bg-zinc-50 dark:bg-zinc-900 p-3 text-xs font-mono overflow-auto'>
-															{module.rawStrings.map((x, index) => (
-																<div key={index}>{x}</div>
-															))}
-														</div>
-													</details>
-												) : null}
 											</div>
 										</div>
 									</div>
