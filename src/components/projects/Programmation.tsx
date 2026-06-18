@@ -212,7 +212,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 						Object.entries(grouped).map(([type, entries], i) => {
 							if (!entries.length) return null;
 
-							const latest = entries[0];
+							const latest = entries.reverse()[0];
 							const older = entries.slice(1);
 							const isExpanded = expandedGroups.includes(type);
 
