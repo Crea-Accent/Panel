@@ -182,7 +182,6 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 				className='rounded-3xl p-6 space-y-6'
 				style={{
 					background: 'var(--container)',
-					border: '1px solid var(--border)',
 				}}>
 				<AnimatePresence>
 					{/* Upload */}
@@ -236,7 +235,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 												{older.length > 0 && (
 													<div
 														onClick={() => setExpandedGroups((prev) => (prev.includes(type) ? prev.filter((g) => g !== type) : [...prev, type]))}
-														className='rounded-2xl cursor-pointer border border-dashed border-zinc-300 dark:border-zinc-700 min-h-45 flex items-center justify-center hover:border-(--accent) transition'>
+														className='rounded-2xl cursor-pointer min-h-45 flex items-center justify-center hover:border-(--accent) transition'>
 														<div className='text-center'>
 															{isExpanded ? <ChevronLeft className='mx-auto w-8 h-8' /> : <ChevronRight className='mx-auto w-8 h-8' />}
 
@@ -279,7 +278,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 											{older.length > 0 && (
 												<button
 													onClick={() => setExpandedGroups((prev) => (prev.includes(type) ? prev.filter((g) => g !== type) : [...prev, type]))}
-													className=' 							w-full 							h-12 							px-4 							rounded-2xl 							border 							border-zinc-200 							dark:border-zinc-800 							flex 							items-center 							gap-2 text-zinc-500 hover:text-(--hover-accent) transition'>
+													className=' 							w-full 							h-12 							px-4 							rounded-2xl 						flex 							items-center 							gap-2 text-zinc-500 hover:text-(--hover-accent) transition'>
 													{isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
 
 													<span>{isExpanded ? 'Hide older' : `Show older (${older.length})`}</span>
@@ -310,7 +309,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 
 					{/* Empty */}
 					{!loading && Object.values(grouped).every((arr) => arr.length === 0) && (
-						<div className='text-sm text-gray-500 dark:text-zinc-400 border border-dashed border-gray-300 dark:border-zinc-700 rounded-2xl p-6 text-center'>No programmation files found.</div>
+						<div className='text-sm text-gray-500 dark:text-zinc-40 rounded-2xl p-6 text-center'>No programmation files found.</div>
 					)}
 				</AnimatePresence>
 			</div>
