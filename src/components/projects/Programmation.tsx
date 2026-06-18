@@ -54,7 +54,7 @@ function parseDateFromFolderName(name: string, dateFormat: string = 'DDMMYYYY'):
 			return 0;
 	}
 
-	return Number(`${dd}${mm}${yyyy}`);
+	return Number(`${yyyy}${mm}${dd}`);
 }
 
 function detectProgrammationType(entry: FileEntry): 'DuoTecno' | 'DALI' | 'Loxone' | 'Niko' | 'Siemens' | 'Other' {
