@@ -8,13 +8,8 @@ type Props = {
 
 export default function Loading({ title = 'Loading', description = 'Please wait...' }: Props) {
 	return (
-		<div className='flex items-center justify-center min-h-[400px]'>
-			<div
-				className='rounded-3xl p-10 text-center max-w-md w-full'
-				style={{
-					background: 'var(--container)',
-					border: '1px solid var(--border)',
-				}}>
+		<div className='flex items-center justify-center my-auto'>
+			<div className='rounded-3xl p-10 text-center max-w-md w-full'>
 				<div className='flex justify-center mb-6'>
 					<div className='relative h-16 w-16'>
 						<div className='absolute inset-0 rounded-full border-4 border-zinc-300 dark:border-zinc-700' />

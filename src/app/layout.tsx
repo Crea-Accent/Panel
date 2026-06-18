@@ -2,6 +2,8 @@
 
 import './globals.css';
 
+import BackgroundGlow from '@/components/ui/BackGroundGlow';
+import { HEADER_HEIGHT } from '@/lib/layout';
 import Header from '@/components/Header';
 import { LocalProvider } from '@/providers/LocalProvider';
 import type { Metadata } from 'next';
@@ -30,17 +32,8 @@ export default async function RootLayout({
 	const session = await getServerSession(authConfig);
 
 	return (
-		<html lang='en' className='h-full'>
-			<body
-				className='
-					h-full
-					bg-zinc-50 dark:bg-zinc-950
-					text-zinc-900 dark:text-zinc-100
-					antialiased
-					font-sans
-					selection:bg-(--accent) selection:text-white
-					transition-colors duration-200
-				'>
+		<html lang='en' className='h-full dark'>
+			<body className='h-full antialiased font-sans selection:bg-(--accent) selection:text-white transition-colors duration-1000'>
 				<SessionProvider>
 					<ThemeProvider sessionTheme={session?.user?.theme}>
 						<PermissionsProvider>
@@ -48,9 +41,12 @@ export default async function RootLayout({
 								<ProjectPromptProvider>
 									<UploadProvider>
 										<SidebarProvider>
-											<div className='min-h-screen flex flex-col'>
+											<div className='min-h-screen flex flex-col relative overflow-hidden'>
+												{/* Background glow */}
+												<BackgroundGlow />
+
 												<Header />
-												{children}
+												<div className={`mt-[${HEADER_HEIGHT}px]`}>{children}</div>
 											</div>
 										</SidebarProvider>
 									</UploadProvider>

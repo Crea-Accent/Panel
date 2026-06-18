@@ -6,6 +6,7 @@ import { ClipboardList, Folder, FolderArchive, FolderKanban, Home, KeyRound, Log
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
+import Button from './ui/Button';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { usePermissions } from '@/providers/PermissionsProvider';
@@ -16,15 +17,6 @@ export default function Sidebar() {
 	const { open, setOpen, toggle } = useSidebar();
 	const { data: session, status } = useSession();
 	const { has, loading } = usePermissions();
-
-	if (!session && status !== 'loading') {
-		setOpen(false);
-		return null;
-	}
-
-	if (loading) {
-		return null;
-	}
 
 	const navItems = [
 		{ href: '/dashboard', label: 'Home', icon: Home },
@@ -40,6 +32,13 @@ export default function Sidebar() {
 
 	const visibleItems = navItems.filter((item) => !item.permission || has(item.permission as any));
 
+	if (!session && status !== 'loading') {
+		setOpen(false);
+		return null;
+	}
+
+	if (loading) return null;
+
 	return (
 		<AnimatePresence>
 			{open && (
@@ -51,8 +50,11 @@ export default function Sidebar() {
 						exit={{ opacity: 0 }}
 						transition={{ duration: 0.2 }}
 						onClick={toggle}
-						style={{ top: HEADER_HEIGHT }}
-						className='fixed left-0 right-0 bottom-0 bg-black/25 backdrop-blur-sm z-40 md:hidden'
+						className='fixed left-0 right-0 bottom-0 z-40 md:hidden backdrop-blur-md'
+						style={{
+							top: HEADER_HEIGHT,
+							background: 'rgba(0,0,0,0.18)',
+						}}
 					/>
 
 					{/* Sidebar */}
@@ -61,18 +63,13 @@ export default function Sidebar() {
 						animate={{ x: 0 }}
 						exit={{ x: -SIDEBAR_WIDTH }}
 						transition={{ duration: 0.25 }}
+						className='fixed left-0 z-50 p-4 flex flex-col backdrop-blur-xl'
 						style={{
 							width: SIDEBAR_WIDTH,
 							top: HEADER_HEIGHT,
 							height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
-						}}
-						className='
-							fixed left-0 z-50
-							bg-white dark:bg-zinc-950
-							border-r border-zinc-200 dark:border-zinc-800
-							p-4
-							flex flex-col
-						'>
+							background: 'color-mix(in srgb, var(--foreground) 92%, transparent)',
+						}}>
 						{/* Navigation */}
 						<nav>
 							<ul className='space-y-1.5'>
@@ -85,12 +82,24 @@ export default function Sidebar() {
 						<div className='flex-1' />
 
 						{/* Account Section */}
-						<div className='border-t border-zinc-200 dark:border-zinc-800 pt-4 space-y-3'>
+						<div className='relative pt-6 space-y-3'>
+							<div
+								className='absolute top-0 left-0 right-0 h-px'
+								style={{
+									background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 35%, transparent), transparent)',
+								}}
+							/>
+
 							{session ? (
 								<>
 									{/* User Info */}
 									<div className='flex items-center gap-3 px-2'>
-										<div className='w-9 h-9 rounded-xl bg-(--accent) dark:bg-(--accent)/40 text-(--accent) dark:text-(--accent) flex items-center justify-center text-sm font-semibold'>
+										<div
+											className='w-10 h-10 rounded-xl flex items-center justify-center font-semibold'
+											style={{
+												background: 'color-mix(in srgb, var(--accent) 20%, var(--foreground))',
+												color: 'var(--accent)',
+											}}>
 											{session.user?.name?.[0] ?? session.user?.email?.[0]}
 										</div>
 
@@ -102,53 +111,32 @@ export default function Sidebar() {
 
 									{/* Account Button */}
 									<Link href='/account'>
-										<button
-											className='
-												w-full h-9 px-3 rounded-lg
-												flex items-center gap-2
-												text-sm
-												text-zinc-600 dark:text-zinc-300
-												hover:bg-zinc-100 dark:hover:bg-zinc-800
-												transition-colors
-											'>
+										<Button className='w-full flex justify-start' variant='ghost'>
 											<User size={16} strokeWidth={1.8} />
 											Account
-										</button>
+										</Button>
 									</Link>
 
 									{/* Logout */}
-									<button
-										onClick={() => signOut()}
-										className='
-											w-full h-9 px-3 rounded-lg
-											flex items-center gap-2
-											text-sm
-											text-red-600
-											hover:bg-red-50 dark:hover:bg-red-900/20
-											transition-colors
-										'>
+									<Button className='w-full flex justify-start' variant='danger-ghost' onClick={() => signOut()}>
 										<LogOut size={16} strokeWidth={1.8} />
 										Log out
-									</button>
+									</Button>
 								</>
 							) : (
-								<button
-									onClick={() => signIn()}
-									className='
-										w-full h-9
-										flex items-center gap-2
-										px-3 rounded-lg
-										bg-(--accent) text-white
-										text-sm font-medium
-										hover:bg-(--hover-accent)
-										active:scale-[0.98]
-										transition-all
-									'>
+								<Button onClick={() => signIn()}>
 									<LogIn size={16} strokeWidth={1.8} />
 									Login
-								</button>
+								</Button>
 							)}
 						</div>
+
+						<div
+							className='absolute top-0 right-0 h-full w-px pointer-events-none'
+							style={{
+								background: 'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 40%, transparent), transparent)',
+							}}
+						/>
 					</motion.aside>
 				</>
 			)}
@@ -160,23 +148,38 @@ function NavItem({ href, label, Icon, currentPath }: { href: string; label: stri
 	const isActive = href === '/dashboard' ? currentPath === '/dashboard' : currentPath.startsWith(href);
 
 	return (
-		<li>
+		<li className='relative'>
 			<Link
 				href={href}
-				className={`
-					group flex items-center gap-3 h-10 px-3
-					rounded-lg
-					text-sm font-medium
-					transition-colors
-					${isActive ? 'bg-(--active-accent) dark:bg-(--accent)/30 text-(--accent) dark:text-(--accent)' : 'text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-zinc-800'}
-				`}>
+				style={
+					isActive
+						? {
+								background: 'color-mix(in srgb, var(--accent) 15%, var(--foreground))',
+								color: 'var(--accent)',
+								boxShadow: '0 0 20px color-mix(in srgb, var(--accent) 12%, transparent)',
+							}
+						: undefined
+				}
+				className='group flex items-center gap-3 h-10 px-3 rounded-xl text-sm font-medium transition-all duration-200 hover:translate-x-1
+'>
+				{isActive && (
+					<motion.div
+						layoutId='sidebar-active'
+						className='absolute left-0 top-1 bottom-1 w-1 rounded-r-full'
+						style={{
+							background: 'var(--accent)',
+						}}
+					/>
+				)}
+
 				<Icon
 					size={16}
 					strokeWidth={1.8}
 					className={`
-						${isActive ? 'text-(--accent) dark:text-(--accent)' : 'text-zinc-400 group-hover:text-zinc-600 dark:text-zinc-500'}
+						${isActive ? 'text-(--accent)' : 'text-(--text-muted)'}
 					`}
 				/>
+
 				{label}
 			</Link>
 		</li>

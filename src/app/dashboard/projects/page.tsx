@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { Folder, MapPin, Pencil, Plus, Search } from 'lucide-react';
+import { ArrowDownAZ, ArrowUpAZ, Folder, MapPin, Pencil, Plus, Search } from 'lucide-react';
 import { NotPermitted, usePermissions } from '@/providers/PermissionsProvider';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -14,6 +14,7 @@ import Loading from '@/components/ui/Loading';
 import Modal from '@/components/ui/Modal';
 import MultiSelector from '@/components/ui/MultiSelector';
 import PageHeader from '@/components/ui/PageHeader';
+import Selector from '@/components/ui/Selector';
 import ViewToggle from '@/components/ui/ViewToggle';
 import { motion } from 'framer-motion';
 import { useRouter } from 'next/navigation';
@@ -45,7 +46,7 @@ type Settings = {
 	labels?: LabelSetting[];
 };
 
-type SortKey = 'name' | 'updated';
+type SortKey = 'name' | 'updated' | 'city' | 'label';
 
 export default function Page() {
 	const { data: session } = useSession();
@@ -69,19 +70,6 @@ export default function Page() {
 	const [sortKey, setSortKey] = useState<SortKey>('name');
 	const [sortAsc, setSortAsc] = useState(true);
 
-	useEffect(() => {
-		async function load() {
-			const [settings, projects] = await Promise.all([fetch('/api/settings/projects').then((r) => r.json()), fetch('/api/projects/map').then((r) => r.json())]);
-
-			setSettings(settings);
-			setProjects(projects);
-
-			if (session) setView(session?.user?.preferences?.defaultView ?? 'list');
-		}
-
-		load();
-	}, [session]);
-
 	function toggleSort(key: SortKey) {
 		if (sortKey === key) {
 			setSortAsc(!sortAsc);
@@ -90,45 +78,6 @@ export default function Page() {
 			setSortAsc(true);
 		}
 	}
-
-	const filteredProjects = useMemo(() => {
-		let list = [...projects];
-
-		const q = query.toLowerCase().trim();
-
-		list = list.filter((p) => {
-			if (
-				q &&
-				!p.name.toLowerCase().includes(q) &&
-				!p.label?.toLowerCase().includes(q) &&
-				!p.address?.street?.toLowerCase().includes(q) &&
-				!p.address?.country?.toLowerCase().includes(q) &&
-				!p.address?.city?.toLowerCase().includes(q)
-			)
-				return false;
-			if (labelFilters.length > 0 && (!p.label || !labelFilters.includes(p.label))) {
-				return false;
-			}
-			return true;
-		});
-
-		list.sort((a, b) => {
-			if (sortKey === 'name') {
-				return sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
-			}
-
-			if (sortKey === 'updated') {
-				const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
-				const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
-
-				return sortAsc ? aDate - bDate : bDate - aDate;
-			}
-
-			return 0;
-		});
-
-		return list;
-	}, [projects, query, labelFilters, sortKey, sortAsc]);
 
 	async function createProject() {
 		if (!settings?.path || !newProjectName.trim()) return;
@@ -203,6 +152,67 @@ export default function Page() {
 		return l?.color ?? 'var(--accent)';
 	}
 
+	const filteredProjects = useMemo(() => {
+		let list = [...projects];
+
+		const q = query.toLowerCase().trim();
+
+		list = list.filter((p) => {
+			if (
+				q &&
+				!p.name.toLowerCase().includes(q) &&
+				!p.label?.toLowerCase().includes(q) &&
+				!p.address?.street?.toLowerCase().includes(q) &&
+				!p.address?.country?.toLowerCase().includes(q) &&
+				!p.address?.city?.toLowerCase().includes(q)
+			)
+				return false;
+			if (labelFilters.length > 0 && (!p.label || !labelFilters.includes(p.label))) {
+				return false;
+			}
+			return true;
+		});
+
+		list.sort((a, b) => {
+			switch (sortKey) {
+				case 'name':
+					return sortAsc ? a.name.localeCompare(b.name) : b.name.localeCompare(a.name);
+
+				case 'city':
+					return sortAsc ? (a.address?.city ?? '').localeCompare(b.address?.city ?? '') : (b.address?.city ?? '').localeCompare(a.address?.city ?? '');
+
+				case 'label':
+					return sortAsc ? (a.label ?? '').localeCompare(b.label ?? '') : (b.label ?? '').localeCompare(a.label ?? '');
+
+				case 'updated': {
+					const aDate = a.updatedAt ? new Date(a.updatedAt).getTime() : 0;
+
+					const bDate = b.updatedAt ? new Date(b.updatedAt).getTime() : 0;
+
+					return sortAsc ? aDate - bDate : bDate - aDate;
+				}
+
+				default:
+					return 0;
+			}
+		});
+
+		return list;
+	}, [projects, query, labelFilters, sortKey, sortAsc]);
+
+	useEffect(() => {
+		async function load() {
+			const [settings, projects] = await Promise.all([fetch('/api/settings/projects').then((r) => r.json()), fetch('/api/projects/map').then((r) => r.json())]);
+
+			setSettings(settings);
+			setProjects(projects);
+
+			if (session) setView(session?.user?.preferences?.defaultView ?? 'list');
+		}
+
+		load();
+	}, [session]);
+
 	if (loading) return <Loading title='Loading Projects' />;
 
 	return (
@@ -224,6 +234,19 @@ export default function Page() {
 					<div className='flex-1 min-w-75'>
 						<Input icon={<Search size={16} />} placeholder='Search projects...' value={query} onChange={(e) => setQuery(e.target.value)} />
 					</div>
+
+					<Selector
+						value={sortKey}
+						onChange={(value) => setSortKey(value as SortKey)}
+						options={[
+							{ label: 'Name', value: 'name' },
+							{ label: 'Updated', value: 'updated' },
+							{ label: 'City', value: 'city' },
+							{ label: 'Label', value: 'label' },
+						]}
+					/>
+
+					<Button variant='secondary' icon={sortAsc ? <ArrowUpAZ size={16} /> : <ArrowDownAZ size={16} />} onClick={() => setSortAsc(!sortAsc)} />
 
 					<div
 						className='flex overflow-hidden rounded-lg'
@@ -272,9 +295,7 @@ export default function Page() {
 								<motion.div
 									layout
 									key={p.path}
-									className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-14 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${
-										index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''
-									}`}>
+									className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-14 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''}`}>
 									<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
 										<div
 											className='w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-semibold shrink-0'
@@ -320,23 +341,29 @@ export default function Page() {
 					) : (
 						<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
 							{filteredProjects.map((p, i) => (
-								<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} key={i}>
-									<Card key={p.path} className='p-5 hover:shadow-lg transition min-h-40'>
-										<div className='flex items-start justify-between mb-4'>
-											<div>
-												<div className='font-semibold'>{p.name || ''}</div>
+								<motion.div layout key={p.path} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
+									<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} key={i}>
+										<Card className='p-5 hover:shadow-lg transition min-h-40'>
+											<div className='flex items-start justify-between mb-4'>
+												<div>
+													<div className='font-semibold'>{p.name || ''}</div>
 
-												<div className='text-sm text-zinc-500'>{p.address?.city || ''}</div>
+													<div className='text-sm text-zinc-500'>{p.address?.city || ''}</div>
+												</div>
+
+												{p.label ? <Badge color={labelColor(p.label)}>{p.label}</Badge> : <></>}
 											</div>
 
-											{p.label ? <Badge color={labelColor(p.label)}>{p.label}</Badge> : <></>}
-										</div>
+											<div className='text-xs text-zinc-500 mb-4'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : 'No updates'}</div>
 
-										<div className='text-xs text-zinc-500 mb-4'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : 'No updates'}</div>
+											<div className='flex gap-2 justify-end'>
+												{has('projects.write') && <Button size='sm' variant='ghost' icon={<Pencil size={16} />} onClick={() => renameProject(p.name)} />}
 
-										<div className='flex gap-2'>{p.address?.city && <Button size='sm' variant='secondary' icon={<MapPin size={14} />} onClick={() => openMaps(p)} />}</div>
-									</Card>
-								</Link>
+												<div className='flex gap-2'>{p.address?.city && <Button size='sm' variant='ghost' icon={<MapPin size={14} />} onClick={() => openMaps(p)} />}</div>
+											</div>
+										</Card>
+									</Link>
+								</motion.div>
 							))}
 						</div>
 					)}

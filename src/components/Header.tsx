@@ -2,60 +2,57 @@
 
 'use client';
 
+import { PanelLeft, PanelLeftClose } from 'lucide-react';
+
+import Button from './ui/Button';
 import { HEADER_HEIGHT } from '@/lib/layout';
 import Icon from '@/../public/favicon.svg';
 import Link from 'next/link';
-import { Menu } from 'lucide-react';
 import { useSidebar } from '../providers/SidebarProvider';
 
 export default function Header() {
-	const { toggle } = useSidebar();
+	const { toggle, open } = useSidebar();
 
 	return (
 		<header
-			style={{ height: HEADER_HEIGHT }}
-			className='
-				sticky top-0 z-40
-				bg-white dark:bg-zinc-950
-				border-b border-zinc-200 dark:border-zinc-800
-				backdrop-blur supports-[backdrop-filter]:bg-white/70
-				dark:supports-[backdrop-filter]:bg-zinc-950/70
-				transition-colors
-			'>
+			className='fixed w-full top-0 z-40 backdrop-blur-xl transition-all duration-300'
+			style={{
+				height: HEADER_HEIGHT,
+				background: 'color-mix(in srgb, var(--background) 80%, transparent)',
+			}}>
 			<div className='flex items-center h-full px-4 md:px-6 relative'>
 				{/* Sidebar Toggle */}
-				<button
+				<Button
+					variant='ghost'
 					onClick={toggle}
-					className='
-						h-10 w-10
-						z-99999
-						flex items-center justify-center
-						rounded-lg
-						border border-zinc-200 dark:border-zinc-800
-						bg-white dark:bg-zinc-900
-						text-zinc-600 dark:text-zinc-300
-						hover:bg-zinc-50 dark:hover:bg-zinc-800
-						active:scale-[0.97]
-						transition-all
-					'>
-					<Menu size={18} strokeWidth={1.8} />
-				</button>
+					className='z-10000'
+					icon={open ? <PanelLeftClose size={24} strokeWidth={1.8} /> : <PanelLeft size={24} strokeWidth={1.8} />}
+					style={{
+						color: 'var(--text)',
+					}}
+				/>
 
 				{/* Logo */}
-				<Link
-					href='/'
-					className='
-						hover:cursor-pointer
-						absolute inset-0
-						flex items-center justify-center
-						md:relative md:inset-auto md:justify-start md:ml-4
-					'>
-					<Icon className='h-9 w-auto fill-current text-zinc-900 dark:text-zinc-100' />
+				<Link href='/' className='absolute inset-0 flex items-center justify-center md:relative md:inset-auto md:justify-start md:ml-4 transition-all duration-300	hover:opacity-90'>
+					<div
+						className='transition-all duration-500'
+						style={{
+							filter: 'drop-shadow(0 0 8px color-mix(in srgb, var(--accent) 20%, transparent))',
+						}}>
+						<Icon className='h-9 w-auto' />
+					</div>
 				</Link>
 
 				{/* Spacer for desktop alignment */}
 				<div className='hidden md:block flex-1' />
 			</div>
+
+			<div
+				className='absolute bottom-0 left-0 h-px w-full pointer-events-none'
+				style={{
+					background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 40%, transparent), transparent)',
+				}}
+			/>
 		</header>
 	);
 }

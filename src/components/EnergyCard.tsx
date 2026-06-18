@@ -4,6 +4,7 @@
 
 import { useEffect, useState } from 'react';
 
+import Card from './ui/Card';
 import Link from 'next/link';
 import { Zap } from 'lucide-react';
 
@@ -34,7 +35,7 @@ export default function EnergyCard() {
 
 	return (
 		<Link href='/dashboard/energy'>
-			<div
+			<Card
 				className='
 					bg-white dark:bg-zinc-900
 					border border-zinc-200 dark:border-zinc-800
@@ -68,7 +69,7 @@ export default function EnergyCard() {
 				</div>
 
 				<p className='text-2xl font-semibold text-zinc-900 dark:text-zinc-100'>{Math.abs(energy?.totalPower ?? 0).toLocaleString()} W</p>
-			</div>
+			</Card>
 		</Link>
 	);
 }
