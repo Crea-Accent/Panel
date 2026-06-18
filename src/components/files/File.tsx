@@ -64,7 +64,7 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 
 	const formattedComment = rawComment.replaceAll('__', ' ');
 
-	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(0, 2)}/${rawDate.slice(2, 4)}/${rawDate.slice(4, 8)}` : rawDate;
+	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(6, 8)}/${rawDate.slice(4, 6)}/${rawDate.slice(0, 4)}` : rawDate;
 
 	const uploader = users.find((u) => getInitials(u.name as string) === rawUploader)?.name ?? rawUploader;
 
