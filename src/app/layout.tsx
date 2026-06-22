@@ -43,7 +43,7 @@ export default async function RootLayout({
 										<SidebarProvider>
 											<div className='min-h-screen flex flex-col relative overflow-hidden'>
 												{/* Background glow */}
-												<BackgroundGlow />
+												{/* <BackgroundGlow /> */}
 
 												<Header />
 												<div className={`mt-[${HEADER_HEIGHT}px]`}>{children}</div>
