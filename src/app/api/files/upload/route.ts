@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
 		}
 	}
 
-	const uniquePath = resolveUniquePath(targetDir, baseName, ext);
+	const uniquePath = resolveUniquePath(targetDir, baseName);
 
 	try {
 		fs.writeFileSync(uniquePath, buffer);
