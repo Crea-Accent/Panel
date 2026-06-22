@@ -22,10 +22,13 @@ type FileEntry = {
 };
 
 function parseDateFromFolderName(name: string, dateFormat: string = 'DDMMYYYY'): number {
-	const parts = name.split(' ');
-	const datePart = parts[parts.length - 2];
+	const match = name.match(/\b(\d{8})\b/);
 
-	if (!/^\d{8}$/.test(datePart)) return 0;
+	if (!match) {
+		return 0;
+	}
+
+	const datePart = match[1];
 
 	let dd = '';
 	let mm = '';
@@ -55,6 +58,12 @@ function parseDateFromFolderName(name: string, dateFormat: string = 'DDMMYYYY'):
 	}
 
 	return Number(`${yyyy}${mm}${dd}`);
+}
+
+function parseRevision(name: string): number {
+	const match = name.match(/_(\d+)(?:\.[^.]+)?$/);
+
+	return match ? Number(match[1]) : 0;
 }
 
 function detectProgrammationType(entry: FileEntry): 'DuoTecno' | 'DALI' | 'Loxone' | 'Niko' | 'Siemens' | 'Other' {
@@ -107,7 +116,15 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 
 		setUsers(userData.users ?? []);
 
-		const sorted = data.sort((a, b) => parseDateFromFolderName(b.name, dateFormat) - parseDateFromFolderName(a.name, dateFormat));
+		const sorted = data.sort((a, b) => {
+			const dateDiff = parseDateFromFolderName(b.name, dateFormat) - parseDateFromFolderName(a.name, dateFormat);
+
+			if (dateDiff !== 0) {
+				return dateDiff;
+			}
+
+			return parseRevision(b.name) - parseRevision(a.name);
+		});
 
 		setItems(sorted);
 		setLoading(false);
