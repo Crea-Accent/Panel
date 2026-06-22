@@ -21,49 +21,28 @@ type FileEntry = {
 	type: string;
 };
 
-function parseDateFromFolderName(name: string, dateFormat: string = 'DDMMYYYY'): number {
-	const match = name.match(/\b(\d{8})\b/);
+function parseDateFromFolderName(name: string) {
+	const filename = name.replace(/\.[^.]+$/, '');
 
-	if (!match) {
-		return 0;
-	}
+	const parts = filename.split('__');
 
-	const datePart = match[1];
+	const datePart = parts.find((p) => /^\d{8}$/.test(p));
 
-	let dd = '';
-	let mm = '';
-	let yyyy = '';
+	const date = datePart ? Number(datePart) : 0;
 
-	switch (dateFormat) {
-		case 'DDMMYYYY':
-			dd = datePart.slice(0, 2);
-			mm = datePart.slice(2, 4);
-			yyyy = datePart.slice(4, 8);
-			break;
+	const uploaderRaw = parts[2] ?? '';
 
-		case 'MMDDYYYY':
-			mm = datePart.slice(0, 2);
-			dd = datePart.slice(2, 4);
-			yyyy = datePart.slice(4, 8);
-			break;
+	const revisionMatch = uploaderRaw.match(/^(.*)_(\d+)$/);
 
-		case 'YYYYMMDD':
-			yyyy = datePart.slice(0, 4);
-			mm = datePart.slice(4, 6);
-			dd = datePart.slice(6, 8);
-			break;
+	const uploader = revisionMatch ? revisionMatch[1] : uploaderRaw;
 
-		default:
-			return 0;
-	}
+	const revision = revisionMatch ? Number(revisionMatch[2]) : 0;
 
-	return Number(`${yyyy}${mm}${dd}`);
-}
-
-function parseRevision(name: string): number {
-	const match = name.match(/_(\d+)(?:\.[^.]+)?$/);
-
-	return match ? Number(match[1]) : 0;
+	return {
+		date,
+		uploader,
+		revision,
+	};
 }
 
 function detectProgrammationType(entry: FileEntry): 'DuoTecno' | 'DALI' | 'Loxone' | 'Niko' | 'Siemens' | 'Other' {
@@ -117,13 +96,16 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		setUsers(userData.users ?? []);
 
 		const sorted = data.sort((a, b) => {
-			const dateDiff = parseDateFromFolderName(b.name, dateFormat) - parseDateFromFolderName(a.name, dateFormat);
+			const aMeta = parseDateFromFolderName(a.name);
+			const bMeta = parseDateFromFolderName(b.name);
+
+			const dateDiff = bMeta.date - aMeta.date;
 
 			if (dateDiff !== 0) {
 				return dateDiff;
 			}
 
-			return parseRevision(b.name) - parseRevision(a.name);
+			return bMeta.revision - aMeta.revision;
 		});
 
 		setItems(sorted);
@@ -131,8 +113,16 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 	};
 
 	const upload = async (file: File) => {
-		const success = await uploadFile(file, client, 'programmation');
-		if (success) await load();
+		const projectFile = new File([file], client + file.name.substring(file.name.lastIndexOf('.')), {
+			type: file.type,
+			lastModified: file.lastModified,
+		});
+
+		const success = await uploadFile(projectFile, client, 'programmation');
+
+		if (success) {
+			await load();
+		}
 	};
 
 	const download = async (path: string) => {
@@ -157,7 +147,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		const date = parts[1] ?? '';
 		const uploader = parts[2] ?? '';
 
-		const newFilename = [name.replaceAll(' ', '_'), date, uploader, collaborators.join('-'), comment].join('__') + '.' + extension;
+		const newFilename = [name, date, uploader, collaborators.join('-'), comment].join('__') + '.' + extension;
 
 		await fetch('/api/files', {
 			method: 'PATCH',
@@ -228,10 +218,8 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 						Object.entries(grouped).map(([type, entries], i) => {
 							if (!entries.length) return null;
 
-							const reversed = [...entries].reverse();
-
-							const latest = reversed[0];
-							const older = reversed.slice(1);
+							const latest = entries[0];
+							const older = entries.slice(1);
 							const isExpanded = expandedGroups.includes(type);
 
 							return (

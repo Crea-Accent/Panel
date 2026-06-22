@@ -60,13 +60,19 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 	const rawCollaborators = parts[3] ?? '';
 	const rawComment = parts.slice(4).join('__');
 
+	const revisionMatch = rawUploader.match(/^(.*)_(\d+)$/);
+
+	const uploaderInitials = revisionMatch ? revisionMatch[1] : rawUploader;
+
+	const revision = revisionMatch ? Number(revisionMatch[2]) : 0;
+
+	const uploader = users.find((u) => getInitials(u.name as string) === uploaderInitials)?.name ?? uploaderInitials;
+
 	const formattedName = rawName.replaceAll('_', ' ');
 
 	const formattedComment = rawComment.replaceAll('__', ' ');
 
 	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(6, 8)}/${rawDate.slice(4, 6)}/${rawDate.slice(0, 4)}` : rawDate;
-
-	const uploader = users.find((u) => getInitials(u.name as string) === rawUploader)?.name ?? rawUploader;
 
 	const collaborators = rawCollaborators
 		.split('-')
@@ -126,7 +132,17 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 						<div className='flex flex-wrap gap-3 mt-1 text-xs text-zinc-500'>
 							<span>{formattedDate}</span>
 
-							<span>{uploader || '-'}</span>
+							<div className='flex items-center gap-2'>
+								<UserIcon size={14} />
+								<span>{uploader || '-'}</span>
+							</div>
+
+							{revision > 0 && (
+								<div className='flex items-center gap-2'>
+									<FileText size={14} />
+									<span>{revision}</span>
+								</div>
+							)}
 
 							{!!collaborators.length && <span>{collaborators.join(', ')}</span>}
 						</div>
@@ -177,10 +193,19 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 					<span>{uploader || '-'}</span>
 				</div>
 
-				<div className='flex items-center gap-2'>
-					<Users size={14} />
-					<span>{collaborators.length ? collaborators.join(', ') : '-'}</span>
-				</div>
+				{revision > 0 && (
+					<div className='flex items-center gap-2'>
+						<FileText size={14} />
+						<span>{revision}</span>
+					</div>
+				)}
+
+				{!!collaborators.length && (
+					<div className='flex items-center gap-2'>
+						<Users size={14} />
+						<span>{collaborators.length ? collaborators.join(', ') : '-'}</span>
+					</div>
+				)}
 			</div>
 		</div>
 	);

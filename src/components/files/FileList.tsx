@@ -19,7 +19,7 @@ export default function FileGrid({ files, users = [], permission, onDownload, on
 		<div className='space-y-2'>
 			{files.map((file, index) => (
 				<motion.div
-					key={file.path}
+					key={file.path + index}
 					initial={{
 						opacity: 0,
 						x: -8,

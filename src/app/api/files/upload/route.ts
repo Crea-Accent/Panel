@@ -142,7 +142,7 @@ export async function POST(request: NextRequest) {
 		.join('__');
 
 	if (kind === 'programmation' && ext === '.zip') {
-		const uniquePath = resolveUniquePath(targetDir, baseName, ext);
+		const uniquePath = resolveUniquePath(targetDir, baseName);
 		const tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'panel-programmation-'));
 
 		try {
@@ -180,7 +180,7 @@ export async function POST(request: NextRequest) {
 		}
 	}
 
-	const uniquePath = resolveUniquePath(targetDir, baseName);
+	const uniquePath = resolveUniquePath(targetDir, baseName, ext);
 
 	try {
 		fs.writeFileSync(uniquePath, buffer);

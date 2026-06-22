@@ -19,7 +19,7 @@ export default function FileList({ files, users = [], permission, onDownload, on
 		<div className='grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4'>
 			{files.map((file, index) => (
 				<motion.div
-					key={file.path}
+					key={file.path + index}
 					initial={{
 						opacity: 0,
 						y: 8,
