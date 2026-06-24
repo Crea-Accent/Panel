@@ -1,6 +1,6 @@
 {
 	"name": "panel",
-	"version": "0.1.131",
+	"version": "0.1.132",
 	"private": true,
 	"scripts": {
 		"dev": "pnpm i && next dev",
