@@ -2,7 +2,5 @@
 	"id": "DT13-MOD",
 	"name": "RS 485 Modbus interface",
 	"description": "This interface is the master in the Modbus network which enables a universal control of heating, aircondtioning and ventilation appliances which run on this protocol.",
-	"units": {
-		"sens": 16
-	}
+	"detectable": true
 }

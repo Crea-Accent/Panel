@@ -1,74 +1,49 @@
 /** @format */
 
 import { NextResponse } from 'next/server';
-import fs from 'fs';
+import { promises as fs } from 'fs';
 import path from 'path';
+
+export type ModuleDefinition = {
+	id: string;
+	name: string;
+	description?: string;
+	detectable?: boolean;
+};
 
 export async function GET() {
 	try {
 		const modulesDir = path.join(process.cwd(), 'public', 'modules');
 
-		if (!fs.existsSync(modulesDir)) {
-			return NextResponse.json({
-				modules: [],
-			});
+		const entries = await fs.readdir(modulesDir, {
+			withFileTypes: true,
+		});
+
+		const modules: ModuleDefinition[] = [];
+
+		for (const entry of entries) {
+			if (!entry.isDirectory()) continue;
+
+			const jsonPath = path.join(modulesDir, entry.name, 'module.json');
+
+			try {
+				const json = JSON.parse(await fs.readFile(jsonPath, 'utf8'));
+
+				modules.push({
+					id: json.id,
+					name: json.name,
+					description: json.description,
+					detectable: json.detectable ?? true,
+				});
+			} catch {
+				// Ignore folders without a valid module.json
+			}
 		}
 
-		const folders = fs
-			.readdirSync(modulesDir, {
-				withFileTypes: true,
-			})
-			.filter((entry) => entry.isDirectory());
-
-		const modules = folders
-			.map((folder) => {
-				try {
-					const folderPath = path.join(modulesDir, folder.name);
-
-					const moduleFile = path.join(folderPath, 'module.json');
-
-					if (!fs.existsSync(moduleFile)) {
-						return null;
-					}
-
-					const files = fs.readdirSync(folderPath);
-
-					const data = JSON.parse(fs.readFileSync(moduleFile, 'utf8'));
-
-					const previewFile = files.find((file) => ['.svg', '.png', '.jpg', '.jpeg', '.webp'].some((ext) => file.toLowerCase().endsWith(ext)));
-
-					const dxfFile = files.find((file) => file.toLowerCase().endsWith('.dxf'));
-
-					const dwgFile = files.find((file) => file.toLowerCase().endsWith('.dwg'));
-
-					let preview: string | null = null;
-
-					if (previewFile) {
-						preview = `/modules/${folder.name}/${previewFile}`;
-					} else if (dxfFile) {
-						preview = `/api/project/modules/${folder.name}/`;
-					}
-
-					return {
-						id: folder.name,
-
-						...data,
-
-						preview,
-
-						dxf: dxfFile ? `/modules/${folder.name}/${dxfFile}` : null,
-
-						drawing: dwgFile ? `/modules/${folder.name}/${dwgFile}` : null,
-					};
-				} catch (error) {
-					console.error(`Failed loading module ${folder.name}`, error);
-
-					return null;
-				}
-			})
-			.filter(Boolean);
+		modules.sort((a, b) => a.name.localeCompare(b.name));
 
 		return NextResponse.json({
+			success: true,
 			modules,
 		});
 	} catch (error) {
@@ -76,11 +51,10 @@ export async function GET() {
 
 		return NextResponse.json(
 			{
-				error: 'Failed to load modules',
+				success: false,
+				error: 'Failed to load module definitions.',
 			},
-			{
-				status: 500,
-			}
+			{ status: 500 }
 		);
 	}
 }

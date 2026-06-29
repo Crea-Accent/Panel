@@ -2,5 +2,5 @@
 	"id": "DT18-HS",
 	"name": "TCP/IP Homeserver inclusief Home Manager",
 	"description": "Deze module kan 20 IP adressen koppelen met het domoticasysteem.",
-	"units": {}
+	"detectable": false
 }

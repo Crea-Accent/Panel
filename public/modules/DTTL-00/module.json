@@ -2,8 +2,5 @@
 	"id": "DTTL-00",
 	"name": "Twilight Module",
 	"description": "16 inputs for push buttons and/or motions detectors and 2 temperature",
-	"units": {
-		"input": 16,
-		"sensor": 2
-	}
+	"detectable": true
 }

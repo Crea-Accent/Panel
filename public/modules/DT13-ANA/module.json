@@ -2,7 +2,5 @@
 	"id": "DT13-ANA",
 	"name": "8-channel analog input module",
 	"description": "Interface for 8 temperature sensors.",
-	"units": {
-		"cotnrol": 8
-	}
+	"detectable": true
 }

@@ -2,8 +2,5 @@
 	"id": "DT1C-4Ag",
 	"name": "Smarttouch",
 	"description": "Neat design - Limited surface with 48 operational functions - In stand-by mode: a normal switch with 4 functions",
-	"units": {
-		"sens": 1,
-		"virtual": 10
-	}
+	"detectable": true
 }

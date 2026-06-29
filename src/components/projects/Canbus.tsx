@@ -1,300 +1,172 @@
 /** @format */
 'use client';
 
-import ModuleBuilder, { ModuleInstance } from '@/components/canbus/ModuleBuilder';
+import { BookIcon, Pencil, Trash2 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import dt00_24 from '@/../public/modules/DT00-24/module.json' with { type: 'json' };
-import dt00_24sw from '@/../public/modules/DT00-24SW/module.json' with { type: 'json' };
-import dt18_gt from '@/../public/modules/DT18-GT/module.json' with { type: 'json' };
-import dt18_hs from '@/../public/modules/DT18-HS/module.json' with { type: 'json' };
+
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import Image from 'next/image';
+import Input from '../ui/Input';
 import Loading from '../ui/Loading';
-import EmptyState from '../ui/EmptyState';
+import Modal from '../ui/Modal';
 
 type Props = {
 	client: string;
 	basePath: string;
 };
 
-type DuoString = {
-	offset: number;
-	value: string;
-};
-
-type ModuleDefinition = {
+export type ModuleDefinition = {
 	id: string;
 	name: string;
 	description?: string;
-	preview?: string;
-
-	signature?: {
-		type: number;
-		profile: number;
-	};
-
-	inputs?: {
-		name: string;
-		description?: string;
-	}[];
-
-	outputs?: {
-		name: string;
-		description?: string;
-	}[];
+	detectable: boolean;
 };
 
-export type ModuleUnit = {
-	id: number;
-	channel: number;
+export type Metadata = {
+	setup?: TopologyModule[];
+};
+
+export type DetectedNode = {
 	name: string;
-	type: 'temperature' | 'virtual' | 'input' | 'relay' | 'dimmer' | 'motor' | 'audio' | 'ir' | 'dali';
+	nodeAddress: string;
+	physicalAddress: string;
+	softwareVersion: string;
+	numberOfUnits: number;
+	nodeType: number;
+	units: any[];
+};
+
+export type TopologyModule = {
+	instanceId: string;
+
+	moduleId: string;
+
+	physicalAddress?: string;
+
+	nodes?: {
+		1?: TopologyModule[];
+		2?: TopologyModule[];
+	};
 };
 
 export default function Canbus({ client, basePath }: Props) {
-	const [foundModules, setFoundModules] = useState<ModuleInstance[]>([]);
-	const [topology, setTopology] = useState<ModuleInstance[]>([]);
 	const [loading, setLoading] = useState(true);
-	const [loaded, setLoaded] = useState(false);
 
-	function parseModuleSignature(bytes: Uint8Array, offset: number) {
-		const length = bytes[offset - 1];
-		const start = offset + length;
+	const [metadata, setMetadata] = useState<Metadata | null>(null);
 
-		return {
-			family1: bytes[start + 2],
-			family2: bytes[start + 3],
+	const [availableModules, setAvailableModules] = useState<ModuleDefinition[]>([]);
 
-			instance: bytes[start + 4],
+	const [foundModules, setFoundModules] = useState<DetectedNode[]>([]);
+	const [topology, setTopology] = useState<TopologyModule[]>([]);
 
-			profile1: bytes[start + 8],
-			profile2: bytes[start + 9],
-		};
-	}
+	const [search, setSearch] = useState('');
 
-	function extractStrings(data: Uint8Array): DuoString[] {
-		const result: DuoString[] = [];
+	const [addModalOpen, setAddModalOpen] = useState(false);
 
-		let current = '';
-		let startOffset = 0;
+	type ModuleSelection =
+		| {
+				mode: 'add';
+				node: DetectedNode;
+		  }
+		| {
+				mode: 'edit';
+				topology: TopologyModule;
+		  };
 
-		for (let i = 0; i < data.length; i++) {
-			const byte = data[i];
+	const [moduleSelection, setModuleSelection] = useState<ModuleSelection | null>(null);
 
-			if (byte >= 32 && byte <= 126) {
-				if (!current.length) {
-					startOffset = i;
-				}
+	const unplacedModules = foundModules.filter((node) => !topology.some((entry) => entry.physicalAddress?.toLowerCase() === node.physicalAddress?.toLowerCase()));
 
-				current += String.fromCharCode(byte);
-			} else {
-				if (current.length >= 3) {
-					result.push({
-						offset: startOffset,
-						value: current,
-					});
-				}
+	const detectableModules = availableModules.filter((m) => m.detectable);
 
-				current = '';
-			}
-		}
+	const manualModules = availableModules.filter((m) => !m.detectable);
 
-		return result;
-	}
+	const filteredTopology = topology.filter((entry) => {
+		const module = availableModules.find((m) => m.id === entry.moduleId);
 
-	function buildModules(strings: DuoString[], bytes: Uint8Array, moduleDefinitions: ModuleDefinition[]): ModuleInstance[] {
-		const modulesByAddress = new Map<number, ModuleInstance>();
+		const node = foundModules.find((n) => n.physicalAddress === entry.physicalAddress);
 
-		// PASS 1: discover modules
+		const q = search.toLowerCase();
 
-		for (const item of strings) {
-			const signature = parseModuleSignature(bytes, item.offset);
+		return module?.name?.toLowerCase().includes(q) || node?.name?.toLowerCase().includes(q) || node?.physicalAddress?.toLowerCase().includes(q);
+	});
 
-			// console.log(item.value, signature); // family1 + profile1
-
-			const matches = moduleDefinitions.filter((module) => module.signature?.type === signature.family1 && module.signature?.profile === signature.profile1);
-
-			const definition = matches[0];
-
-			if (!definition) continue;
-
-			modulesByAddress.set(signature.instance, {
+	function addManualModule(module: ModuleDefinition) {
+		const next = [
+			...topology,
+			{
 				instanceId: crypto.randomUUID(),
+				moduleId: module.id,
+			},
+		];
 
-				moduleId: definition.id,
+		saveTopology(next);
 
-				family: signature.family1,
-				profile: signature.profile1,
-
-				name: definition.name,
-				label: item.value,
-
-				address: signature.instance,
-
-				settings: {
-					type: signature.family1,
-					profile: signature.profile1,
-					profile2: signature.profile2,
-					instance: signature.instance,
-				},
-
-				units: [],
-
-				description: definition.description,
-				preview: definition.preview,
-			});
-		}
-
-		// PASS 2: attach units
-
-		for (const item of strings) {
-			const unit = parseUnit(bytes, item);
-
-			if (!unit) {
-				continue;
-			}
-
-			const ownerModule = modulesByAddress.get(unit.id);
-
-			if (!ownerModule) {
-				continue;
-			}
-
-			const exists = ownerModule.units.some((existing) => existing.channel === unit.channel);
-
-			if (!exists) {
-				ownerModule.units.push(unit);
-			}
-		}
-
-		return [...modulesByAddress.values()];
+		setAddModalOpen(false);
 	}
 
-	function parseUnit(bytes: Uint8Array, item: DuoString): ModuleUnit | null {
-		const length = bytes[item.offset - 1];
-		const start = item.offset + length;
+	function selectDetectedModule(node: DetectedNode) {
+		setAddModalOpen(false);
 
-		const owner = bytes[start];
-		const channel = bytes[start + 1];
-
-		const type1 = bytes[start + 2];
-		const type2 = bytes[start + 3];
-
-		let type: ModuleUnit['type'] | null = null;
-
-		if (type1 === 4) type = 'temperature';
-		else if (type1 === 1) type = 'dimmer';
-		else if (type1 === 2) type = 'relay';
-		else if (type1 === 3) type = 'input';
-		else if (type1 === 7) type = 'virtual';
-		else if (type1 === 8) type = 'motor';
-		else if (type1 === 11) type = 'audio';
-		else if (type1 === 12) type = 'ir';
-		else if (type1 === 19) type = 'dali';
-
-		if (!type) {
-			return null;
-		}
-
-		return {
-			id: owner,
-			channel,
-			type,
-			name: item.value,
-		};
+		setModuleSelection({
+			mode: 'add',
+			node,
+		});
 	}
 
-	async function loadSetup() {
-		try {
-			setLoading(true);
-
-			const infrastructureModules = [dt00_24, dt00_24sw, dt18_gt, dt18_hs];
-
-			const infrastructureById = new Map(infrastructureModules.map((module) => [module.id, module]));
-
-			const programmationPath = `${basePath}/${client}/programmation`;
-
-			const files = await fetch(`/api/files?view=${encodeURIComponent(programmationPath)}&recursive=1`).then((r) => r.json());
-
-			const duoFiles = files
-				.filter((file: any) => file.type === 'file' && file.name.toLowerCase().endsWith('.duo'))
-				.sort((a: any, b: any) => {
-					return new Date(b.modified).getTime() - new Date(a.modified).getTime();
-				});
-
-			if (!duoFiles.length) {
-				setFoundModules([]);
-				setTopology([]);
-				return;
-			}
-
-			const latest = duoFiles[0];
-
-			const res = await fetch(`/api/files/download?path=${encodeURIComponent(latest.path)}`);
-
-			const buffer = await res.arrayBuffer();
-
-			const bytes = new Uint8Array(buffer);
-
-			const strings = extractStrings(bytes);
-
-			const modulesRes = await fetch('/api/projects/modules');
-
-			const modulesData = await modulesRes.json();
-
-			const inferredModules = buildModules(strings, bytes, modulesData.modules ?? []);
-
-			const metadataRes = await fetch(`/api/projects/metadata?client=${encodeURIComponent(client)}`);
-			const metadata = await metadataRes.json();
-
-			const savedSetup = metadata.setup ?? [];
-
-			const modulesByAddress = new Map(inferredModules.map((module) => [module.address, module]));
-
-			const restoredTopology: ModuleInstance[] = [];
-
-			for (const entry of savedSetup) {
-				const infrastructure = infrastructureById.get(entry.moduleId);
-
-				if (infrastructure) {
-					restoredTopology.push({
-						instanceId: entry.instanceId ?? crypto.randomUUID(),
-
-						moduleId: infrastructure.id,
-
-						name: infrastructure.name,
-						description: infrastructure.description,
-
-						family: 0,
-						profile: 0,
-
-						address: undefined,
-
-						settings: {},
-
-						units: [],
-					});
-
-					continue;
-				}
-
-				const found = modulesByAddress.get(entry.address);
-
-				if (found) {
-					restoredTopology.push(found);
-				}
-			}
-
-			setFoundModules(inferredModules);
-
-			setTopology(restoredTopology);
-		} catch (error) {
-			console.error(error);
-		} finally {
-			setLoading(false);
-			setLoaded(true);
+	async function addDetectedModule(module: ModuleDefinition) {
+		if (!moduleSelection || moduleSelection.mode !== 'add') {
+			return;
 		}
+
+		const next = [
+			...topology,
+			{
+				instanceId: crypto.randomUUID(),
+				moduleId: module.id,
+				physicalAddress: moduleSelection.node.physicalAddress,
+			},
+		];
+
+		await saveTopology(next);
+
+		setModuleSelection(null);
 	}
 
-	async function saveTopology() {
+	function removeModule(instanceId: string) {
+		saveTopology(topology.filter((m) => m.instanceId !== instanceId));
+	}
+
+	function editModule(topology: TopologyModule) {
+		setModuleSelection({
+			mode: 'edit',
+			topology,
+		});
+	}
+
+	async function changeModuleType(module: ModuleDefinition) {
+		if (!moduleSelection || moduleSelection.mode !== 'edit') {
+			return;
+		}
+
+		const next = topology.map((entry) =>
+			entry.instanceId === moduleSelection.topology.instanceId
+				? {
+						...entry,
+						moduleId: module.id,
+					}
+				: entry
+		);
+
+		await saveTopology(next);
+
+		setModuleSelection(null);
+	}
+
+	async function saveTopology(next: TopologyModule[]) {
+		setTopology(next);
+
 		try {
 			await fetch('/api/projects/metadata', {
 				method: 'PATCH',
@@ -304,40 +176,256 @@ export default function Canbus({ client, basePath }: Props) {
 				body: JSON.stringify({
 					client,
 					data: {
-						setup: topology.map((module) => ({
-							instanceId: module.instanceId,
-							moduleId: module.moduleId,
-							address: module.address ?? null,
-						})),
+						setup: next,
 					},
 				}),
 			});
+
+			setMetadata((current) =>
+				current
+					? {
+							...current,
+							setup: next,
+						}
+					: current
+			);
 		} catch (error) {
 			console.error(error);
 		}
 	}
 
 	useEffect(() => {
-		loadSetup();
+		load();
 	}, [client, basePath]);
 
-	useEffect(() => {
-		if (!loaded) {
-			return;
+	async function load() {
+		try {
+			setLoading(true);
+
+			//
+			// Metadata
+			//
+
+			const metadata = await fetch(`/api/projects/metadata?client=${client}`).then((r) => r.json());
+
+			//
+			// Find latest programmation
+			//
+
+			const programmationPath = `${basePath}/${client}/Programmation`;
+
+			const files = await fetch(`/api/files?view=${encodeURIComponent(programmationPath)}&recursive=1`).then((r) => r.json());
+
+			const duoFiles = files
+				.filter((file: any) => file.type === 'file' && file.name.toLowerCase().endsWith('.duo'))
+				.sort((a: any, b: any) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+
+			if (!duoFiles.length) {
+				setFoundModules([]);
+				setAvailableModules([]);
+				setMetadata(metadata);
+
+				return;
+			}
+
+			const latest = duoFiles[0];
+
+			const latestFolder = latest.path.split('\\').slice(0, -1).join('/');
+
+			//
+			// Node database
+			//
+
+			const nodeDatabase = await fetch(`/api/files/download?path=${encodeURIComponent(`${latestFolder}/Config/nodedatabase.cache.json`)}`).then((r) => r.json());
+
+			const moduleDefinitions = await fetch('/api/projects/modules').then((r) => r.json());
+
+			setMetadata(metadata);
+
+			setTopology(metadata.setup ?? []);
+
+			setFoundModules(nodeDatabase.nodes ?? []);
+
+			setAvailableModules(moduleDefinitions.modules ?? []);
+		} catch (error) {
+			console.error(error);
+		} finally {
+			setLoading(false);
 		}
-
-		saveTopology();
-	}, [topology, loaded]);
-
-	if (loading) return <Loading title='Building CAN Bus Topology' description='Reading DUO configuration and restoring saved module layout' />;
-
-	if (!foundModules.length) {
-		return <EmptyState title='No CAN Bus Configuration Found' description='No DUO programming file was found in the project programmation folder.' />;
 	}
 
+	function renderModule(entry: TopologyModule) {
+		const module = availableModules.find((m) => m.id === entry.moduleId);
+
+		const node = foundModules.find((n) => n.physicalAddress === entry.physicalAddress);
+
+		if (!module) return null;
+
+		return (
+			<Card key={entry.instanceId}>
+				<div className='flex flex-col gap-4'>
+					<div className='aspect-video rounded-lg p-1 overflow-hidden'>
+						<Image src={`/modules/${module.id}/drawing.svg`} alt={module.name} width={100} height={100} className='w-full h-full object-contain' />
+					</div>
+
+					<div className='px-3'>
+						<h3 className='font-semibold'>{module.name}</h3>
+
+						{node ? (
+							<>
+								<p className='text-sm opacity-70'>{node.name}</p>
+								<p className='text-sm opacity-70'>{node.physicalAddress}</p>
+							</>
+						) : (
+							<p className='text-sm opacity-70'>Infrastructure module</p>
+						)}
+					</div>
+
+					<div className='flex items-center justify-end gap-2 border-t pt-3'>
+						<Button variant='ghost' icon={<Pencil size={14} />} onClick={() => editModule(entry)} />
+
+						<Button variant='ghost' icon={<BookIcon size={14} />} onClick={() => window.open(`/modules/${module.id}/datasheet.pdf`, '_blank')} />
+
+						<Button variant='danger-ghost' icon={<Trash2 size={14} />} onClick={() => removeModule(entry.instanceId)} />
+					</div>
+				</div>
+			</Card>
+		);
+	}
+
+	function renderTopology(entry: TopologyModule): React.ReactNode {
+		return (
+			<div key={entry.instanceId} className='flex flex-col items-center'>
+				{renderModule(entry)}
+
+				{entry.nodes ? (
+					<>
+						<div className='relative h-16 w-full max-w-5xl'>
+							<div className='absolute left-1/2 top-0 h-6 w-[3px] bg-orange-500 -translate-x-1/2' />
+
+							<div className='absolute left-[calc(50%-6px)] top-0 h-6 w-[3px] bg-orange-200' />
+
+							<div className='absolute left-1/4 right-1/4 top-6 h-[3px] bg-orange-500' />
+
+							<div className='absolute left-[calc(25%-6px)] right-[calc(25%-6px)] top-6 h-[3px] bg-orange-200' />
+
+							<div className='absolute left-1/4 top-6 h-10 w-[3px] bg-orange-500' />
+
+							<div className='absolute left-[calc(25%-6px)] top-6 h-10 w-[3px] bg-orange-200' />
+
+							<div className='absolute right-1/4 top-6 h-10 w-[3px] bg-orange-500' />
+
+							<div className='absolute right-[calc(25%-6px)] top-6 h-10 w-[3px] bg-orange-200' />
+						</div>
+
+						<div className='grid grid-cols-2 gap-20 w-full'>
+							<div className='flex flex-col gap-6'>{entry.nodes[1]?.map(renderTopology)}</div>
+
+							<div className='flex flex-col gap-6'>{entry.nodes[2]?.map(renderTopology)}</div>
+						</div>
+					</>
+				) : (
+					<div className='flex justify-center'>
+						<div className='relative h-10 w-4'>
+							<div className='absolute left-0 h-full w-[3px] bg-orange-500' />
+
+							<div className='absolute left-[6px] h-full w-[3px] bg-orange-200' />
+						</div>
+					</div>
+				)}
+			</div>
+		);
+	}
+
+	if (loading) return <Loading title='Loading Topology' />;
+
 	return (
-		<div className='rounded-3xl bg-(--foreground) p-6'>
-			<ModuleBuilder foundModules={foundModules} topology={topology} setTopology={setTopology} />
-		</div>
+		<>
+			<div className='flex items-center gap-2'>
+				<Input placeholder='Search modules...' value={search} onChange={(e) => setSearch(e.target.value)} />
+
+				<Button onClick={() => setAddModalOpen(true)}>Add ({unplacedModules.length})</Button>
+			</div>
+
+			<div className='mt-8 flex flex-col gap-6'>{topology.map(renderTopology)}</div>
+
+			<Modal open={addModalOpen} onClose={() => setAddModalOpen(false)} title='Add Module'>
+				<div className='space-y-8 max-h-[70vh] overflow-y-auto pr-2'>
+					<div>
+						<h3 className='mb-4 text-lg font-semibold'>Detected Modules ({unplacedModules.length})</h3>
+
+						<div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
+							{unplacedModules.map((node) => (
+								<Card key={node.physicalAddress} onClick={() => selectDetectedModule(node)} className='cursor-pointer transition hover:scale-[1.02]'>
+									<div className='flex flex-col gap-4'>
+										<div className='aspect-video rounded-lg border bg-muted flex items-center justify-center'>
+											<span className='text-sm text-muted-foreground'>Unknown module</span>
+										</div>
+
+										<div>
+											<h4 className='font-semibold'>{node.name}</h4>
+
+											<p className='text-sm opacity-70'>{node.physicalAddress}</p>
+
+											<p className='text-sm opacity-70'>{node.numberOfUnits} units</p>
+										</div>
+									</div>
+								</Card>
+							))}
+						</div>
+					</div>
+
+					<div>
+						<h3 className='mb-4 text-lg font-semibold'>Infrastructure</h3>
+
+						<div className='grid grid-cols-1 gap-4 lg:grid-cols-3'>
+							{manualModules.map((module) => (
+								<Card key={module.id} onClick={() => addManualModule(module)} className='cursor-pointer transition hover:scale-[1.02]'>
+									<div className='flex flex-col gap-4'>
+										<div className='aspect-video rounded-lg border overflow-hidden bg-white'>
+											<img src={`/modules/${module.id}/drawing.svg`} alt={module.name} className='w-full h-full object-contain p-4' />
+										</div>
+
+										<div>
+											<h4 className='font-semibold'>{module.name}</h4>
+
+											<p className='text-sm opacity-70 line-clamp-3'>{module.description}</p>
+										</div>
+									</div>
+								</Card>
+							))}
+						</div>
+					</div>
+				</div>
+			</Modal>
+
+			<Modal open={moduleSelection !== null} onClose={() => setModuleSelection(null)} title='Select Module Type'>
+				<div className='space-y-6'>
+					<div>
+						<h3 className='font-semibold'>{moduleSelection?.mode === 'add' ? moduleSelection.node.name : availableModules.find((x) => x.id === moduleSelection?.topology.moduleId)?.name}</h3>
+
+						<p className='opacity-70'>{moduleSelection?.mode === 'add' ? moduleSelection.node.physicalAddress : moduleSelection?.topology.physicalAddress}</p>
+					</div>
+
+					<div className='grid grid-cols-1 gap-4 max-h-[70vh] overflow-y-auto pr-2 lg:grid-cols-3'>
+						{detectableModules.map((module) => (
+							<Card key={module.id} onClick={() => (moduleSelection?.mode === 'add' ? addDetectedModule(module) : changeModuleType(module))} className='cursor-pointer transition hover:scale-[1.02]'>
+								<div className='flex flex-col gap-4'>
+									<div className='aspect-video rounded-lg p-1 overflow-hidden'>
+										<Image src={`/modules/${module.id}/drawing.svg`} alt={module.name} className='w-full h-full object-contain' height={100} width={100} />
+									</div>
+
+									<div>
+										<h4 className='font-semibold'>{module.name}</h4>
+
+										<p className='text-sm opacity-70 line-clamp-3'>{module.description}</p>
+									</div>
+								</div>
+							</Card>
+						))}
+					</div>
+				</div>
+			</Modal>
+		</>
 	);
 }

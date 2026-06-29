@@ -2,7 +2,5 @@
 	"id": "DT03-12",
 	"name": "12 channel 10A NO relais module",
 	"description": "To connect or deconnect 12 sockets and/or lightcircuit.",
-	"units": {
-		"relais": 12
-	}
+	"detectable": true
 }

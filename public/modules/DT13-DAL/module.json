@@ -2,7 +2,5 @@
 	"id": "DT13-DAL",
 	"name": "Dali interface 64 kan.",
 	"description": "Interface for controlling DALI lighting.",
-	"units": {
-		"dimmer": 79
-	}
+	"detectable": true
 }
