@@ -103,33 +103,16 @@ export default function Contact({ contacts: selectedContacts, onChange }: Props)
 		<div className='flex flex-col gap-4'>
 			<div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'>
 				{contacts.map((contact, index) => (
-					<div
-						key={index}
-						className='rounded-xl p-4 flex flex-col'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-							border: '1px solid color-mix(in srgb, var(--accent) 20%, var(--border))',
-							backdropFilter: 'blur(8px)',
-						}}>
+					<div key={index} className='rounded-3xl p-4 flex flex-col bg-(--accent)/10 text-(--text) border-2 border-(--accent)/70'>
 						<div className='flex items-center gap-3 mb-4'>
-							<div
-								className='h-9 w-9 rounded-lg flex items-center justify-center'
-								style={{
-									background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-								}}>
+							<div className='h-10 w-10 rounded-2xl flex items-center justify-center bg-(--background) text-(--text)'>
 								<User size={16} />
 							</div>
 
 							<div>
-								<div className='font-medium'>{contact.name || 'Unnamed Contact'}</div>
+								<div className='font-medium text-(--text)'>{contact.name || 'Unnamed Contact'}</div>
 
-								<div
-									className='text-xs'
-									style={{
-										color: 'var(--text-muted)',
-									}}>
-									{contact.role || ''}
-								</div>
+								<div className='text-xs text-(--text-muted)'>{contact.role || ''}</div>
 							</div>
 						</div>
 
@@ -144,11 +127,7 @@ export default function Contact({ contacts: selectedContacts, onChange }: Props)
 								<Input label='Email' icon={<Mail size={16} />} value={contact.email} onChange={(e) => updateContact(index, 'email', e.target.value)} />
 							</div>
 						) : (
-							<div
-								className='text-sm flex flex-col gap-2 flex-1'
-								style={{
-									color: 'var(--text-muted)',
-								}}>
+							<div className='text-sm flex flex-col gap-2 flex-1 text-(--text-muted)'>
 								<div className='flex items-center gap-2'>
 									<Mail size={14} />
 									<span>{contact.email || 'No email'}</span>
@@ -196,17 +175,11 @@ export default function Contact({ contacts: selectedContacts, onChange }: Props)
 				))}
 
 				{has('projects.write') && (
-					<button
-						onClick={() => setCreateOpen(true)}
-						className='rounded-xl p-4 flex flex-col items-center justify-center gap-2 min-h-55 transition hover:scale-[1.01]'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
-							border: '1px dashed color-mix(in srgb, var(--accent) 30%, var(--border))',
-						}}>
+					<Button variant='primary-ghost' onClick={() => setCreateOpen(true)} className='rounded-3xl p-4 min-h-55 flex flex-col items-center justify-center gap-2 transition hover:opacity-80'>
 						<Plus size={28} />
 
 						<span>Add Contact</span>
-					</button>
+					</Button>
 				)}
 			</div>
 
@@ -270,19 +243,12 @@ export default function Contact({ contacts: selectedContacts, onChange }: Props)
 						/>
 
 						{suggestions.length > 0 && (
-							<div
-								className='absolute z-50 left-0 right-0 mt-2 rounded-xl overflow-hidden'
-								style={{
-									background: 'var(--bg-main)',
-									border: '1px solid var(--border)',
-									boxShadow: '0 12px 32px rgba(0,0,0,.15)',
-									backdropFilter: 'blur(16px)',
-								}}>
+							<div className='absolute z-50 left-0 right-0 mt-2 rounded-3xl overflow-hidden bg-(--foreground)'>
 								{suggestions.map((contact) => (
-									<button
+									<Button
 										key={contact.id}
-										type='button'
-										className='w-full p-3 text-left transition hover:bg-black/5 dark:hover:bg-white/5'
+										variant='secondary'
+										className='w-full justify-start'
 										onClick={() => {
 											if (selectedContacts.includes(contact.id)) {
 												return;
@@ -296,14 +262,8 @@ export default function Contact({ contacts: selectedContacts, onChange }: Props)
 										}}>
 										<div className='font-medium'>{contact.name}</div>
 
-										<div
-											className='text-sm'
-											style={{
-												color: 'var(--text-muted)',
-											}}>
-											{contact.email}
-										</div>
-									</button>
+										<div className='text-sm text-(--text-muted)'>{contact.email}</div>
+									</Button>
 								))}
 							</div>
 						)}

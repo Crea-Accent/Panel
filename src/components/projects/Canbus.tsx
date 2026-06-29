@@ -8,6 +8,7 @@ import dt00_24sw from '@/../public/modules/DT00-24SW/module.json' with { type: '
 import dt18_gt from '@/../public/modules/DT18-GT/module.json' with { type: 'json' };
 import dt18_hs from '@/../public/modules/DT18-HS/module.json' with { type: 'json' };
 import Loading from '../ui/Loading';
+import EmptyState from '../ui/EmptyState';
 
 type Props = {
 	client: string;
@@ -328,7 +329,15 @@ export default function Canbus({ client, basePath }: Props) {
 		saveTopology();
 	}, [topology, loaded]);
 
-	if (loading) return <Loading title='Loading programmation' description='Reading DUO files and building CAN bus topology' />;
+	if (loading) return <Loading title='Building CAN Bus Topology' description='Reading DUO configuration and restoring saved module layout' />;
 
-	return <ModuleBuilder foundModules={foundModules} topology={topology} setTopology={setTopology} />;
+	if (!foundModules.length) {
+		return <EmptyState title='No CAN Bus Configuration Found' description='No DUO programming file was found in the project programmation folder.' />;
+	}
+
+	return (
+		<div className='rounded-3xl bg-(--foreground) p-6'>
+			<ModuleBuilder foundModules={foundModules} topology={topology} setTopology={setTopology} />
+		</div>
+	);
 }

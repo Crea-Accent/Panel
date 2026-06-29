@@ -11,6 +11,7 @@ import Access from './metadata/Access';
 import Address from './metadata/Address';
 import Button from '../ui/Button';
 import Contact from './metadata/Contact';
+import EmptyState from '../ui/EmptyState';
 import { User } from 'next-auth';
 import { usePermissions } from '@/providers/PermissionsProvider';
 
@@ -79,6 +80,28 @@ export default function Metadata({ client, onActionsChange }: Props) {
 	const [users, setUsers] = useState<User[]>([]);
 	const [labels, setLabels] = useState<Label[]>([]);
 
+	/* ---------- STYLES ---------- */
+
+	const collapseAnimation = {
+		initial: {
+			height: 0,
+			opacity: 0,
+		},
+		animate: {
+			height: 'auto',
+			opacity: 1,
+		},
+		exit: {
+			height: 0,
+			opacity: 0,
+		},
+		transition: {
+			duration: 0.15,
+		},
+	};
+
+	/* ---------- LOGIC ---------- */
+
 	const normalize = (data: MetadataType | null) => {
 		if (!data) return data;
 		return {
@@ -86,8 +109,6 @@ export default function Metadata({ client, onActionsChange }: Props) {
 			logins: data.logins?.map((l) => ({ ...l, password: undefined })),
 		};
 	};
-
-	const [copied, setCopied] = useState(false);
 
 	const share = async () => {
 		const res = await fetch('/api/projects/metadata', {
@@ -110,9 +131,47 @@ export default function Metadata({ client, onActionsChange }: Props) {
 		url.searchParams.set('code', shareCode);
 
 		await navigator.clipboard.writeText(url.toString());
+	};
 
-		setCopied(true);
-		setTimeout(() => setCopied(false), 2000);
+	const toggleSection = (key: string) => {
+		setOpenSections((prev) => (prev.includes(key) ? prev.filter((s) => s !== key) : [...prev, key]));
+	};
+
+	const save = async () => {
+		setSaving(true);
+		setSaved(false);
+
+		const payload = {
+			...metadata,
+			logins: metadata?.logins?.map((l) => ({
+				id: l.id,
+				label: l.label ?? '',
+				link: l.link ?? '',
+				username: l.username ?? '',
+				password: l.password || undefined,
+				client: l.client ?? false,
+			})),
+		};
+
+		const res = await fetch('/api/projects/metadata', {
+			method: 'PATCH',
+			headers: { 'Content-Type': 'application/json' },
+			body: JSON.stringify({ client, data: payload }),
+		});
+
+		if (!res.ok) {
+			setSaving(false);
+			return;
+		}
+
+		const refreshed = await fetch(`/api/projects/metadata?client=${client}`).then((r) => r.json());
+
+		setMetadata(refreshed);
+		setInitialMetadata(refreshed);
+
+		setSaving(false);
+		setSaved(true);
+		setTimeout(() => setSaved(false), 2000);
 	};
 
 	const hasChanges = JSON.stringify(normalize(metadata)) !== JSON.stringify(normalize(initialMetadata));
@@ -173,79 +232,14 @@ export default function Metadata({ client, onActionsChange }: Props) {
 			.then((d) => setLabels(d.labels ?? []));
 	}, [client]);
 
-	if (!metadata) return null;
-
-	/* ---------- STYLES ---------- */
-
-	const section = 'bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm p-6';
-
-	const collapseAnimation = {
-		initial: {
-			height: 0,
-			opacity: 0,
-		},
-		animate: {
-			height: 'auto',
-			opacity: 1,
-		},
-		exit: {
-			height: 0,
-			opacity: 0,
-		},
-		transition: {
-			duration: 0.15,
-		},
-	};
-
-	/* ---------- LOGIC ---------- */
-
-	const toggleSection = (key: string) => {
-		setOpenSections((prev) => (prev.includes(key) ? prev.filter((s) => s !== key) : [...prev, key]));
-	};
-
-	const save = async () => {
-		setSaving(true);
-		setSaved(false);
-
-		const payload = {
-			...metadata,
-			logins: metadata.logins?.map((l) => ({
-				id: l.id,
-				label: l.label ?? '',
-				link: l.link ?? '',
-				username: l.username ?? '',
-				password: l.password || undefined,
-				client: l.client ?? false,
-			})),
-		};
-
-		const res = await fetch('/api/projects/metadata', {
-			method: 'PATCH',
-			headers: { 'Content-Type': 'application/json' },
-			body: JSON.stringify({ client, data: payload }),
-		});
-
-		if (!res.ok) {
-			setSaving(false);
-			return;
-		}
-
-		const refreshed = await fetch(`/api/projects/metadata?client=${client}`).then((r) => r.json());
-
-		setMetadata(refreshed);
-		setInitialMetadata(refreshed);
-
-		setSaving(false);
-		setSaved(true);
-		setTimeout(() => setSaved(false), 2000);
-	};
-
 	/* ---------- UI ---------- */
 
+	if (!metadata) return <EmptyState title='No metadata' description='No metadata could be loaded for this project.' />;
+
 	return (
-		<section className='space-y-6'>
-			<div className={section}>
-				<Button onClick={() => toggleSection('address')} className='w-full text-left justify-start' variant='secondary'>
+		<section className='space-y-4'>
+			<div className='rounded-3xl p-6 bg-(--foreground)'>
+				<Button onClick={() => toggleSection('address')} className='w-full justify-start' variant='secondary'>
 					<span>Address</span>
 
 					{openSections.includes('address') ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
@@ -253,7 +247,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 
 				<AnimatePresence initial={false}>
 					{openSections.includes('address') && (
-						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
+						<motion.div {...collapseAnimation} className='pt-4 overflow-hidden'>
 							<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!} libraries={['places']}>
 								<Address
 									value={metadata.address}
@@ -270,7 +264,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 				</AnimatePresence>
 			</div>
 
-			<div className={section}>
+			<div className={'rounded-3xl p-6 bg-(--foreground)'}>
 				<Button onClick={() => toggleSection('contact')} className='w-full text-left justify-start' variant='secondary'>
 					<span>Contact</span>
 
@@ -279,7 +273,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 
 				<AnimatePresence initial={false}>
 					{openSections.includes('contact') && (
-						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
+						<motion.div {...collapseAnimation} className='pt-4 overflow-hidden'>
 							<Contact
 								contacts={metadata.contacts ?? []}
 								onChange={(contacts) =>
@@ -295,7 +289,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 			</div>
 
 			{/* LOGINS */}
-			<div className={section}>
+			<div className={'rounded-3xl p-6 bg-(--foreground)'}>
 				<Button onClick={() => toggleSection('logins')} className='w-full text-left justify-start' variant='secondary'>
 					<span>Logins</span>
 
@@ -304,7 +298,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 
 				<AnimatePresence initial={false}>
 					{openSections.includes('logins') && (
-						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
+						<motion.div {...collapseAnimation} className='pt-4 overflow-hidden'>
 							<Login
 								value={metadata.logins ?? []}
 								onChange={(logins) =>
@@ -320,7 +314,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 			</div>
 
 			{!hasWrite && (
-				<div className={section}>
+				<div className={'rounded-3xl p-6 bg-(--foreground)'}>
 					<Button onClick={() => toggleSection('access')} className='w-full text-left justify-start' variant='secondary'>
 						<span>Access</span>
 
@@ -329,7 +323,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 
 					<AnimatePresence initial={false}>
 						{openSections.includes('access') && (
-							<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
+							<motion.div {...collapseAnimation} className='pt-4 overflow-hidden'>
 								<Access
 									users={users}
 									value={(metadata as any).access ?? []}
@@ -347,7 +341,7 @@ export default function Metadata({ client, onActionsChange }: Props) {
 			)}
 
 			{/* NOTES */}
-			<div className={section}>
+			<div className={'rounded-3xl p-6 bg-(--foreground)'}>
 				<Button onClick={() => toggleSection('notes')} className='w-full text-left justify-start' variant='secondary'>
 					<span>Notes</span>
 
@@ -356,9 +350,9 @@ export default function Metadata({ client, onActionsChange }: Props) {
 
 				<AnimatePresence initial={false}>
 					{openSections.includes('notes') && (
-						<motion.div {...collapseAnimation} className='pt-5 overflow-hidden'>
+						<motion.div {...collapseAnimation} className='pt-4 overflow-hidden'>
 							<textarea
-								className={'w-full'}
+								className='w-full min-h-48 rounded-2xl p-4 bg-(--background) outline-none resize-y'
 								disabled={hasWrite}
 								value={metadata.notes ?? ''}
 								onChange={(e) =>

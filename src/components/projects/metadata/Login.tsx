@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
+import Toggle from '@/components/ui/Toggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
 import { useState } from 'react';
 
@@ -78,44 +79,22 @@ export default function Login({ value, onChange }: Props) {
 	}
 
 	return (
-		<div className='flex flex-col gap-4'>
+		<div className='space-y-4'>
 			<div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'>
 				{value.map((login, index) => (
-					<div
-						key={login.id}
-						className='rounded-xl p-4 flex flex-col'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-							border: '1px solid color-mix(in srgb, var(--accent) 20%, var(--border))',
-						}}>
+					<div key={login.id} className='rounded-3xl p-4 flex flex-col bg-(--accent)/10 border-2 border-(--accent)/70'>
 						<div className='flex items-center gap-3 mb-4'>
-							<div
-								className='h-9 w-9 rounded-lg flex items-center justify-center'
-								style={{
-									background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-								}}>
+							<div className='h-10 w-10 rounded-2xl flex items-center justify-center bg-(--background) text-(--text)'>
 								<Globe size={16} />
 							</div>
 
 							<div className='flex-1 min-w-0'>
 								<div className='font-medium truncate'>{login.label || 'Unnamed Login'}</div>
 
-								<div
-									className='text-xs truncate'
-									style={{
-										color: 'var(--text-muted)',
-									}}>
-									{login.username || 'No username'}
-								</div>
+								<div className='text-xs truncate text-(--text-muted)'>{login.username || 'No username'}</div>
 							</div>
 
-							<div
-								className='h-9 w-9 rounded-lg flex items-center justify-center'
-								style={{
-									background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-								}}>
-								{login.client ? <Eye size={16} /> : <EyeOff size={16} />}
-							</div>
+							<div className='h-10 w-10 rounded-2xl flex items-center justify-center bg-(--background) text-(--text)'>{login.client ? <Eye size={16} /> : <EyeOff size={16} />}</div>
 						</div>
 
 						{editing === index ? (
@@ -128,22 +107,13 @@ export default function Login({ value, onChange }: Props) {
 
 								<Input label='Password' value={login.password} onChange={(e) => updateField(index, 'password', e.target.value)} />
 
-								<label className='flex items-center gap-3 text-sm'>
-									<input type='checkbox' checked={login.client} onChange={(e) => updateField(index, 'client', e.target.checked)} />
-									Visible to client
-								</label>
+								<Toggle checked={login.client} onChange={(checked) => updateField(index, 'client', checked)} label='Visible to client' description='Client can view these credentials' />
 							</div>
 						) : (
 							<div className='flex flex-col gap-3 flex-1'>
-								<div
-									className='text-sm'
-									style={{
-										color: 'var(--text-muted)',
-									}}>
-									{login.link || 'No URL'}
-								</div>
+								<div className='text-sm text-(--text-muted) break-all'>{login.link || 'No URL'}</div>
 
-								<div className='flex items-center justify-between rounded-lg px-3 py-2 border border-(--border)'>
+								<div className='flex items-center justify-between rounded-2xl px-3 py-2 bg-(--foreground)'>
 									<span>{visiblePasswords[login.id] ? login.password : '••••••••••••'}</span>
 
 									<button
@@ -189,17 +159,11 @@ export default function Login({ value, onChange }: Props) {
 				))}
 
 				{has('projects.write') && (
-					<button
-						onClick={() => setCreateOpen(true)}
-						className='rounded-xl p-4 flex flex-col items-center justify-center gap-2 min-h-55 transition hover:scale-[1.01]'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 6%, transparent)',
-							border: '1px dashed color-mix(in srgb, var(--accent) 30%, var(--border))',
-						}}>
+					<Button variant='primary-ghost' onClick={() => setCreateOpen(true)} className='rounded-3xl p-4 min-h-55 flex flex-col items-center justify-center gap-2'>
 						<Plus size={28} />
 
 						<span>Add Login</span>
-					</button>
+					</Button>
 				)}
 			</div>
 
@@ -226,10 +190,19 @@ export default function Login({ value, onChange }: Props) {
 
 					<Input label='Password' value={newLogin.password} onChange={(e) => setNewLogin({ ...newLogin, password: e.target.value })} />
 
-					<label className='flex items-center gap-3 text-sm md:col-span-2'>
-						<input type='checkbox' checked={newLogin.client} onChange={(e) => setNewLogin({ ...newLogin, client: e.target.checked })} />
-						Visible to client
-					</label>
+					<div className='md:col-span-2'>
+						<Toggle
+							checked={newLogin.client}
+							onChange={(checked) =>
+								setNewLogin({
+									...newLogin,
+									client: checked,
+								})
+							}
+							label='Visible to client'
+							description='Client can view these credentials'
+						/>
+					</div>
 				</div>
 			</Modal>
 

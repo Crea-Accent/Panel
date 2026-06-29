@@ -1,19 +1,20 @@
 /** @format */
 'use client';
 
-import { AnimatePresence, motion } from 'framer-motion';
-import { ArrowUp, Copy, Download, File, Folder, Home, LucideIcon, Pencil, RotateCw, Search, Trash2, Upload } from 'lucide-react';
+import { ArrowUp, ChevronLeft, ChevronRight, Folder, Home, Pencil, Search, Upload } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
-import ContextMenu from '@/components/ui/ContextMenu';
-import EmptyState from '@/components/ui/EmptyState';
-import Image from 'next/image';
+import FileGrid from '@/components/files/FileGrid';
+import FileList from '@/components/files/FileList';
 import Input from '@/components/ui/Input';
 import Modal from '@/components/ui/Modal';
 import PageHeader from '@/components/ui/PageHeader';
+import ViewToggle from '@/components/ui/ViewToggle';
+import { motion } from 'framer-motion';
+import { useFileNavigation } from '@/hooks/useFileNavigation';
 
 type FileEntry = {
 	path: string;
@@ -27,32 +28,13 @@ type Settings = {
 	path?: string;
 };
 
-function formatSize(bytes?: number | null) {
-	if (bytes == null) return '-';
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	if (bytes < 1024 * 1024 * 1024) return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
-	return `${(bytes / 1024 / 1024 / 1024).toFixed(1)} GB`;
-}
-
-function formatDate(date?: string) {
-	if (!date) return '-';
-	return new Date(date).toLocaleString();
-}
-
-const IMAGE_EXTENSIONS = ['.png', '.jpg', '.jpeg', '.webp', '.gif', '.svg'];
-
-function isImage(name: string) {
-	const lower = name.toLowerCase();
-	return IMAGE_EXTENSIONS.some((ext) => lower.endsWith(ext));
-}
-
 export default function FilesPage() {
 	const abortRef = useRef<AbortController | null>(null);
 	const uploadRef = useRef<HTMLInputElement>(null);
-
 	const [settings, setSettings] = useState<Settings | null>(null);
-	const [currentPath, setCurrentPath] = useState<string | null>(null);
+
+	const { currentPath, navigate, goUp, goBack, goForward, canGoBack, canGoForward, canGoUp, breadcrumbs } = useFileNavigation(settings?.path ?? '');
+
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
 	const [loading, setLoading] = useState(true);
@@ -93,8 +75,6 @@ export default function FilesPage() {
 
 	const selectedFile = useMemo(() => (selected.length === 1 ? filtered.find((f) => f.path === selected[0]) : null), [selected, filtered]);
 
-	const hasImages = useMemo(() => files.some((f) => isImage(f.name)), [files]);
-
 	async function loadFiles(path: string, recursive = false) {
 		if (abortRef.current) abortRef.current.abort();
 
@@ -120,14 +100,15 @@ export default function FilesPage() {
 		}
 	}
 
-	function navigate(file: FileEntry) {
-		if (file.type === 'directory') {
-			clearSelection();
-
-			setQuery('');
-
-			setCurrentPath(file.path);
+	function openFile(file: FileEntry) {
+		if (file.type !== 'directory') {
+			return;
 		}
+
+		clearSelection();
+		setQuery('');
+
+		navigate(file.path);
 	}
 
 	function toggleSelection(path: string, event: React.MouseEvent) {
@@ -170,14 +151,6 @@ export default function FilesPage() {
 		setSelected([]);
 
 		lastSelected.current = null;
-	}
-
-	function goUp() {
-		if (!currentPath || !settings?.path || isSearching) return;
-		if (currentPath === settings.path) return;
-
-		const parent = currentPath.substring(0, currentPath.lastIndexOf('\\'));
-		setCurrentPath(parent);
 	}
 
 	async function copyToClipboard(text: string) {
@@ -311,10 +284,7 @@ export default function FilesPage() {
 			const s = await fetch('/api/settings/files').then((r) => r.json());
 			setSettings(s);
 
-			if (s?.path) {
-				setCurrentPath(s.path);
-				await loadFiles(s.path);
-			}
+			if (s?.path) navigate(s.path);
 
 			setLoading(false);
 		})();
@@ -351,7 +321,7 @@ export default function FilesPage() {
 			if (e.key === 'Enter' && selectedFile) {
 				e.preventDefault();
 
-				navigate(selectedFile);
+				openFile(selectedFile);
 			}
 		}
 
@@ -403,21 +373,17 @@ export default function FilesPage() {
 			<Card className='p-4 sticky top-4 z-20 backdrop-blur bg-white/80 dark:bg-zinc-900/80'>
 				<div className='flex flex-wrap items-center justify-between gap-4'>
 					<div className='flex flex-wrap items-center gap-3'>
-						<Button variant='ghost' icon={<RotateCw size={16} />} onClick={() => currentPath && loadFiles(currentPath, isSearching)} />
+						<Button icon={<ChevronLeft size={16} />} onClick={goBack} disabled={!canGoBack} />
 
-						<Button variant='ghost' icon={<ArrowUp size={16} />} onClick={goUp} disabled={isSearching} />
+						<Button icon={<ChevronRight size={16} />} onClick={goForward} disabled={!canGoForward} />
 
-						<Button variant='ghost' icon={<Copy size={16} />} onClick={() => currentPath && copyToClipboard(currentPath)} disabled={isSearching} />
+						<Button icon={<ArrowUp size={16} />} onClick={goUp} disabled={!canGoUp} />
 
 						<div className='w-full md:w-80'>
 							<Input icon={<Search size={16} />} placeholder='Search files...' value={query} onChange={(e) => setQuery(e.target.value)} />
 						</div>
 
-						{hasImages && (
-							<Button variant='secondary' onClick={() => setView((v) => (v === 'list' ? 'grid' : 'list'))}>
-								{view === 'list' ? 'Gallery' : 'List'}
-							</Button>
-						)}
+						<ViewToggle value={view} onChange={setView} />
 
 						<>
 							<Button variant='secondary' icon={<Folder size={16} />} onClick={() => setCreatingFolder(true)}>
@@ -457,191 +423,37 @@ export default function FilesPage() {
 			{/* NAVIGATION */}
 
 			<Card className='p-4'>
-				<div className='flex flex-wrap items-center gap-2 text-sm'>
-					<button onClick={() => settings?.path && setCurrentPath(settings.path)} className='font-medium text-(--accent)'>
-						<Home size={16} />
-					</button>
+				<div className='flex flex-wrap items-center gap-2'>
+					{breadcrumbs.map((crumb, index) => (
+						<div key={crumb.path} className='flex items-center gap-2'>
+							{index > 0 && <span className='text-(--text-muted)'>/</span>}
 
-					{currentPath &&
-						settings?.path &&
-						currentPath
-							.replace(settings.path, '')
-							.split('\\')
-							.filter(Boolean)
-							.map((segment, index, arr) => {
-								const path = settings.path + '\\' + arr.slice(0, index + 1).join('\\');
-
-								return (
-									<div key={path} className='flex items-center gap-2'>
-										<span className='text-zinc-400'>/</span>
-
-										<button onClick={() => setCurrentPath(path)} className='hover:text-(--accent)'>
-											{segment}
-										</button>
-									</div>
-								);
-							})}
+							<Button variant='ghost' onClick={() => navigate(crumb.path)}>
+								{index === 0 ? <Home size={16} /> : crumb.label}
+							</Button>
+						</div>
+					))}
 				</div>
 			</Card>
 
 			{/* Table */}
-			{view === 'list' ? (
-				<motion.div
-					initial={{ opacity: 0, y: 6 }}
-					animate={{ opacity: 1, y: 0 }}
-					className='bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-xl shadow-sm overflow-hidden'>
-					{/* Header */}
-					<div className='hidden md:grid grid-cols-4 px-6 py-3 text-xs uppercase tracking-wide text-zinc-500 bg-zinc-50 dark:bg-zinc-800'>
-						<div>Name</div>
-						<div>Size</div>
-						<div>Modified</div>
-						<div className='text-right'>Actions</div>
-					</div>
-
-					{loadingFiles && <div className='p-8 text-center text-sm text-zinc-500'>Loading files...</div>}
-
-					{!loadingFiles && filtered.length === 0 && (
-						<div className='p-8'>
-							<EmptyState icon={<Folder size={24} />} title='Folder is empty' description='Upload files or create a folder to get started.' />
-						</div>
-					)}
-
-					{!loadingFiles &&
-						filtered.map((file) => (
-							<motion.div
-								layout
-								key={file.path}
-								onClick={(e) => toggleSelection(file.path, e)}
-								onContextMenu={(e) => openContextMenu(e, file)}
-								className={`border-t border-zinc-200 dark:border-zinc-800 transition ${selected.includes(file.path) ? `bg-(--active-accent) dark:bg-(--accent)/10` : `hover:bg-zinc-50 dark:hover:bg-zinc-800`}`}>
-								<div className='flex md:grid md:grid-cols-4 items-center px-4 md:px-6 py-4 gap-3'>
-									{/* Name */}
-									<div
-										className='flex items-start gap-3 cursor-pointer flex-1'
-										onDoubleClick={() => {
-											navigate(file);
-										}}>
-										{file.type === 'directory' ? (
-											<Folder size={18} className='text-(--accent)' />
-										) : isImage(file.name) ? (
-											<img src={`/api/files/download?path=${encodeURIComponent(file.path)}`} className='w-6 h-6 object-cover rounded' />
-										) : (
-											<File size={18} className='text-zinc-400' />
-										)}
-
-										<div className='flex flex-col min-w-0'>
-											<span className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{file.name}</span>
-
-											{/* Mobile meta */}
-											<div className='text-xs text-zinc-500 md:hidden mt-1 space-x-3'>
-												<span>{formatSize(file.size)}</span>
-												<span>{formatDate(file.modified)}</span>
-											</div>
-										</div>
-									</div>
-
-									{/* Size */}
-									<div className='hidden md:block text-sm text-zinc-500'>{formatSize(file.size)}</div>
-
-									{/* Modified */}
-									<div className='hidden md:block text-sm text-zinc-500'>{formatDate(file.modified)}</div>
-
-									{/* Actions */}
-									<div className='flex justify-end gap-2'>
-										<ActionIcon icon={Copy} onClick={() => copyToClipboard(file.path)} />
-										<ActionIcon icon={Download} onClick={() => download(file.path)} />
-										<ActionIcon icon={Pencil} onClick={() => rename(file.path)} />
-										<ActionIcon icon={Trash2} onClick={() => setDeleteTarget(file.path)} danger />
-									</div>
-								</div>
-							</motion.div>
-						))}
-				</motion.div>
+			{view === 'grid' ? (
+				<FileGrid
+					permission={'files.write'}
+					files={filtered}
+					onDownload={(file) => download(file.path)}
+					onEdit={(file) => rename(file.path)}
+					// onOpen={(file) => openFile(file)}
+				/>
 			) : (
-				/* ===== GRID / IMAGE VIEW ===== */
-				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-					{filtered.length === 0 ? (
-						<EmptyState icon={<Folder size={24} />} title='Folder is empty' description='Upload files or create a folder to get started.' />
-					) : (
-						<div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4'>
-							{filtered.map((file, i) => {
-								const image = isImage(file.name);
-
-								return (
-									<Card
-										key={file.path}
-										onContextMenu={(e) => openContextMenu(e, file)}
-										className={`group relative overflow-hidden p-0 cursor-pointer ${selected.includes(file.path) ? `ring-2 ring-(--accent)` : ''}`}>
-										{image ? (
-											<Image src={`/api/files/download?path=${encodeURIComponent(file.path)}`} className='w-full h-40 object-cover' alt={file.name} height={512} width={512} />
-										) : (
-											<div className='h-40 flex items-center justify-center'>
-												{' '}
-												{file.type === 'directory' ? <Folder size={32} className='text-(--accent)' /> : <File size={32} className='text-zinc-400' />}{' '}
-											</div>
-										)}
-
-										<div className='p-3'>
-											{' '}
-											<p className='text-sm font-medium truncate'>{file.name}</p> <p className='text-xs text-zinc-500 mt-1'>{formatSize(file.size)}</p>
-										</div>
-
-										<div className='absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition'>
-											{' '}
-											<ActionIcon icon={Download} onClick={() => download(file.path)} /> <ActionIcon icon={Trash2} onClick={() => setDeleteTarget(file.path)} danger />
-										</div>
-									</Card>
-								);
-							})}
-						</div>
-					)}
-				</motion.div>
+				<FileList
+					permission={'files.write'}
+					files={filtered}
+					onDownload={(file) => download(file.path)}
+					onEdit={(file) => rename(file.path)}
+					// onOpen={(file) => openFile(file)}
+				/>
 			)}
-
-			<ContextMenu
-				open={!!contextMenu.file}
-				x={contextMenu.x}
-				y={contextMenu.y}
-				onClose={() =>
-					setContextMenu({
-						x: 0,
-						y: 0,
-						file: null,
-					})
-				}
-				items={
-					contextMenu.file
-						? [
-								{
-									label: 'Open',
-									icon: <Folder size={16} />,
-									onClick: () => navigate(contextMenu.file!),
-								},
-								{
-									label: 'Rename',
-									icon: <Pencil size={16} />,
-									onClick: () => rename(contextMenu.file!.path),
-								},
-								{
-									label: 'Download',
-									icon: <Download size={16} />,
-									onClick: () => download(contextMenu.file!.path),
-								},
-								{
-									label: 'Copy Path',
-									icon: <Copy size={16} />,
-									onClick: () => copyToClipboard(contextMenu.file!.path),
-								},
-								{
-									label: 'Delete',
-									icon: <Trash2 size={16} />,
-									danger: true,
-									onClick: () => setDeleteTarget(contextMenu.file!.path),
-								},
-							]
-						: []
-				}
-			/>
 
 			<Modal
 				open={creatingFolder}
@@ -787,8 +599,4 @@ export default function FilesPage() {
 			)}
 		</div>
 	);
-}
-
-function ActionIcon({ icon: Icon, onClick, danger }: { icon: LucideIcon; onClick: () => void; danger?: boolean }) {
-	return <Button size='sm' variant={danger ? 'danger-ghost' : 'ghost'} icon={<Icon size={14} />} onClick={onClick} />;
 }

@@ -137,18 +137,29 @@ export default function Address({ value, onChange }: Props) {
 		);
 	}, []);
 
+	useEffect(() => {
+		setPosition({
+			lat: value?.lat ?? 0,
+			lng: value?.lng ?? 0,
+		});
+
+		setAddress({
+			street: value?.street ?? '',
+			number: value?.number ?? '',
+			postalCode: value?.postalCode ?? '',
+			city: value?.city ?? '',
+			country: value?.country ?? '',
+		});
+	}, [value]);
+
 	return (
-		<div className='flex flex-col gap-4'>
+		<div className='space-y-4'>
 			{/* Search */}
 
 			{has('projects.write') && <Input ref={inputRef} value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Search address...' icon={<Search size={16} />} />}
 
 			{/* Map */}
-			<div
-				className='overflow-hidden rounded-xl'
-				style={{
-					border: '1px solid var(--border)',
-				}}>
+			<div className='overflow-hidden rounded-2xl bg-(--foreground) '>
 				<Map
 					colorScheme={resolvedTheme.toUpperCase() as ColorScheme}
 					defaultCenter={position}
@@ -172,6 +183,7 @@ export default function Address({ value, onChange }: Props) {
 			</div>
 
 			{/* Address */}
+
 			<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
 				<Input label='Street' value={address.street} readOnly />
 
@@ -184,10 +196,7 @@ export default function Address({ value, onChange }: Props) {
 				<div className='md:col-span-2'>
 					<Input label='Country' value={address.country} readOnly />
 				</div>
-			</div>
 
-			{/* Coordinates */}
-			<div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
 				<Input label='Latitude' value={position.lat.toFixed(6)} readOnly />
 
 				<Input label='Longitude' value={position.lng.toFixed(6)} readOnly />

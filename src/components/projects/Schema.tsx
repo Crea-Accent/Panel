@@ -3,6 +3,8 @@
 
 import { useEffect, useRef, useState } from 'react';
 
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
 import FileEditModal from '../files/FileEditModal';
 import FileGrid from '../files/FileGrid';
 import FileList from '../files/FileList';
@@ -35,7 +37,6 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 	const [users, setUsers] = useState<User[]>([]);
 
 	const [loading, setLoading] = useState(true);
-	const [open, setOpen] = useState(true);
 	const [view, setView] = useState<'grid' | 'list'>('list');
 
 	const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
@@ -119,8 +120,10 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 		load();
 	}, [basePath, client]);
 
+	if (loading) return <Loading title="Loading schema's" />;
+
 	return (
-		<section className='space-y-6'>
+		<section className='space-y-4'>
 			<input
 				ref={inputRef}
 				type='file'
@@ -139,33 +142,18 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 				}}
 			/>
 
-			<div
-				className='rounded-3xl p-6 space-y-6'
-				style={{
-					background: 'var(--container)',
-					border: '1px solid var(--border)',
-				}}>
-				<div className='flex items-center justify-between'>
-					<div></div>
-					<div className='flex gap-2'>
-						<ViewToggle value={view ?? 'list'} onChange={setView} />
+			<div className='rounded-3xl p-6 space-y-6 bg-(--foreground)'>
+				<div className='flex items-center justify-end gap-2'>
+					<ViewToggle value={view ?? 'list'} onChange={setView} />
 
-						{canWrite && (
-							<button
-								onClick={() => inputRef.current?.click()}
-								disabled={uploading}
-								className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white hover:bg-(--hover-accent) transition'>
-								<Upload size={16} />
-
-								{uploading ? 'Uploading...' : 'Upload'}
-							</button>
-						)}
-					</div>
+					{canWrite && (
+						<Button icon={<Upload size={16} />} onClick={() => inputRef.current?.click()} disabled={uploading}>
+							{uploading ? 'Uploading...' : 'Upload'}
+						</Button>
+					)}
 				</div>
 
-				{loading && <Loading title="Loading schema's" />}
-
-				{!loading && files.length === 0 && <div className='border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-10 text-center text-sm text-zinc-500'>No schema files found</div>}
+				{files.length === 0 && <EmptyState title='No Schemas Found' description='Upload PDF, Schrack or Trikker schema files to get started.' />}
 
 				{view === 'grid' ? (
 					<FileGrid

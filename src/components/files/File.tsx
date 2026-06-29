@@ -17,17 +17,30 @@ export type FileEntry = {
 	thumbnail?: string;
 };
 
-type Props = {
+type FileActionHandlers = {
+	onOpen?: (file: FileEntry) => void;
+	onDownload?: (file: FileEntry) => void;
+	onEdit?: (file: FileEntry) => void;
+	onRename?: (file: FileEntry) => void;
+	onDelete?: (file: FileEntry) => void;
+
+	onSelect?: (file: FileEntry, event: React.MouseEvent) => void;
+	onContextMenu?: (file: FileEntry, event: React.MouseEvent) => void;
+
+	onDragStart?: (file: FileEntry) => void;
+};
+
+type Props = FileActionHandlers & {
 	file: FileEntry;
+
+	mode?: 'project' | 'explorer';
+
+	selected?: boolean;
 
 	permission?: string;
 	users?: User[];
 	compact?: boolean;
 	image?: boolean;
-
-	onDownload?: () => void;
-	onEdit?: () => void;
-	onDragStart?: (file: FileEntry) => void;
 };
 
 function getInitials(name?: string) {
@@ -40,13 +53,27 @@ function getInitials(name?: string) {
 		.toUpperCase();
 }
 
-export default function File({ file, users = [], onDownload, onEdit, onDragStart, compact = false, image = false, permission }: Props) {
+export default function File({
+	file,
+	users = [],
+	mode = 'project',
+
+	onOpen,
+	onDownload,
+	onEdit,
+	onDelete,
+	onRename,
+
+	onDragStart,
+
+	compact = false,
+	image = false,
+	permission,
+}: Props) {
 	const { has } = usePermissions();
 
 	const [download, setDownload] = useState(false);
 	const [viewing, setViewing] = useState(false);
-
-	const isAllowed = (permission && has(permission as any)) ?? false;
 
 	const extension = file.type === 'directory' ? '' : (file.name.split('.').pop() ?? '');
 
@@ -81,10 +108,15 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 			return users.find((u) => getInitials(u.name as string) === initials)?.name ?? initials;
 		});
 
+	const isAllowed = (permission && has(permission as any)) ?? false;
 	const isImage = image || ['png', 'jpg', 'jpeg', 'gif', 'webp', 'svg'].includes(extension);
 
+	const canEdit = !!onEdit;
+	const canDownload = !!onDownload;
+	const canOpen = !!onOpen;
+
 	function handleDownload() {
-		onDownload?.();
+		onDownload?.(file);
 
 		setDownload(true);
 
@@ -93,10 +125,27 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 		}, 5000);
 	}
 
+	function handleOpen() {
+		onOpen?.(file);
+	}
+
+	function handleContextMenu(event: React.MouseEvent) {
+		if (!mode) return;
+
+		event.preventDefault();
+
+		console.log('context menu', file);
+	}
+
 	if (isImage && !compact)
 		return (
 			<>
-				<div className='rounded-2xl dark:bg-zinc-900 overflow-hidden transition hover:shadow-md' draggable={isAllowed || false} onDragStart={() => onDragStart?.(file)}>
+				<div
+					className='rounded-3xl overflow-hidden bg-(--foreground)'
+					draggable={isAllowed || false}
+					onDragStart={() => onDragStart?.(file)}
+					onDoubleClick={handleOpen}
+					onContextMenu={handleContextMenu}>
 					<button type='button' onClick={() => setViewing(true)} className='group aspect-square overflow-hidden w-full max-h-50 block cursor-zoom-in'>
 						<div className='transition-transform duration-200 group-hover:scale-105'>
 							<FileIcon file={file} height={1080} width={1920} />
@@ -107,9 +156,9 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 						<div className='font-medium truncate'>{formattedName}</div>
 
 						<div className='flex gap-2 mt-3'>
-							{isAllowed && <Button icon={<Pencil size={14} />} onClick={onEdit} />}
+							{canEdit && <Button icon={<Pencil size={14} />} onClick={() => onEdit?.(file)} />}
 
-							<Button icon={download ? <Loader2 size={14} className='animate-spin' /> : <Download size={14} />} onClick={handleDownload} disabled={download} />
+							{canDownload && <Button icon={download ? <Loader2 size={14} className='animate-spin' /> : <Download size={14} />} onClick={handleDownload} disabled={download} />}
 						</div>
 					</div>
 				</div>
@@ -121,7 +170,12 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 	if (compact)
 		return (
 			<>
-				<div className='rounded-xl dark:bg-zinc-900 px-4 py-3 flex items-center justify-between gap-4' draggable={isAllowed || false} onDragStart={() => onDragStart?.(file)}>
+				<div
+					className='rounded-3xl bg-(--foreground) border border-(--border) px-4 py-3 ...'
+					draggable={isAllowed || false}
+					onDragStart={() => onDragStart?.(file)}
+					onDoubleClick={handleOpen}
+					onContextMenu={handleContextMenu}>
 					<div className='min-w-0 flex-1'>
 						<div className='flex items-center gap-2'>
 							<FileIcon file={file} size={16} />
@@ -129,7 +183,7 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 							<div className='truncate font-medium'>{formattedName}</div>
 						</div>
 
-						<div className='flex flex-wrap gap-3 mt-1 text-xs text-zinc-500'>
+						<div className='flex flex-wrap gap-3 mt-1 text-xs text-(--text-muted)'>
 							<span>{formattedDate}</span>
 
 							<div className='flex items-center gap-2'>
@@ -147,15 +201,15 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 							{!!collaborators.length && <span>{collaborators.join(', ')}</span>}
 						</div>
 
-						{!!formattedComment && <div className='text-xs text-zinc-400 truncate mt-1'>{formattedComment}</div>}
+						{!!formattedComment && <div className='text-xs text-(--text-muted) truncate mt-1'>{formattedComment}</div>}
 					</div>
 
 					<div className='flex gap-2'>
 						{isImage && <Button icon={<Eye size={14} />} onClick={() => setViewing(true)} />}
 
-						{isAllowed && <Button icon={<Pencil size={14} />} onClick={onEdit} />}
+						{canEdit && <Button icon={<Pencil size={14} />} onClick={() => onEdit?.(file)} />}
 
-						<Button icon={download ? <Loader2 size={14} className='animate-spin' /> : <Download size={14} />} onClick={handleDownload} disabled={download} />
+						{canDownload && <Button icon={download ? <Loader2 size={14} className='animate-spin' /> : <Download size={14} />} onClick={handleDownload} disabled={download} />}
 					</div>
 				</div>
 				<FileViewer file={file} open={viewing} onClose={() => setViewing(false)} />
@@ -163,26 +217,31 @@ export default function File({ file, users = [], onDownload, onEdit, onDragStart
 		);
 
 	return (
-		<div className='rounded-2xl dark:bg-zinc-900 p-4 transition hover:shadow-md min-h-45' draggable={isAllowed || false} onDragStart={() => onDragStart?.(file)}>
+		<div
+			className='rounded-3xl bg-(--foreground) border border-(--border) p-5 ...'
+			draggable={isAllowed || false}
+			onDragStart={() => onDragStart?.(file)}
+			onDoubleClick={handleOpen}
+			onContextMenu={handleContextMenu}>
 			<div className='flex items-start justify-between gap-4'>
 				<div className='min-w-0 flex-1'>
-					<div className='flex items-center gap-2'>
+					<div className='flex items-center gap-2 transition-colors group-hover:text-(--accent)'>
 						<FileIcon file={file} size={18} />
 
 						<h3 className='font-semibold truncate'>{formattedName}</h3>
 					</div>
 
-					{!!formattedComment && <p className='text-sm text-zinc-500 mt-2 wrap-break-word'>{formattedComment}</p>}
+					{!!formattedComment && <p className='text-sm text-(--text-muted) mt-2 wrap-break-word'>{formattedComment}</p>}
 				</div>
 
 				<div className='flex gap-2'>
-					{isAllowed && <Button icon={<Pencil size={14} />} onClick={onEdit} />}
+					{canEdit && <Button icon={<Pencil size={14} />} onClick={() => onEdit?.(file)} />}
 
-					<Button icon={download ? <Loader2 size={14} className='animate-spin' /> : <Download size={14} />} onClick={handleDownload} disabled={download} />
+					{canDownload && <Button icon={download ? <Loader2 size={14} className='animate-spin' /> : <Download size={14} />} onClick={handleDownload} disabled={download} />}
 				</div>
 			</div>
 
-			<div className='mt-4 grid gap-2 text-sm text-zinc-500'>
+			<div className='mt-4 grid gap-2 text-sm text-(--text-muted)'>
 				<div className='flex items-center gap-2'>
 					<Calendar size={14} />
 					<span>{formattedDate || '-'}</span>

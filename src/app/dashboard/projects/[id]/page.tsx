@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Canbus from '@/components/projects/Canbus';
 import Documents from '@/components/projects/Document';
+import EmptyState from '@/components/ui/EmptyState';
 import Loading from '@/components/ui/Loading';
 import Metadata from '@/components/projects/Metadata';
 import Pictures from '@/components/projects/Picture';
@@ -43,6 +44,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
 	const [settings, setSettings] = useState<Settings | null>(null);
 	const [client, setClient] = useState<string | null>(null);
+	const [metadata, setMetadata] = useState<any>(null);
 	const [tab, setTab] = useState<Tab>('info');
 	const [loading, setLoading] = useState(true);
 	const [shareAccess, setShareAccess] = useState(false);
@@ -67,9 +69,9 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 			setClient(id);
 
 			const s = await fetch('/api/settings/projects').then((r) => r.json());
-			const m = await fetch(`/api/projects/metadata?client=${encodeURIComponent(id)}&reveal=true`).then((r) => r.json());
-
-			setSettings(s);
+			const m = await fetch(`/api/projects/metadata?client=${encodeURIComponent(id)}&reveal=true`)
+				.then((r) => r.json())
+				.catch(() => null);
 
 			const code = new URL(window.location.href).searchParams.get('code');
 
@@ -77,14 +79,17 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 				setShareAccess(m.shareCode === code);
 			}
 
+			setSettings(s);
+			setMetadata(m);
 			setLoading(false);
 		})();
 	}, [params]);
 
-	if (loading || !client) return <Loading title={`Loading ${client || 'project'}`} />;
+	if (loading) return <Loading title={`Loading ${client || 'project'}`} description='Reading project metadata' />;
 
-	if (!settings?.path)
-		return <div className='text-sm text-red-700 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl px-4 py-3'>Base path not configured.</div>;
+	if (!metadata || !client) return <EmptyState title='Project not found' description='The requested project could not be loaded.' />;
+
+	if (!settings?.path) return <EmptyState title='Projects path not configured' description='Configure a base projects path in settings before opening project data.' />;
 
 	return (
 		<NotPermitted permission='projects.read' shareAccess={shareAccess}>
@@ -92,23 +97,14 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 				{/* Header */}
 
 				<div>
-					<h1 className='text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100'>{client}</h1>
+					<h1 className='text-2xl font-semibold tracking-tight'>{client}</h1>
 
-					<p className='text-sm text-zinc-500 dark:text-zinc-400 mt-1'>Project dashboard</p>
+					<p className='text-sm mt-1 text-(--text-muted)'>Project dashboard</p>
 				</div>
 
 				{/* Navigation + Actions */}
 
-				<div
-					className='
-		flex flex-col sm:flex-row
-		sm:items-center sm:justify-between
-		gap-2
-		bg-zinc-100 dark:bg-zinc-900
-		p-1
-		rounded-xl
-		border border-zinc-200 dark:border-zinc-800
-	'>
+				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between	gap-2 p-2 rounded-3xl bg-(--foreground)'>
 					{/* Mobile Navigation */}
 
 					<div className='sm:hidden w-full'>

@@ -6,6 +6,7 @@ import { PanelTop, Sun, Zap } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
 import Button from '@/components/ui/Button';
+import EmptyState from '../ui/EmptyState';
 import Loading from '../ui/Loading';
 import { motion } from 'framer-motion';
 import { usePermissions } from '@/providers/PermissionsProvider';
@@ -18,7 +19,6 @@ export default function Solar({ client }: Props) {
 	const { has } = usePermissions();
 
 	const [solar, setSolar] = useState<any>(null);
-	const [selectedPanels, setSelectedPanels] = useState<number>(0);
 	const [loading, setLoading] = useState(true);
 	const [calculating, setCalculating] = useState(false);
 	const [error, setError] = useState('');
@@ -43,8 +43,6 @@ export default function Solar({ client }: Props) {
 
 			if (data?.solar) {
 				setSolar(data.solar);
-
-				setSelectedPanels(data.solar.recommended?.panelsCount ?? 0);
 			}
 		} finally {
 			setLoading(false);
@@ -137,54 +135,17 @@ export default function Solar({ client }: Props) {
 			return indexInSegment < summary?.panelsCount;
 		}) ?? [];
 
-	if (loading) return <Loading title={'Loading Solar Analyzer'} description='Checking for existing solar configuration.' />;
-
 	const hasAnalysis = Boolean(solar?.recommended && solar?.configs?.length && solar?.solarPanels?.length);
 
-	if (!hasAnalysis) {
-		return (
-			<div className='flex flex-col gap-6'>
-				<div className='flex items-center justify-between'>
-					<div>
-						<div className='text-xl font-semibold'>Solar Analysis</div>
-
-						<div className='text-sm text-zinc-500'>
-							{address.lat.toFixed(6)}, {address.lng.toFixed(6)}
-						</div>
-					</div>
-
-					{has('projects.write') && (
-						<Button loading={calculating} onClick={analyzeRoof}>
-							<Sun size={16} />
-							Analyze Roof
-						</Button>
-					)}
-				</div>
-
-				<div className='rounded-2xl border border-dashed border-zinc-300 dark:border-zinc-700 p-12 text-center'>
-					<Sun size={48} className='mx-auto mb-4 text-zinc-400' />
-
-					<h2 className='text-lg font-semibold mb-2'>No Solar Analysis Available</h2>
-
-					<p className='text-sm text-zinc-500 max-w-md mx-auto'>
-						{error ? error : 'Run a roof analysis to calculate possible panel layouts, yearly production estimates and optimal panel placement.'}
-					</p>
-				</div>
-			</div>
-		);
-	}
+	if (loading) return <Loading title='Loading Solar Analyzer' description='Checking for existing solar configuration.' />;
 
 	return (
 		<div className='flex flex-col gap-6'>
 			<div className='flex items-center justify-between'>
 				<div>
-					<div className='text-xl font-semibold'>Solar Analysis</div>
+					<h2 className='text-2xl font-semibold tracking-tight'>Solar Analysis</h2>
 
-					<div
-						className='text-sm'
-						style={{
-							color: 'var(--text-muted)',
-						}}>
+					<div className='text-sm text-(--text-muted)'>
 						{address.lat.toFixed(6)}, {address.lng.toFixed(6)}
 						{solar?.maxSunshineHoursPerYear && (
 							<>
@@ -203,13 +164,17 @@ export default function Solar({ client }: Props) {
 				)}
 			</div>
 
-			{solar?.solarPanels?.length > 0 && (
+			{!hasAnalysis && (
+				<EmptyState
+					icon={<Sun size={48} />}
+					title='No Solar Analysis Available'
+					description={error || 'Run a roof analysis to calculate possible panel layouts, yearly production estimates and optimal panel placement.'}
+				/>
+			)}
+
+			{hasAnalysis && solar?.solarPanels?.length > 0 && (
 				<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
-					<motion.div
-						initial={{ opacity: 0, y: 8 }}
-						animate={{ opacity: 1, y: 0 }}
-						transition={{ duration: 0.25 }}
-						className='rounded-2xl		overflow-hidden		shadow-xl		border		border-zinc-200		dark:border-zinc-800	'>
+					<motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }} className='rounded-3xl overflow-hidden bg-(--foreground)'>
 						<Map
 							mapId={'map'}
 							defaultCenter={address}
@@ -247,13 +212,8 @@ export default function Solar({ client }: Props) {
 				</APIProvider>
 			)}
 
-			{solar?.configs?.length > 0 && (
-				<div
-					className='rounded-xl p-4'
-					style={{
-						background: 'var(--container)',
-						border: '1px solid var(--border)',
-					}}>
+			{hasAnalysis && solar?.configs?.length > 0 && (
+				<div className='rounded-3xl p-6 bg-(--foreground)'>
 					{has('projects.write') && (
 						<div className='space-y-4'>
 							<input
@@ -266,7 +226,7 @@ export default function Solar({ client }: Props) {
 								className='solar-slider w-full'
 							/>
 
-							<div className='flex justify-between text-xs text-zinc-500'>
+							<div className='flex justify-between text-xs text-(--text-muted)'>
 								<span>{configs[0]?.panelsCount ?? 0}</span>
 
 								<span>{configs.at(-1)?.panelsCount ?? 0}</span>
@@ -276,68 +236,61 @@ export default function Solar({ client }: Props) {
 				</div>
 			)}
 
-			<div className='grid grid-cols-1 md:grid-cols-2 gap-4 mt-6'>
-				<div
-					className='rounded-xl p-5 border'
-					style={{
-						borderColor: 'var(--border)',
-					}}>
-					<div className='flex items-center gap-2 mb-4'>
-						<PanelTop size={18} />
-						<span>Selected System</span>
+			{hasAnalysis && (
+				<div className='grid grid-cols-1 md:grid-cols-2 gap-4 mt-6'>
+					<div className='rounded-3xl p-5 bg-(--foreground)'>
+						<div className='flex items-center gap-2 mb-4'>
+							<PanelTop size={18} />
+							<span>Selected System</span>
+						</div>
+
+						<div
+							className='mt-3 text-xs px-2 py-1 rounded-full w-fit'
+							style={{
+								background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
+							}}>
+							{Math.round((selectedConfig?.panelsCount / solar.recommended?.panelsCount - 1) * 100)}% vs recommendation
+						</div>
+
+						<div className='text-4xl font-bold'>{selectedConfig?.panelsCount}</div>
+
+						<div className='text-sm'>Panels</div>
+
+						<div className='mt-3 font-medium'>
+							{Math.round(selectedConfig?.yearlyEnergyDcKwh).toLocaleString()}
+							kWh/year
+						</div>
+
+						<div className='text-sm text-(--text-muted)'>
+							≈ {((selectedConfig?.panelsCount * 440) / 1000).toFixed(1)}
+							kWp
+						</div>
 					</div>
 
-					<div
-						className='mt-3 text-xs px-2 py-1 rounded-full w-fit'
-						style={{
-							background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-						}}>
-						{Math.round((selectedConfig?.panelsCount / solar.recommended?.panelsCount - 1) * 100)}% vs recommendation
-					</div>
+					<div className='rounded-3xl p-5 bg-(--accent)/10 border-2 border-(--accent)/70'>
+						<div className='flex items-center gap-2 mb-4'>
+							<Zap size={18} />
+							<span>Recommended</span>
+						</div>
 
-					<div className='text-4xl font-bold'>{selectedConfig?.panelsCount}</div>
+						<div className='text-4xl font-bold'>{solar.recommended.panelsCount}</div>
 
-					<div className='text-sm'>Panels</div>
+						<div className='text-sm'>Panels</div>
 
-					<div className='mt-3 font-medium'>
-						{Math.round(selectedConfig?.yearlyEnergyDcKwh).toLocaleString()}
-						kWh/year
-					</div>
+						<div className='mt-3 font-medium'>
+							{Math.round(solar.recommended.yearlyEnergyDcKwh).toLocaleString()}
+							kWh/year
+						</div>
 
-					<div className='text-sm text-zinc-500'>
-						≈ {((selectedConfig?.panelsCount * 440) / 1000).toFixed(1)}
-						kWp
-					</div>
-				</div>
-
-				<div
-					className='rounded-xl p-5 border'
-					style={{
-						borderColor: 'color-mix(in srgb, var(--accent) 30%, var(--border))',
-						background: 'color-mix(in srgb, var(--accent) 8%, transparent)',
-					}}>
-					<div className='flex items-center gap-2 mb-4'>
-						<Zap size={18} />
-						<span>Recommended</span>
-					</div>
-
-					<div className='text-4xl font-bold'>{solar.recommended.panelsCount}</div>
-
-					<div className='text-sm'>Panels</div>
-
-					<div className='mt-3 font-medium'>
-						{Math.round(solar.recommended.yearlyEnergyDcKwh).toLocaleString()}
-						kWh/year
-					</div>
-
-					<div className='text-sm text-zinc-500'>
-						≈ {((solar.recommended.panelsCount * 440) / 1000).toFixed(1)}
-						kWp
+						<div className='text-sm text-(--text-muted)'>
+							≈ {((solar.recommended.panelsCount * 440) / 1000).toFixed(1)}
+							kWp
+						</div>
 					</div>
 				</div>
-			</div>
+			)}
 
-			{selectedConfig?.roofSegmentSummaries?.length > 0 && (
+			{hasAnalysis && selectedConfig?.roofSegmentSummaries?.length > 0 && (
 				<div className='space-y-4'>
 					<div className='flex items-center gap-2'>
 						<Sun size={18} className='text-(--accent)' />
@@ -358,15 +311,12 @@ export default function Solar({ client }: Props) {
 									opacity: 1,
 									y: 0,
 								}}
-								className='rounded-xl border p-4'
-								style={{
-									borderColor: 'var(--border)',
-								}}>
+								className='rounded-3xl p-5 bg-(--foreground)'>
 								<div className='flex items-center justify-between'>
 									<div>
 										<div className='font-semibold'>{getDirection(segment.azimuthDegrees)}</div>
 
-										<div className='text-xs text-zinc-500'>Roof Segment</div>
+										<div className='text-xs text-(--text-muted)'>Roof Segment</div>
 									</div>
 
 									<PanelTop size={18} className='text-(--accent)' />
@@ -374,32 +324,28 @@ export default function Solar({ client }: Props) {
 
 								<div className='grid grid-cols-3 gap-3 mt-5'>
 									<div>
-										<div className='text-xs text-zinc-500'>Panels</div>
+										<div className='text-xs text-(--text-muted)'>Panels</div>
 
 										<div className='text-lg font-semibold'>{segment.panelsCount}</div>
 									</div>
 
 									<div>
-										<div className='text-xs text-zinc-500'>Yield</div>
+										<div className='text-xs text-(--text-muted)'>Yield</div>
 
 										<div className='text-lg font-semibold'>{Math.round(segment.yearlyEnergyDcKwh).toLocaleString()}</div>
 									</div>
 
 									<div>
-										<div className='text-xs text-zinc-500'>Pitch</div>
+										<div className='text-xs text-(--text-muted)'>Pitch</div>
 
 										<div className='text-lg font-semibold'>{segment.pitchDegrees?.toFixed(0)}°</div>
 									</div>
 								</div>
 
-								<div className='mt-4 pt-4 border-t border-zinc-200 dark:border-zinc-800'>
-									<div className='text-xs text-zinc-500'>
-										Facing <strong className='text-zinc-900 dark:text-zinc-100'>{getDirection(segment.azimuthDegrees)}</strong>
-									</div>
+								<div className='mt-4 pt-4 border-t border-(--border)/20'>
+									<div className='text-xs text-(--text-muted) mt-1'>Orientation: {segment.azimuthDegrees?.toFixed(0)}°</div>
 
-									<div className='text-xs text-zinc-500 mt-1'>Orientation: {segment.azimuthDegrees?.toFixed(0)}°</div>
-
-									<div className='text-xs text-zinc-500 mt-1'>Estimated production: {Math.round(segment.yearlyEnergyDcKwh).toLocaleString()} kWh/year</div>
+									<div className='text-xs text-(--text-muted) mt-1'>Estimated production: {Math.round(segment.yearlyEnergyDcKwh).toLocaleString()} kWh/year</div>
 								</div>
 							</motion.div>
 						))}

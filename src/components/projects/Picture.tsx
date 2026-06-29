@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import Button from '../ui/Button';
 import ConfirmDialog from '../ui/ConfirmDialog';
+import EmptyState from '../ui/EmptyState';
 import FileEditModal from '../files/FileEditModal';
 import FileGrid from '../files/FileGrid';
 import FileList from '../files/FileList';
@@ -274,8 +275,10 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 		load();
 	}, [basePath, client]);
 
+	if (loading) return <Loading title='Loading pictures' />;
+
 	return (
-		<section className='space-y-6'>
+		<section className='space-y-4'>
 			<input
 				ref={inputRef}
 				type='file'
@@ -296,140 +299,115 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 				}}
 			/>
 
-			<div
-				className='rounded-3xl p-6 space-y-6'
-				style={{
-					background: 'var(--container)',
-					border: '1px solid var(--border)',
-				}}>
-				<div className='flex items-center justify-between'>
-					<div></div>
+			<div className='rounded-3xl bg-(--foreground) p-6 space-y-6'>
+				<div className='flex items-center justify-end gap-2'>
+					<ViewToggle value={view} onChange={setView} />
 
-					<div className='flex gap-2'>
-						<ViewToggle value={view} onChange={setView} />
+					{isAllowed && (
+						<>
+							<Button
+								onClick={() => {
+									setNewGroupName('');
+									setNewGroupOpen(true);
+								}}>
+								New Group
+							</Button>
 
-						{isAllowed && (
-							<>
-								<Button
-									onClick={() => {
-										setNewGroupName('');
-										setNewGroupOpen(true);
-									}}>
-									New Group
-								</Button>
+							<Button onClick={() => inputRef.current?.click()} disabled={uploading}>
+								<Upload size={16} />
 
-								<Button
-									onClick={() => inputRef.current?.click()}
-									disabled={uploading}
-									className='h-10 px-4 flex items-center gap-2 rounded-xl bg-(--accent) text-white hover:bg-(--hover-accent) transition'>
-									<Upload size={16} />
-
-									{uploading ? 'Uploading...' : 'Upload'}
-								</Button>
-							</>
-						)}
-					</div>
+								{uploading ? 'Uploading...' : 'Upload'}
+							</Button>
+						</>
+					)}
 				</div>
 
-				{loading && <Loading title='Loading pictures' />}
+				{groups.length === 0 && files.length === 0 && <EmptyState title='No Pictures Found' description='Upload images or create a picture group to get started.' />}
 
-				{!loading && groups.length === 0 && files.length == 0 && (
-					<div className='border border-dashed border-zinc-300 dark:border-zinc-700 rounded-2xl p-10 text-center text-sm text-zinc-500'>No pictures found</div>
-				)}
+				{groups.map((group) => {
+					const folder = group.name;
 
-				{!loading && (
-					<>
-						{groups.map((group) => {
-							const folder = group.name;
+					const folderFiles = files.filter((file) => getFolderName(file) === folder);
 
-							const folderFiles = files.filter((file) => getFolderName(file) === folder);
+					return (
+						<div
+							key={folder}
+							className='space-y-4'
+							onDragOver={(e) => e.preventDefault()}
+							onDrop={async () => {
+								await moveFileToGroup(draggingFile, folder);
+							}}>
+							<div className='flex items-center justify-between'>
+								<h3 className='font-semibold'>{folder}</h3>
 
-							return (
-								<div
-									key={folder}
-									className='space-y-4'
-									onDragOver={(e) => e.preventDefault()}
-									onDrop={async () => {
-										await moveFileToGroup(draggingFile, folder);
-									}}>
-									<div className='flex items-center justify-between'>
-										<h3 className='font-semibold'>{folder}</h3>
-
-										<div className='text-sm text-zinc-500 flex items-center gap-2'>
-											<div>
-												{folderFiles.length} image
-												{folderFiles.length !== 1 ? 's' : ''}
-											</div>
-
-											{group.name !== 'Ungrouped' && isAllowed && (
-												<>
-													<Button
-														variant='ghost'
-														onClick={() => {
-															setGroupToRename(group);
-															setNewGroupName(group.name);
-															setRenameGroupOpen(true);
-														}}>
-														<Pencil size={15} />
-													</Button>
-
-													<Button variant='ghost' onClick={() => downloadGroup(group)}>
-														<Download size={15} />
-													</Button>
-
-													<Button variant='danger-ghost' onClick={() => setDeleteGroup(group)}>
-														<Trash2 size={15} />
-													</Button>
-												</>
-											)}
-										</div>
+								<div className='text-sm text-(--text-muted) flex items-center gap-2'>
+									<div>
+										{folderFiles.length} image
+										{folderFiles.length !== 1 ? 's' : ''}
 									</div>
 
-									{folderFiles.length === 0 && (
-										<div
-											className='rounded-2xl p-4 min-h-15 flex items-center justify-center border border-dashed'
-											style={{
-												background: 'var(--container)',
-												borderColor: 'var(--border)',
-											}}>
-											<div className='text-center'>
-												<div className='text-sm font-medium text-zinc-500'>No images</div>
+									{group.name !== 'Ungrouped' && isAllowed && (
+										<>
+											<Button
+												variant='ghost'
+												onClick={() => {
+													setGroupToRename(group);
+													setNewGroupName(group.name);
+													setRenameGroupOpen(true);
+												}}>
+												<Pencil size={15} />
+											</Button>
 
-												<div className='text-xs text-zinc-400 mt-1'>Drag images here or upload new ones</div>
-											</div>
-										</div>
-									)}
+											<Button variant='ghost' onClick={() => downloadGroup(group)}>
+												<Download size={15} />
+											</Button>
 
-									{view === 'grid' ? (
-										<FileGrid
-											files={folderFiles}
-											users={users}
-											onDownload={download}
-											onEdit={(file) => {
-												setEditingFile(file);
-												setEditModalOpen(true);
-											}}
-											onDragStart={setDraggingFile}
-											permission='projects.write'
-										/>
-									) : (
-										<FileList
-											files={folderFiles}
-											users={users}
-											onDownload={download}
-											onEdit={(file) => {
-												setEditingFile(file);
-												setEditModalOpen(true);
-											}}
-											onDragStart={setDraggingFile}
-											permission='projects.write'
-										/>
+											<Button variant='danger-ghost' onClick={() => setDeleteGroup(group)}>
+												<Trash2 size={15} />
+											</Button>
+										</>
 									)}
 								</div>
-							);
-						})}
-					</>
-				)}
+							</div>
+
+							{folderFiles.length === 0 && (
+								<div className='rounded-3xl p-6 min-h-20 flex items-center justify-center border-2 border-dashed border-(--accent)/30 bg-(--background)'>
+									<div className='text-center'>
+										<div className='text-sm font-medium text-(--text-muted)'>No images</div>
+
+										<div className='text-xs text-(--text-muted) mt-1 opacity-70'>Drag images here or upload new ones</div>
+									</div>
+								</div>
+							)}
+
+							{view === 'grid' ? (
+								<FileGrid
+									files={folderFiles}
+									users={users}
+									onDownload={download}
+									onEdit={(file) => {
+										setEditingFile(file);
+										setEditModalOpen(true);
+									}}
+									onDragStart={setDraggingFile}
+									permission='projects.write'
+								/>
+							) : (
+								<FileList
+									files={folderFiles}
+									users={users}
+									onDownload={download}
+									onEdit={(file) => {
+										setEditingFile(file);
+										setEditModalOpen(true);
+									}}
+									onDragStart={setDraggingFile}
+									permission='projects.write'
+								/>
+							)}
+						</div>
+					);
+				})}
 			</div>
 
 			<Modal
@@ -453,12 +431,7 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 						<Button onClick={createGroup}>Create</Button>
 					</>
 				}>
-				<Input
-					value={newGroupName}
-					onChange={(e) => setNewGroupName(e.target.value)}
-					placeholder='Kitchen'
-					className='w-full rounded-xl border border-zinc-300 dark:border-zinc-700 px-3 py-2 bg-transparent'
-				/>
+				<Input label={'Group Name'} value={newGroupName} onChange={(e) => setNewGroupName(e.target.value)} placeholder='Kitchen' />
 			</Modal>
 
 			<Modal

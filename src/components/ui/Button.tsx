@@ -3,7 +3,7 @@
 
 import { ButtonHTMLAttributes, ReactNode } from 'react';
 
-type ButtonVariant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'danger-ghost';
+type ButtonVariant = 'primary' | 'primary-ghost' | 'secondary' | 'ghost' | 'danger' | 'danger-ghost';
 
 type ButtonSize = 'sm' | 'md' | 'lg';
 
@@ -21,6 +21,12 @@ export default function Button({ children, variant = 'primary', size = 'md', ico
 			text-white
 			hover:bg-(--hover-accent)
 		`,
+		'primary-ghost': `
+			bg-(--accent)/10
+			text-(--text)
+			hover:bg-(--hover-accent)
+			border: border-2 border-(--accent)/70
+		`,
 		'secondary': `
 			bg-white dark:bg-zinc-900
 			border border-zinc-200 dark:border-zinc-800
@@ -36,9 +42,7 @@ export default function Button({ children, variant = 'primary', size = 'md', ico
 			text-white
 			hover:bg-red-700
 		`,
-		'danger-ghost': `text-red-600
-			hover:text-white
-			hover:bg-red-700`,
+		'danger-ghost': `text-red-700 hover:bg-red-700 hover:text-white`,
 	};
 
 	const sizes: Record<ButtonSize, string> = {

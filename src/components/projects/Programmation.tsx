@@ -5,6 +5,8 @@ import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 
+import Button from '../ui/Button';
+import EmptyState from '../ui/EmptyState';
 import FileEditModal from '../files/FileEditModal';
 import FileGrid from '../files/FileGrid';
 import FileList from '../files/FileList';
@@ -74,7 +76,6 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 
 	const [expandedGroups, setExpandedGroups] = useState<string[]>([]);
 	const inputRef = useRef<HTMLInputElement | null>(null);
-	const [dateFormat, setDateFormat] = useState('DDMMYYYY');
 
 	const grouped = {
 		DuoTecno: items.filter((i) => detectProgrammationType(i) === 'DuoTecno'),
@@ -168,7 +169,6 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 			try {
 				const res = await fetch('/api/settings/projects');
 				const s = await res.json();
-				if (s?.dateFormat) setDateFormat(s.dateFormat);
 			} catch {}
 		};
 
@@ -181,142 +181,128 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		})();
 	}, [basePath, client]);
 
+	if (loading) return <Loading title='Loading programmation files' />;
+
 	return (
 		<section className='space-y-6'>
 			<input ref={inputRef} type='file' accept='.zip,.dnc,.loxone,.nhc2,.lsc' className='hidden' onChange={(e) => e.target.files && upload(e.target.files[0])} />
 
-			<div
-				className='rounded-3xl p-6 space-y-6'
-				style={{
-					background: 'var(--container)',
-				}}>
+			<div className='rounded-3xl p-6 space-y-6 bg-(--foreground)'>
 				<AnimatePresence>
 					{/* Upload */}
-					<div className='flex justify-between'>
-						<div></div>
-						<div className='flex gap-2'>
-							<ViewToggle value={view} onChange={setView} />
+					<div className='flex justify-end gap-2'>
+						<ViewToggle value={view} onChange={setView} />
 
-							{hasWrite && (
-								<button
-									onClick={() => inputRef.current?.click()}
-									disabled={uploading}
-									className={`h-10 px-4 flex items-center gap-2 rounded-xl text-sm font-medium transition
-										${uploading ? 'bg-(--accent) text-white cursor-not-allowed' : 'bg-(--accent) text-white hover:bg-(--hover-accent)'}`}>
-									<Upload className='w-4 h-4' />
-									{uploading ? 'Uploading…' : 'Upload'}
-								</button>
-							)}
-						</div>
+						{hasWrite && (
+							<Button icon={<Upload size={14} />} onClick={() => inputRef.current?.click()} disabled={uploading}>
+								{uploading ? 'Uploading…' : 'Upload'}
+							</Button>
+						)}
 					</div>
 
-					{/* Loading */}
-					{loading && <Loading title='Loading programmation files' />}
-
 					{/* Groups */}
-					{!loading &&
-						Object.entries(grouped).map(([type, entries], i) => {
-							if (!entries.length) return null;
+					{Object.entries(grouped).map(([type, entries], i) => {
+						if (!entries.length) return null;
 
-							const latest = entries[0];
-							const older = entries.slice(1);
-							const isExpanded = expandedGroups.includes(type);
+						const latest = entries[0];
+						const older = entries.slice(1);
+						const isExpanded = expandedGroups.includes(type);
 
-							return (
-								<div key={type + i} className='space-y-3'>
-									<h3 className='text-xs uppercase tracking-wide text-zinc-500'>{type}</h3>
+						return (
+							<div key={type + i} className='space-y-3'>
+								<div className='flex items-center gap-2'>
+									<h3 className='text-sm font-semibold'>{type}</h3>
+								</div>
 
-									{view === 'grid' ? (
-										<>
-											<div className='grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4'>
-												<ProjectFile
-													file={latest}
-													users={users}
-													onDownload={() => download(latest.path)}
-													onEdit={() => {
-														setEditingFile(latest);
-														setEditModalOpen(true);
-													}}
-												/>
-
-												{older.length > 0 && (
-													<div
-														onClick={() => setExpandedGroups((prev) => (prev.includes(type) ? prev.filter((g) => g !== type) : [...prev, type]))}
-														className='rounded-2xl cursor-pointer min-h-45 flex items-center justify-center hover:border-(--accent) transition'>
-														<div className='text-center'>
-															{isExpanded ? <ChevronLeft className='mx-auto w-8 h-8' /> : <ChevronRight className='mx-auto w-8 h-8' />}
-
-															<div className='text-xs mt-2 text-zinc-500'>{older.length} older</div>
-														</div>
-													</div>
-												)}
-											</div>
-
-											<AnimatePresence>
-												{isExpanded && (
-													<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-														<FileGrid
-															files={older}
-															users={users}
-															onDownload={download}
-															onEdit={(file) => {
-																setEditingFile(file);
-																setEditModalOpen(true);
-															}}
-															permission='projects.write'
-														/>
-													</motion.div>
-												)}
-											</AnimatePresence>
-										</>
-									) : (
-										<>
-											<FileList
-												files={[latest]}
+								{view === 'grid' ? (
+									<>
+										<div className='grid grid-cols-1 lg:grid-cols-2 2xl:grid-cols-3 gap-4'>
+											<ProjectFile
+												file={latest}
 												users={users}
-												onDownload={download}
-												onEdit={(file) => {
-													setEditingFile(file);
+												onDownload={() => download(latest.path)}
+												onEdit={() => {
+													setEditingFile(latest);
 													setEditModalOpen(true);
 												}}
-												permission='projects.write'
 											/>
 
 											{older.length > 0 && (
-												<button
+												<div
 													onClick={() => setExpandedGroups((prev) => (prev.includes(type) ? prev.filter((g) => g !== type) : [...prev, type]))}
-													className=' 							w-full 							h-12 							px-4 							rounded-2xl 						flex 							items-center 							gap-2 text-zinc-500 hover:text-(--hover-accent) transition'>
-													{isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+													className='rounded-3xl min-h-45 flex items-center justify-center cursor-pointer bg-(--accent)/10 border-2 border-(--accent)/70 transition	hover:opacity-80'>
+													<div className='text-center'>
+														{isExpanded ? <ChevronLeft className='mx-auto w-8 h-8' /> : <ChevronRight className='mx-auto w-8 h-8' />}
 
-													<span>{isExpanded ? 'Hide older' : `Show older (${older.length})`}</span>
-												</button>
+														<div className='text-xs mt-2 text-zinc-500'>{older.length} older</div>
+													</div>
+												</div>
 											)}
+										</div>
 
-											<AnimatePresence>
-												{isExpanded && (
-													<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className='overflow-hidden'>
-														<FileList
-															files={older}
-															users={users}
-															onDownload={download}
-															onEdit={(file) => {
-																setEditingFile(file);
-																setEditModalOpen(true);
-															}}
-															permission='projects.write'
-														/>
-													</motion.div>
-												)}
-											</AnimatePresence>
-										</>
-									)}
-								</div>
-							);
-						})}
+										<AnimatePresence>
+											{isExpanded && (
+												<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+													<FileGrid
+														files={older}
+														users={users}
+														onDownload={download}
+														onEdit={(file) => {
+															setEditingFile(file);
+															setEditModalOpen(true);
+														}}
+														permission='projects.write'
+													/>
+												</motion.div>
+											)}
+										</AnimatePresence>
+									</>
+								) : (
+									<>
+										<FileList
+											files={[latest]}
+											users={users}
+											onDownload={download}
+											onEdit={(file) => {
+												setEditingFile(file);
+												setEditModalOpen(true);
+											}}
+											permission='projects.write'
+										/>
+
+										{older.length > 0 && (
+											<Button className='w-full' variant='primary-ghost' onClick={() => setExpandedGroups((prev) => (prev.includes(type) ? prev.filter((g) => g !== type) : [...prev, type]))}>
+												{isExpanded ? <ChevronDown size={16} /> : <ChevronRight size={16} />}
+
+												<span>{isExpanded ? 'Hide older' : `Show older (${older.length})`}</span>
+											</Button>
+										)}
+
+										<AnimatePresence>
+											{isExpanded && (
+												<motion.div initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }} exit={{ opacity: 0, height: 0 }} className='overflow-hidden'>
+													<FileList
+														files={older}
+														users={users}
+														onDownload={download}
+														onEdit={(file) => {
+															setEditingFile(file);
+															setEditModalOpen(true);
+														}}
+														permission='projects.write'
+													/>
+												</motion.div>
+											)}
+										</AnimatePresence>
+									</>
+								)}
+							</div>
+						);
+					})}
 
 					{/* Empty */}
 					{!loading && Object.values(grouped).every((arr) => arr.length === 0) && (
-						<div className='text-sm text-gray-500 dark:text-zinc-40 rounded-2xl p-6 text-center'>No programmation files found.</div>
+						<EmptyState title='No Programmation Files' description='Upload DuoTecno, Niko, Siemens, DALI or Loxone project files to get started.' />
 					)}
 				</AnimatePresence>
 			</div>

@@ -1,20 +1,28 @@
 /** @format */
 'use client';
 
-import ProjectFile from '../files/File';
+import ProjectFile, { FileEntry } from '../files/File';
+
 import { User } from 'next-auth';
 import { motion } from 'framer-motion';
 
 type Props = {
-	files: any[];
-	permission?: string;
+	files: FileEntry[];
 	users?: User[];
-	onDownload: (path: string) => void;
-	onEdit: (file: any) => void;
-	onDragStart?: (file: any) => void;
+
+	permission?: string;
+
+	mode?: string;
+
+	onDownload?: (file: FileEntry) => void;
+	onEdit?: (file: FileEntry) => void;
+	onOpen?: (file: FileEntry) => void;
+	onDelete?: (file: FileEntry) => void;
+	onRename?: (file: FileEntry) => void;
+	onDragStart?: (file: FileEntry) => void;
 };
 
-export default function FileGrid({ files, users = [], permission, onDownload, onEdit, onDragStart }: Props) {
+export default function FileList({ files, users = [], permission, mode, onDownload, onEdit, onDragStart, onOpen, onDelete, onRename }: Props) {
 	return (
 		<div className='space-y-2'>
 			{files.map((file, index) => (
@@ -31,7 +39,19 @@ export default function FileGrid({ files, users = [], permission, onDownload, on
 					transition={{
 						delay: index * 0.01,
 					}}>
-					<ProjectFile compact file={file} users={users} onDownload={() => onDownload(file.path)} onEdit={() => onEdit(file)} onDragStart={onDragStart} permission={permission} />
+					<ProjectFile
+						compact
+						file={file}
+						users={users}
+						permission={permission}
+						mode={mode}
+						onDownload={() => onDownload?.(file.path)}
+						onEdit={() => onEdit?.(file)}
+						onDragStart={onDragStart}
+						onOpen={() => onOpen?.(file)}
+						onDelete={() => onDelete?.(file)}
+						onRename={() => onRename?.(file)}
+					/>
 				</motion.div>
 			))}
 		</div>

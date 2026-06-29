@@ -248,11 +248,7 @@ export default function Page() {
 
 					<Button variant='secondary' icon={sortAsc ? <ArrowUpAZ size={16} /> : <ArrowDownAZ size={16} />} onClick={() => setSortAsc(!sortAsc)} />
 
-					<div
-						className='flex overflow-hidden rounded-lg'
-						style={{
-							border: '1px solid var(--border)',
-						}}>
+					<div className='flex overflow-hidden rounded-lg'>
 						<ViewToggle value={view} onChange={setView} />
 					</div>
 

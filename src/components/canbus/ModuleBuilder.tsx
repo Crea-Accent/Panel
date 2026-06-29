@@ -12,6 +12,8 @@ import { Reorder } from 'framer-motion';
 import { useState } from 'react';
 import { ModuleUnit } from '../projects/Canbus';
 import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import Button from '../ui/Button';
 
 export type ModuleDefinition = {
 	id: string;
@@ -123,25 +125,7 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 	}));
 
 	if (foundModules.length <= 0) {
-		return (
-			<Card className='flex items-center justify-center min-h-[500px]'>
-				<div
-					className='max-w-lg w-full rounded-3xl p-10 text-center'
-					style={{
-						background: 'var(--container)',
-						border: '1px solid var(--border)',
-					}}>
-					<div className='text-2xl font-semibold mb-2'>No Duotecno programmation found</div>
-
-					<div className='text-sm text-zinc-500 leading-relaxed'>
-						No valid <code>.duo</code> programmation file could be found for this project.
-						<br />
-						<br />
-						Upload or synchronize a Duotecno configuration before building the CAN bus topology.
-					</div>
-				</div>
-			</Card>
-		);
+		return <EmptyState title='No Duotecno Configuration Found' description='No DUO programmation file was found for this project.' />;
 	}
 
 	return (
@@ -152,19 +136,14 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 				{infrastructureModules.length > 0 && <ModulePalette title='Infrastructure' modules={infrastructureModules} onAdd={addModule} />}
 			</div>
 
-			<div
-				className='rounded-3xl p-6'
-				style={{
-					background: 'var(--container)',
-					border: '1px solid var(--border)',
-				}}>
-				<div className='flex items-center gap-3 mb-8'>
+			<div className='rounded-3xl bg-(--foreground) p-6'>
+				<div className='flex items-center gap-3 mb-8 pb-4 border-b border-black/5 dark:border-white/5'>
 					<Cable size={22} />
 
 					<div>
 						<div className='font-semibold'>CAN Bus Topology</div>
 
-						<div className='text-sm text-zinc-500'>Drag modules into order</div>
+						<div className='text-sm text-(--text-muted)'>Drag modules into order</div>
 					</div>
 				</div>
 
@@ -180,11 +159,7 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 									<div className='w-full max-w-5xl'>
 										<div
 											onClick={() => toggleExpanded(module.instanceId)}
-											className='rounded-3xl overflow-hidden cursor-pointer'
-											style={{
-												background: 'var(--container)',
-												border: '1px solid var(--border)',
-											}}>
+											className='rounded-3xl overflow-hidden cursor-pointer bg-(--background) border border-black/5 dark:border-white/5 transition hover:scale-[1.01]'>
 											<div className='p-5'>
 												<div className='flex items-start justify-between'>
 													<div className='flex-1'>
@@ -221,9 +196,7 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 														</div>
 													</div>
 
-													<button onClick={() => removeModule(module.instanceId)} className='h-8 w-8 rounded-lg text-red-500 hover:bg-red-500/10 flex items-center justify-center'>
-														<Trash2 size={14} />
-													</button>
+													<Button icon={<Trash2 size={14} />} variant={'danger-ghost'} onClick={() => removeModule(module.instanceId)} />
 												</div>
 
 												{expanded.includes(module.instanceId) && module.units.length > 0 && (
@@ -231,14 +204,14 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 														{expanded.includes(module.instanceId) && (
 															<div className='grid md:grid-cols-2 gap-2 mt-4'>
 																{module.units.map((unit, i) => (
-																	<div key={`${unit.type}-${unit.id}-${unit.channel}-${i}`} className='rounded-xl bg-zinc-50 dark:bg-zinc-800 p-3'>
+																	<div key={`${unit.type}-${unit.id}-${unit.channel}-${i}`} className='rounded-2xl p-3 bg-(--foreground)'>
 																		<div className='font-medium text-sm'>
 																			#{unit.id} - {unit.name}
 																		</div>
 
 																		<div className='text-xs text-zinc-500 mt-1'></div>
 
-																		<div className='text-xs text-zinc-500 capitalize'>
+																		<div className='text-xs text-(--text-muted) capitalize'>
 																			{unit.channel} - {unit.type}
 																		</div>
 																	</div>
@@ -259,13 +232,7 @@ export default function ModuleBuilder({ foundModules, topology, setTopology }: P
 
 					<div className='h-10 w-10 rounded-full bg-red-500 text-white flex items-center justify-center font-bold mt-4'>OUT</div>
 
-					{topology.length === 0 && (
-						<div className='mt-16 text-center text-zinc-500'>
-							<Plus className='mx-auto mb-2' />
-
-							<div>Add modules from the left</div>
-						</div>
-					)}
+					{topology.length === 0 && <EmptyState title='No Modules Added' description='Add modules from the left panel to build the CAN bus topology.' icon={<Cable size={32} />} />}
 				</div>
 			</div>
 		</div>

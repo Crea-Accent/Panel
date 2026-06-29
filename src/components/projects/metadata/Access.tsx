@@ -4,6 +4,8 @@
 import { User as UserIcon, X } from 'lucide-react';
 import { useMemo, useState } from 'react';
 
+import Button from '@/components/ui/Button';
+import EmptyState from '@/components/ui/EmptyState';
 import Input from '@/components/ui/Input';
 import { User } from 'next-auth';
 
@@ -39,83 +41,50 @@ export default function Access({ users, value, onChange }: Props) {
 	}
 
 	return (
-		<div className='flex flex-col gap-4'>
+		<div className='space-y-4'>
 			<Input label='' placeholder='Search users...' value={query} onChange={(e) => setQuery(e.target.value)} />
 
 			{filtered.length > 0 && (
-				<div
-					className='rounded-xl overflow-hidden'
-					style={{
-						background: 'var(--bg-main)',
-						border: '1px solid var(--border)',
-						boxShadow: '0 12px 32px rgba(0,0,0,.12)',
-					}}>
+				<div className='rounded-3xl overflow-hidden bg-(--foreground)'>
 					{filtered.map((user) => (
-						<button key={user.id} type='button' onClick={() => add(user.id)} className='w-full text-left p-3 transition hover:bg-black/5 dark:hover:bg-white/5'>
+						<Button variant='secondary' key={user.id} type='button' onClick={() => add(user.id)} className='w-full justify-start'>
 							<div className='font-medium'>{user.name || 'Unnamed User'}</div>
 
-							<div
-								className='text-sm'
-								style={{
-									color: 'var(--text-muted)',
-								}}>
-								{user.email}
-							</div>
-						</button>
+							<div className='text-sm text-(--text-muted)'>{user.email}</div>
+						</Button>
 					))}
 				</div>
 			)}
+
+			{value.length === 0 && <EmptyState title='' description='No users have access yet.' />}
 
 			<div className='grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4'>
 				{value.map((id) => {
 					const user = users.find((x) => x.id === id);
 
-					if (!user) {
-						return null;
-					}
+					if (!user) return null;
 
 					return (
-						<div
-							key={id}
-							className='rounded-xl p-4 flex flex-col'
-							style={{
-								background: 'color-mix(in srgb, var(--accent) 10%, transparent)',
-								border: '1px solid color-mix(in srgb, var(--accent) 20%, var(--border))',
-							}}>
+						<div key={id} className='rounded-3xl p-4 flex flex-col bg-(--accent)/10 text-white border: border-2 border-(--accent)/70 '>
 							<div className='flex items-center gap-3'>
-								<div
-									className='h-9 w-9 rounded-lg flex items-center justify-center'
-									style={{
-										background: 'color-mix(in srgb, var(--accent) 15%, transparent)',
-									}}>
+								<div className='h-10 w-10 rounded-2xl flex items-center justify-center bg-(--background) text-(--text)'>
 									<UserIcon size={16} />
 								</div>
 
 								<div className='flex-1 min-w-0'>
-									<div className='font-medium truncate'>{user.name || 'Unnamed User'}</div>
+									<div className='font-medium truncate text-(--text)'>{user.name || 'Unnamed User'}</div>
 
-									<div
-										className='text-xs truncate'
-										style={{
-											color: 'var(--text-muted)',
-										}}>
-										{user.email}
-									</div>
+									<div className='text-xs truncate text-(--text-muted)'>{user.email}</div>
 								</div>
 							</div>
 
 							<div className='mt-4'>
-								<button
-									onClick={() => remove(id)}
-									className='w-full rounded-lg py-2 text-sm transition'
-									style={{
-										border: '1px solid var(--border)',
-									}}>
-									<div className='flex items-center justify-center gap-2'>
+								<Button variant={'primary'} onClick={() => remove(id)} className='w-full'>
+									<span className='flex items-center justify-center gap-2'>
 										<X size={14} />
 										Remove Access
-									</div>
-								</button>
+									</span>
+								</Button>
 							</div>
 						</div>
 					);

@@ -2,8 +2,7 @@
 	"id": "DT03-06",
 	"name": "6 channel 16 A relay NO contact module",
 	"description": "On and off function of 6 open relay contacts and/or light circles.",
-	"signature": {
-		"type": 3,
-		"profile": 6
+	"units": {
+		"relais": 6
 	}
 }

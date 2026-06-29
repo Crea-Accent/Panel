@@ -1,43 +1,26 @@
 /** @format */
-'use client';
-
-import { ReactNode } from 'react';
 
 type Props = {
-	icon?: ReactNode;
 	title: string;
+	icon?: React.ReactNode;
 	description?: string;
-	action?: ReactNode;
+	children?: React.ReactNode;
 };
 
-export default function EmptyState({ icon, title, description, action }: Props) {
+export default function EmptyState({ title, description, children, icon = null }: Props) {
 	return (
-		<div
-			className='
-				flex flex-col items-center justify-center
-				text-center
-				py-16 px-6
-			'>
-			{icon && (
-				<div
-					className='
-						w-14 h-14
-						rounded-2xl
-						bg-(--active-accent)
-						dark:bg-(--accent)/20
-						text-(--accent)
-						flex items-center justify-center
-						mb-4
-					'>
-					{icon}
+		<div className='rounded-3xl p-8 text-center bg-(--foreground)'>
+			<div className='flex gap-6 items-center'>
+				{icon && <div className='flex'>{icon}</div>}
+
+				<div className={`flex flex-col ${icon ? 'text-left' : 'text-center'}`}>
+					<h2 className='text-lg font-semibold'>{title}</h2>
+
+					{description && <p className='mt-2 text-sm text-(--text-muted)'>{description}</p>}
 				</div>
-			)}
+			</div>
 
-			<h3 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>{title}</h3>
-
-			{description && <p className='mt-2 max-w-md text-sm text-zinc-500 dark:text-zinc-400'>{description}</p>}
-
-			{action && <div className='mt-6'>{action}</div>}
+			{children && <div className='mt-6'>{children}</div>}
 		</div>
 	);
 }

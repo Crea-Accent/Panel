@@ -2,8 +2,7 @@
 	"id": "DT05-06TE",
 	"name": "6 channel 500W trailing-edge fase dimmer module",
 	"description": "Dimming and switching 6 light circles until 500W a canal, through trailing-edge.",
-	"signature": {
-		"type": 5,
-		"profile": 6
+	"units": {
+		"dimmer": 6
 	}
 }
