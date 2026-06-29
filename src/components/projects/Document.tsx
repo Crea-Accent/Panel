@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import FileEditModal from '../files/FileEditModal';
+import { FileEntry } from '../files/File';
 import FileGrid from '../files/FileGrid';
 import FileList from '../files/FileList';
 import FileUploadModal from '../files/FileUploadModal';
@@ -16,12 +17,6 @@ import ViewToggle from '../ui/ViewToggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
 import { useSession } from 'next-auth/react';
 import { useUpload } from '@/providers/UploadProvider';
-
-type FileEntry = {
-	path: string;
-	name: string;
-	type: string;
-};
 
 const DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.xlsm'];
 
@@ -66,10 +61,10 @@ export default function Documents({ basePath, client }: { basePath: string; clie
 		}
 	};
 
-	const download = (path: string) => {
+	const download = (file: FileEntry) => {
 		const a = document.createElement('a');
 
-		a.href = `/api/files/download?path=${encodeURIComponent(path)}`;
+		a.href = `/api/files/download?path=${encodeURIComponent(file.path)}`;
 
 		document.body.appendChild(a);
 		a.click();

@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from 'react';
 import Button from '../ui/Button';
 import EmptyState from '../ui/EmptyState';
 import FileEditModal from '../files/FileEditModal';
+import { FileEntry } from '../files/File';
 import FileGrid from '../files/FileGrid';
 import FileList from '../files/FileList';
 import FileUploadModal from '../files/FileUploadModal';
@@ -16,12 +17,6 @@ import ViewToggle from '../ui/ViewToggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
 import { useSession } from 'next-auth/react';
 import { useUpload } from '@/providers/UploadProvider';
-
-type FileEntry = {
-	path: string;
-	name: string;
-	type: string;
-};
 
 const SCHEMA_EXTENSIONS = ['.pdf', '.schrack', '.trik'];
 
@@ -66,14 +61,16 @@ export default function Schemas({ basePath, client }: { basePath: string; client
 		}
 	};
 
-	const download = (path: string) => {
-		const a = document.createElement('a');
+	const download = async (file: FileEntry) => {
+		try {
+			const url = `/api/files/download?path=${encodeURIComponent(file.path)}`;
 
-		a.href = `/api/files/download?path=${encodeURIComponent(path)}`;
-
-		document.body.appendChild(a);
-		a.click();
-		document.body.removeChild(a);
+			const a = document.createElement('a');
+			a.href = url;
+			document.body.appendChild(a);
+			a.click();
+			document.body.removeChild(a);
+		} catch {}
 	};
 
 	const uploadWithMetadata = async (file: File, name: string, comment: string, collaborators: string[]) => {

@@ -3,6 +3,7 @@
 
 import { AnimatePresence, motion } from 'framer-motion';
 import { ChevronDown, ChevronLeft, ChevronRight, Upload } from 'lucide-react';
+import ProjectFile, { FileEntry } from '../files/File';
 import { useEffect, useRef, useState } from 'react';
 
 import Button from '../ui/Button';
@@ -11,17 +12,10 @@ import FileEditModal from '../files/FileEditModal';
 import FileGrid from '../files/FileGrid';
 import FileList from '../files/FileList';
 import Loading from '../ui/Loading';
-import ProjectFile from '../files/File';
 import { User } from 'next-auth';
 import ViewToggle from '../ui/ViewToggle';
 import { usePermissions } from '@/providers/PermissionsProvider';
 import { useUpload } from '@/providers/UploadProvider';
-
-type FileEntry = {
-	path: string;
-	name: string;
-	type: string;
-};
 
 function parseDateFromFolderName(name: string) {
 	const filename = name.replace(/\.[^.]+$/, '');
@@ -126,9 +120,9 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 		}
 	};
 
-	const download = async (path: string) => {
+	const download = async (file: FileEntry) => {
 		try {
-			const url = `/api/files/download?path=${encodeURIComponent(path)}`;
+			const url = `/api/files/download?path=${encodeURIComponent(file.path)}`;
 
 			const a = document.createElement('a');
 			a.href = url;
@@ -220,7 +214,7 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 											<ProjectFile
 												file={latest}
 												users={users}
-												onDownload={() => download(latest.path)}
+												onDownload={() => download(latest)}
 												onEdit={() => {
 													setEditingFile(latest);
 													setEditModalOpen(true);
@@ -262,11 +256,11 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 										<FileList
 											files={[latest]}
 											users={users}
-											onDownload={download}
-											onEdit={(file) => {
-												setEditingFile(file);
-												setEditModalOpen(true);
-											}}
+											// onDownload={download}
+											// onEdit={(file) => {
+											// 	setEditingFile(file);
+											// 	setEditModalOpen(true);
+											// }}
 											permission='projects.write'
 										/>
 

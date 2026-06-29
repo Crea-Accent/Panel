@@ -12,7 +12,7 @@ type Props = {
 
 	permission?: string;
 
-	mode?: string;
+	mode?: 'project' | 'explorer';
 
 	onDownload?: (file: FileEntry) => void;
 	onEdit?: (file: FileEntry) => void;
@@ -45,7 +45,7 @@ export default function FileList({ files, users = [], permission, mode, onDownlo
 						users={users}
 						permission={permission}
 						mode={mode}
-						onDownload={() => onDownload?.(file.path)}
+						onDownload={() => onDownload?.(file)}
 						onEdit={() => onEdit?.(file)}
 						onDragStart={onDragStart}
 						onOpen={() => onOpen?.(file)}
