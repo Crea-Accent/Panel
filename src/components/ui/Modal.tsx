@@ -12,7 +12,7 @@ type Props = {
 	children: ReactNode;
 	onClose: () => void;
 	footer?: ReactNode;
-	size?: 'sm' | 'md' | 'lg' | 'xl';
+	size?: 'sm' | 'md' | 'lg' | 'xl' | 'xxl';
 };
 
 export default function Modal({ open, title, children, onClose, footer, size = 'md' }: Props) {
@@ -21,6 +21,7 @@ export default function Modal({ open, title, children, onClose, footer, size = '
 		md: 'max-w-md',
 		lg: 'max-w-lg',
 		xl: 'max-w-xl',
+		xxl: 'max-w-xxl',
 	};
 
 	useEffect(() => {
