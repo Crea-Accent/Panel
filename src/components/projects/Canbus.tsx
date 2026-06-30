@@ -531,7 +531,7 @@ export default function Canbus({ client, basePath }: Props) {
 			<Card key={entry.instanceId}>
 				<div className='flex flex-col gap-4'>
 					<div className='aspect-video rounded-lg p-1 overflow-hidden max-h-70'>
-						<Image src={`/modules/${module.id}/drawing.svg`} alt={module.name} width={100} height={100} className='w-150 h-full object-contain' />
+						<Image src={`/modules/${module.id}/drawing.svg`} alt={module.name} width={100} height={100} className='w-150 h-full object-contain' unoptimized />
 					</div>
 
 					<div className='px-3'>

@@ -2,5 +2,5 @@
 	"id": "DT18-PRO",
 	"name": "TCP/IP Pro",
 	"description": "pro",
-	"detectable": false
+	"detectable": true
 }
