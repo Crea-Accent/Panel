@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { Code, Factory, File, FileArchive, FileCode2, FileSpreadsheet, FileText, Network, Workflow } from 'lucide-react';
+import { Code, Factory, File, FileArchive, FileCode2, FileSpreadsheet, FileText, Folder, Network, Workflow } from 'lucide-react';
 
 import { FaFilePdf } from 'react-icons/fa';
 import Image from 'next/image';
@@ -24,26 +24,26 @@ export default function FileIcon({ file, size = 20, height = null, width = null 
 	}
 
 	if (file.type === 'directory') {
-		return <Code size={size} />;
+		return <Folder size={size} />;
 	}
 
 	switch (ext) {
 		case 'loxone':
-			return <Network size={size} />;
+			return <Network size={size} className='text-green-300' />;
 
 		case 'dnc':
-			return <Workflow size={size} />;
+			return <Workflow size={size} className='text-blue-300' />;
 
 		case 'lsc':
-			return <Factory size={size} />;
+			return <Factory size={size} className='text-blue-900' />;
 
 		case 'pdf':
-			return <FaFilePdf size={size} />;
+			return <FaFilePdf size={size} className='text-red-500' />;
 
 		case 'xlsx':
 		case 'xls':
 		case 'csv':
-			return <FileSpreadsheet size={size} />;
+			return <FileSpreadsheet size={size} className='text-green-500' />;
 
 		case 'json':
 		case 'ts':
@@ -52,16 +52,16 @@ export default function FileIcon({ file, size = 20, height = null, width = null 
 		case 'jsx':
 		case 'html':
 		case 'css':
-			return <FileCode2 size={size} />;
+			return <FileCode2 size={size} className='text-yellow-300' />;
 
 		case 'zip':
 		case 'rar':
 		case '7z':
-			return <FileArchive size={size} />;
+			return <FileArchive size={size} className='text-yellow-500' />;
 
 		case 'schrack':
 		case 'trik':
-			return <FileText size={size} />;
+			return <FileText size={size} className='text-blue-500' />;
 
 		default:
 			return <File size={size} />;

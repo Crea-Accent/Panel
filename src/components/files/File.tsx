@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { Calendar, Download, Eye, FileText, Loader2, Pencil, UserIcon, Users } from 'lucide-react';
+import { Calendar, Download, Eye, FileText, FileType, Loader2, Pencil, UserIcon, Users } from 'lucide-react';
 
 import Button from '@/components/ui/Button';
 import FileIcon from './FileIcon';
@@ -99,7 +99,7 @@ export default function File({
 
 	const formattedComment = rawComment.replaceAll('__', ' ');
 
-	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(6, 8)}/${rawDate.slice(4, 6)}/${rawDate.slice(0, 4)}` : rawDate;
+	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(0, 2)}/${rawDate.slice(2, 4)}/${rawDate.slice(4, 8)}` : rawDate;
 
 	const collaborators = rawCollaborators
 		.split('-')
@@ -197,6 +197,12 @@ export default function File({
 								</div>
 							)}
 
+							{extension && (
+								<div className='flex items-center gap-2'>
+									<FileType size={14} />
+									<span>{extension || '-'}</span>
+								</div>
+							)}
 							{!!collaborators.length && <span>{collaborators.join(', ')}</span>}
 						</div>
 
@@ -221,7 +227,6 @@ export default function File({
 				<div className='min-w-0 flex-1'>
 					<div className='flex items-center gap-2 transition-colors group-hover:text-(--accent)'>
 						<FileIcon file={file} size={18} />
-
 						<h3 className='font-semibold truncate'>{formattedName}</h3>
 					</div>
 
@@ -250,6 +255,13 @@ export default function File({
 					<div className='flex items-center gap-2'>
 						<FileText size={14} />
 						<span>{revision}</span>
+					</div>
+				)}
+
+				{extension && (
+					<div className='flex items-center gap-2'>
+						<FileType size={14} />
+						<span>{extension || '-'}</span>
 					</div>
 				)}
 
