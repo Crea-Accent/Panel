@@ -99,7 +99,7 @@ export default function File({
 
 	const formattedComment = rawComment.replaceAll('__', ' ');
 
-	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(0, 2)}/${rawDate.slice(2, 4)}/${rawDate.slice(4, 8)}` : rawDate;
+	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(4, 8)}/${rawDate.slice(2, 4)}/${rawDate.slice(0, 2)}` : rawDate;
 
 	const collaborators = rawCollaborators
 		.split('-')
