@@ -1,0 +1,6 @@
+{
+	"id": "DT0E-00",
+	"name": "RJ 11 busconverter",
+	"description": "DIN rail module met FTP aansluiting onderaan en RJ-connectie voor de bus.",
+	"detectable": false
+}

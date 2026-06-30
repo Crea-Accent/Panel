@@ -2,5 +2,5 @@
 	"id": "DT00-24",
 	"name": "24 VAC power supply module",
 	"description": "CAN-bus power supply: 2 x 24VAC outputs of 1,85A.",
-	"detectable": false
+	"detectable": true
 }

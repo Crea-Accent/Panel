@@ -1,0 +1,6 @@
+{
+	"id": "DT13-SAT",
+	"name": "TCP/IP Satel alarm interface",
+	"description": "Deze interface kan communiceren met de Integra alarmcentrale van Satel. Met deze interface kan men het alarm bewapenen en uitschakelen via de Touchscreens van Duotecno op voorwaarde dat er nog één origineel codeklavier van het alarm aanwezig is.",
+	"detectable": true
+}

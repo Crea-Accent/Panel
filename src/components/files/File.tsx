@@ -170,12 +170,7 @@ export default function File({
 	if (compact)
 		return (
 			<>
-				<div
-					className='rounded-3xl bg-(--foreground) border border-(--border) px-4 py-3 ...'
-					draggable={isAllowed || false}
-					onDragStart={() => onDragStart?.(file)}
-					onDoubleClick={handleOpen}
-					onContextMenu={handleContextMenu}>
+				<div className='rounded-3xl bg-(--foreground)  px-4 py-3' draggable={isAllowed || false} onDragStart={() => onDragStart?.(file)} onDoubleClick={handleOpen} onContextMenu={handleContextMenu}>
 					<div className='min-w-0 flex-1'>
 						<div className='flex items-center gap-2'>
 							<FileIcon file={file} size={16} />
@@ -217,12 +212,7 @@ export default function File({
 		);
 
 	return (
-		<div
-			className='rounded-3xl bg-(--foreground) border border-(--border) p-5 ...'
-			draggable={isAllowed || false}
-			onDragStart={() => onDragStart?.(file)}
-			onDoubleClick={handleOpen}
-			onContextMenu={handleContextMenu}>
+		<div className='rounded-3xl bg-(--foreground) p-5' draggable={isAllowed || false} onDragStart={() => onDragStart?.(file)} onDoubleClick={handleOpen} onContextMenu={handleContextMenu}>
 			<div className='flex items-start justify-between gap-4'>
 				<div className='min-w-0 flex-1'>
 					<div className='flex items-center gap-2 transition-colors group-hover:text-(--accent)'>
