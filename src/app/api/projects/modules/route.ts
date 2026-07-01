@@ -29,12 +29,7 @@ export async function GET() {
 			try {
 				const json = JSON.parse(await fs.readFile(jsonPath, 'utf8'));
 
-				modules.push({
-					id: json.id,
-					name: json.name,
-					description: json.description,
-					detectable: json.detectable ?? true,
-				});
+				modules.push(json);
 			} catch {
 				// Ignore folders without a valid module.json
 			}

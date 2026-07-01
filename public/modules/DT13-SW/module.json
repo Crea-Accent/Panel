@@ -1,6 +1,7 @@
 {
 	"id": "DT13-SW",
 	"name": "CAN-switch",
-	"description": "Can-Switch  wordt gebruikt om sterverbinding te maken.",
-	"detectable": false
+	"description": "Can-Switch wordt gebruikt om sterverbinding te maken.",
+	"detectable": false,
+	"channels": 4
 }

@@ -27,6 +27,7 @@ import Image from 'next/image';
 import Input from '../ui/Input';
 import Loading from '../ui/Loading';
 import Modal from '../ui/Modal';
+import { usePermissions } from '@/providers/PermissionsProvider';
 
 const units = {
 	Sens: <Thermometer size={30} />, // or FaTemperatureHigh
@@ -48,6 +49,7 @@ export type ModuleDefinition = {
 	name: string;
 	description?: string;
 	detectable: boolean;
+	channels?: number;
 };
 
 export type Metadata = {
@@ -71,10 +73,7 @@ export type TopologyModule = {
 
 	physicalAddress?: string;
 
-	nodes?: {
-		1?: TopologyModule[];
-		2?: TopologyModule[];
-	};
+	nodes?: Record<number, TopologyModule[]>;
 };
 
 type ModuleSelection =
@@ -88,6 +87,8 @@ type ModuleSelection =
 	  };
 
 export default function Canbus({ client, basePath }: Props) {
+	const { has } = usePermissions();
+
 	const [loading, setLoading] = useState(true);
 
 	const [metadata, setMetadata] = useState<Metadata | null>(null);
@@ -98,16 +99,17 @@ export default function Canbus({ client, basePath }: Props) {
 	const [topology, setTopology] = useState<TopologyModule[]>([]);
 
 	const [search, setSearch] = useState('');
-	const [mobileBranch, setMobileBranch] = useState<1 | 2>(1);
+	const [mobileBranch, setMobileBranch] = useState<number>(1);
 
 	const [addModalOpen, setAddModalOpen] = useState(false);
+	const [editing, setEditing] = useState(false);
 	const [unitModal, setUnitModal] = useState<DetectedNode | null>(null);
 
 	const [moduleSelection, setModuleSelection] = useState<ModuleSelection | null>(null);
 
 	const [branchParent, setBranchParent] = useState<{
 		instanceId: string;
-		branch: 1 | 2;
+		branch: number;
 	} | null>(null);
 
 	const unplacedModules = foundModules.filter((node) => !containsPhysicalAddress(topology, node.physicalAddress));
@@ -116,25 +118,39 @@ export default function Canbus({ client, basePath }: Props) {
 
 	const manualModules = availableModules.filter((m) => !m.detectable);
 
+	function findNextSwitch(tree: TopologyModule[], instanceId: string): TopologyModule | null {
+		for (let i = 0; i < tree.length; i++) {
+			if (tree[i].instanceId === instanceId) {
+				for (let j = i + 1; j < tree.length; j++) {
+					const def = availableModules.find((m) => m.id === tree[j].moduleId);
+
+					if ((def?.channels ?? 0) > 0) {
+						return tree[j];
+					}
+				}
+
+				return null;
+			}
+		}
+
+		return null;
+	}
+
 	function containsPhysicalAddress(tree: TopologyModule[], address: string): boolean {
 		for (const module of tree) {
-			if (module.physicalAddress === address) {
-				return true;
-			}
+			if (module.physicalAddress === address) return true;
 
-			if (module.nodes?.[1] && containsPhysicalAddress(module.nodes[1]!, address)) {
-				return true;
-			}
-
-			if (module.nodes?.[2] && containsPhysicalAddress(module.nodes[2]!, address)) {
-				return true;
+			for (const branch of Object.values(module.nodes ?? {})) {
+				if (containsPhysicalAddress(branch, address)) {
+					return true;
+				}
 			}
 		}
 
 		return false;
 	}
 
-	function insertIntoBranch(tree: TopologyModule[], parentId: string, branch: 1 | 2, module: TopologyModule): boolean {
+	function insertIntoBranch(tree: TopologyModule[], parentId: string, branch: number, module: TopologyModule): boolean {
 		for (const node of tree) {
 			if (node.instanceId === parentId) {
 				node.nodes ??= {};
@@ -146,9 +162,11 @@ export default function Canbus({ client, basePath }: Props) {
 				return true;
 			}
 
-			if (node.nodes?.[1] && insertIntoBranch(node.nodes[1]!, parentId, branch, module)) return true;
-
-			if (node.nodes?.[2] && insertIntoBranch(node.nodes[2]!, parentId, branch, module)) return true;
+			for (const children of Object.values(node.nodes ?? {})) {
+				if (insertIntoBranch(children, parentId, branch, module)) {
+					return true;
+				}
+			}
 		}
 
 		return false;
@@ -215,12 +233,7 @@ export default function Canbus({ client, basePath }: Props) {
 			.filter((module) => module.instanceId !== id)
 			.map((module) => ({
 				...module,
-				nodes: module.nodes
-					? {
-							1: module.nodes[1] ? removeRecursive(module.nodes[1]!, id) : undefined,
-							2: module.nodes[2] ? removeRecursive(module.nodes[2]!, id) : undefined,
-						}
-					: undefined,
+				nodes: module.nodes ? Object.fromEntries(Object.entries(module.nodes).map(([branch, children]) => [branch, removeRecursive(children, id)])) : undefined,
 			}));
 	}
 
@@ -240,13 +253,7 @@ export default function Canbus({ client, basePath }: Props) {
 			...module,
 			moduleId: module.instanceId === id ? moduleId : module.moduleId,
 
-			nodes: module.nodes
-				? {
-						1: module.nodes[1] ? updateRecursive(module.nodes[1]!, id, moduleId) : undefined,
-
-						2: module.nodes[2] ? updateRecursive(module.nodes[2]!, id, moduleId) : undefined,
-					}
-				: undefined,
+			nodes: module.nodes ? Object.fromEntries(Object.entries(module.nodes).map(([branch, children]) => [branch, updateRecursive(children, id, moduleId)])) : undefined,
 		}));
 	}
 
@@ -254,50 +261,35 @@ export default function Canbus({ client, basePath }: Props) {
 		for (let i = 0; i < tree.length; i++) {
 			const module = tree[i];
 
+			// Move within the current list
 			if (module.instanceId === instanceId) {
-				if (direction === 'up') {
-					if (i > 0) {
-						[tree[i - 1], tree[i]] = [tree[i], tree[i - 1]];
-					}
-				} else {
-					if (i < tree.length - 1) {
-						[tree[i + 1], tree[i]] = [tree[i], tree[i + 1]];
-					}
+				if (direction === 'up' && i > 0) {
+					[tree[i - 1], tree[i]] = [tree[i], tree[i - 1]];
+				}
+
+				if (direction === 'down' && i < tree.length - 1) {
+					[tree[i + 1], tree[i]] = [tree[i], tree[i + 1]];
 				}
 
 				return true;
 			}
 
-			if (module.nodes?.[1]) {
-				const branch = module.nodes[1]!;
+			// Search every branch
+			for (const children of Object.values(module.nodes ?? {})) {
+				const index = children.findIndex((x) => x.instanceId === instanceId);
 
-				const index = branch.findIndex((x) => x.instanceId === instanceId);
-
+				// First module of a branch -> move before switch
 				if (index === 0 && direction === 'up') {
-					const moving = branch.shift()!;
+					const moving = children.shift()!;
 
 					tree.splice(i, 0, moving);
 
 					return true;
 				}
 
-				if (moveRecursive(branch, instanceId, direction)) return true;
-			}
-
-			if (module.nodes?.[2]) {
-				const branch = module.nodes[2]!;
-
-				const index = branch.findIndex((x) => x.instanceId === instanceId);
-
-				if (index === 0 && direction === 'up') {
-					const moving = branch.shift()!;
-
-					tree.splice(i, 0, moving);
-
+				if (moveRecursive(children, instanceId, direction)) {
 					return true;
 				}
-
-				if (moveRecursive(branch, instanceId, direction)) return true;
 			}
 		}
 
@@ -396,7 +388,7 @@ export default function Canbus({ client, basePath }: Props) {
 		}
 	}
 
-	function beginBranch(parent: TopologyModule, branch: 1 | 2) {
+	function beginBranch(parent: TopologyModule, branch: number) {
 		setBranchParent({
 			instanceId: parent.instanceId,
 			branch,
@@ -405,29 +397,46 @@ export default function Canbus({ client, basePath }: Props) {
 		setAddModalOpen(true);
 	}
 
-	function isFirstInBranch(tree: TopologyModule[], id: string): boolean {
+	function getBranchPosition(tree: TopologyModule[], id: string): { first: boolean; last: boolean } | null {
 		for (const module of tree) {
-			if (module.nodes?.[1]?.[0]?.instanceId === id) return true;
+			for (const children of Object.values(module.nodes ?? {})) {
+				const index = children.findIndex((x) => x.instanceId === id);
 
-			if (module.nodes?.[2]?.[0]?.instanceId === id) return true;
+				if (index !== -1) {
+					return {
+						first: index === 0,
+						last: index === children.length - 1,
+					};
+				}
 
-			if (module.nodes?.[1] && isFirstInBranch(module.nodes[1]!, id)) return true;
+				const found = getBranchPosition(children, id);
 
-			if (module.nodes?.[2] && isFirstInBranch(module.nodes[2]!, id)) return true;
+				if (found) return found;
+			}
 		}
 
-		return false;
+		return null;
+	}
+
+	function isRootModule(id: string) {
+		return topology[0]?.instanceId === id;
+	}
+
+	function isLastRootModule(id: string) {
+		return topology[topology.length - 1]?.instanceId === id;
 	}
 
 	function isBeforeSwitch(tree: TopologyModule[], id: string): boolean {
 		for (let i = 0; i < tree.length - 1; i++) {
-			if (tree[i].instanceId === id && tree[i + 1].moduleId === 'DT00-24SW') {
+			if (tree[i].instanceId === id && (tree[i + 1].moduleId === 'DT00-24SW' || tree[i + 1].moduleId === 'DT13-SW')) {
 				return true;
 			}
 
-			if (tree[i].nodes?.[1] && isBeforeSwitch(tree[i].nodes![1]!, id)) return true;
-
-			if (tree[i].nodes?.[2] && isBeforeSwitch(tree[i].nodes![2]!, id)) return true;
+			for (const children of Object.values(tree[i].nodes ?? {})) {
+				if (isBeforeSwitch(children, id)) {
+					return true;
+				}
+			}
 		}
 
 		return false;
@@ -435,53 +444,45 @@ export default function Canbus({ client, basePath }: Props) {
 
 	function extractModule(tree: TopologyModule[], instanceId: string): TopologyModule | null {
 		for (let i = 0; i < tree.length; i++) {
-			if (tree[i].instanceId === instanceId) {
-				return tree.splice(i, 1)[0];
-			}
+			if (tree[i].instanceId === instanceId) return tree.splice(i, 1)[0];
 
-			if (tree[i].nodes?.[1]) {
-				const found = extractModule(tree[i].nodes![1]!, instanceId);
+			for (const children of Object.values(tree[i].nodes ?? {})) {
+				const found = extractModule(children, instanceId);
 
-				if (found) return found;
-			}
-
-			if (tree[i].nodes?.[2]) {
-				const found = extractModule(tree[i].nodes![2]!, instanceId);
-
-				if (found) return found;
+				if (found) {
+					return found;
+				}
 			}
 		}
 
 		return null;
 	}
 
-	async function moveModuleToBranch(instanceId: string, branch: 1 | 2) {
+	async function moveModuleToBranch(instanceId: string, direction: -1 | 1) {
 		const next = structuredClone(topology);
 
-		const moving = extractModule(next, instanceId);
+		const location = getBranchOfModule(next, instanceId);
 
-		if (!moving) return;
+		if (!location) {
+			// Module is on the main line
 
-		for (let i = 0; i < next.length - 1; i++) {
-			if (next[i + 1].moduleId === 'DT00-24SW') {
-				next[i + 1].nodes ??= {};
-				next[i + 1].nodes![branch] ??= [];
+			const moving = extractModule(next, instanceId);
 
-				next[i + 1].nodes![branch]!.unshift(moving);
+			if (!moving) return;
 
-				await saveTopology(next);
+			const targetSwitch = findNextSwitch(next, instanceId);
 
-				return;
-			}
+			if (!targetSwitch) return;
+
+			targetSwitch.nodes ??= {};
+			targetSwitch.nodes[1] ??= [];
+
+			targetSwitch.nodes[1].unshift(moving);
+
+			await saveTopology(next);
+
+			return;
 		}
-
-		const info = getBranchOfModule(topology, instanceId);
-
-		if (!info) return;
-
-		insertIntoBranch(next, info.parentId, branch, moving);
-
-		await saveTopology(next);
 	}
 
 	function getBranchOfModule(
@@ -489,43 +490,72 @@ export default function Canbus({ client, basePath }: Props) {
 		id: string
 	): {
 		parentId: string;
-		branch: 1 | 2;
+		branch: number;
 	} | null {
 		for (const module of tree) {
-			if (module.nodes?.[1]?.some((x) => x.instanceId === id))
-				return {
-					parentId: module.instanceId,
-					branch: 1,
-				};
+			for (const [branch, children] of Object.entries(module.nodes ?? {})) {
+				if (children.some((x) => x.instanceId === id)) {
+					return {
+						parentId: module.instanceId,
+						branch: Number(branch),
+					};
+				}
 
-			if (module.nodes?.[2]?.some((x) => x.instanceId === id))
-				return {
-					parentId: module.instanceId,
-					branch: 2,
-				};
+				const found = getBranchOfModule(children, id);
 
-			const left = module.nodes?.[1] && getBranchOfModule(module.nodes[1]!, id);
+				if (found) {
+					return found;
+				}
+			}
+		}
 
-			if (left) return left;
+		return null;
+	}
 
-			const right = module.nodes?.[2] && getBranchOfModule(module.nodes[2]!, id);
+	function findSwitchParent(tree: TopologyModule[], instanceId: string): TopologyModule | null {
+		for (const module of tree) {
+			for (const children of Object.values(module.nodes ?? {})) {
+				if (children.some((x) => x.instanceId === instanceId)) {
+					return module;
+				}
 
-			if (right) return right;
+				const found = findSwitchParent(children, instanceId);
+
+				if (found) return found;
+			}
 		}
 
 		return null;
 	}
 
 	function renderModule(entry: TopologyModule) {
-		const firstInBranch = isFirstInBranch(topology, entry.instanceId);
+		const position = getBranchPosition(topology, entry.instanceId);
+
+		const firstInBranch = position?.first ?? false;
+		const lastInBranch = position?.last ?? false;
+
+		const rootModule = isRootModule(entry.instanceId);
+		const lastRootModule = isLastRootModule(entry.instanceId);
 
 		const beforeSwitch = isBeforeSwitch(topology, entry.instanceId);
+
+		const inBranch = getBranchOfModule(topology, entry.instanceId) !== null;
+
+		const canMoveUp = inBranch || lastRootModule;
+
+		const canMoveDown = rootModule ? !beforeSwitch : !lastInBranch;
+
+		const canMoveLeft = inBranch && (firstInBranch || lastInBranch);
+
+		const canMoveRight = inBranch && (firstInBranch || lastInBranch);
 
 		const module = availableModules.find((m) => m.id === entry.moduleId);
 
 		const node = foundModules.find((n) => n.physicalAddress === entry.physicalAddress);
 
 		if (!module) return null;
+
+		const branchCount = module.channels ?? 0;
 
 		return (
 			<Card key={entry.instanceId}>
@@ -550,43 +580,58 @@ export default function Canbus({ client, basePath }: Props) {
 						)}
 					</div>
 
-					<div className='flex items-center justify-end gap-2 -t pt-3'>
-						{!!node?.units?.length && module.detectable && <Button variant='ghost' icon={<ListTree size={14} />} onClick={() => setUnitModal(node)} />}
+					<div className='px-3 pb-3 space-y-3'>
+						{/* Actions */}
+						<div className='flex flex-wrap justify-end gap-2'>
+							{!!node?.units?.length && module.detectable && <Button variant='ghost' icon={<ListTree size={14} />} onClick={() => setUnitModal(node)} />}
 
-						<Button variant='ghost' icon={<Pencil size={14} />} onClick={() => editModule(entry)} />
+							<Button variant='ghost' icon={<BookIcon size={14} />} onClick={() => window.open(`/modules/${module.id}/datasheet.pdf`, '_blank')} />
 
-						<Button variant='ghost' icon={<BookIcon size={14} />} onClick={() => window.open(`/modules/${module.id}/datasheet.pdf`, '_blank')} />
+							{editing && <Button variant='ghost' icon={<Pencil size={14} />} onClick={() => editModule(entry)} />}
 
-						<Button variant='danger-ghost' icon={<Trash2 size={14} />} onClick={() => removeModule(entry.instanceId)} />
+							{editing && <Button variant='danger-ghost' icon={<Trash2 size={14} />} onClick={() => removeModule(entry.instanceId)} />}
+						</div>
 
-						{entry.moduleId === 'DT00-24SW' ? (
-							<>
-								<Button variant='ghost' onClick={() => beginBranch(entry, 1)}>
-									<Plus size={14} /> Bus 1
-								</Button>
-
-								<Button variant={'ghost'} onClick={() => beginBranch(entry, 2)}>
-									<Plus size={14} /> Bus 2
-								</Button>
-							</>
-						) : (
-							<>
-								{firstInBranch || beforeSwitch ? (
-									<>
-										<Button variant='ghost' icon={<ChevronUp size={14} />} onClick={() => moveModule(entry.instanceId, 'up')} />
-
-										<Button variant='ghost' icon={<ChevronLeft size={14} />} onClick={() => moveModuleToBranch(entry.instanceId, 1)} />
-
-										<Button variant='ghost' icon={<ChevronRight size={14} />} onClick={() => moveModuleToBranch(entry.instanceId, 2)} />
-									</>
+						{/* Movement */}
+						{editing && (
+							<div className='flex justify-center'>
+								{branchCount ? (
+									<div className='flex flex-wrap justify-center gap-2'>
+										{Array.from({ length: branchCount }, (_, i) => (
+											<Button key={i} variant='ghost' onClick={() => beginBranch(entry, i + 1)}>
+												<Plus size={14} />
+												Bus {i + 1}
+											</Button>
+										))}
+									</div>
 								) : (
-									<>
-										<Button variant='ghost' icon={<ChevronUp size={14} />} onClick={() => moveModule(entry.instanceId, 'up')} />
+									<div className='grid grid-cols-3 gap-1 w-[108px]'>
+										<div />
 
-										<Button variant='ghost' icon={<ChevronDown size={14} />} onClick={() => moveModule(entry.instanceId, 'down')} />
-									</>
+										<div className='flex justify-center'>{canMoveUp && <Button size='sm' variant='ghost' icon={<ChevronUp size={14} />} onClick={() => moveModule(entry.instanceId, 'up')} />}</div>
+
+										<div />
+
+										<div className='flex justify-center'>
+											{canMoveLeft && <Button size='sm' variant='ghost' icon={<ChevronLeft size={14} />} onClick={() => moveModuleToBranch(entry.instanceId, -1)} />}
+										</div>
+
+										<div />
+
+										<div className='flex justify-center'>
+											{canMoveRight && <Button size='sm' variant='ghost' icon={<ChevronRight size={14} />} onClick={() => moveModuleToBranch(entry.instanceId, 1)} />}
+										</div>
+
+										<div />
+
+										<div className='flex justify-center'>
+											{canMoveDown && <Button size='sm' variant='ghost' icon={<ChevronDown size={14} />} onClick={() => moveModule(entry.instanceId, 'down')} />}
+										</div>
+
+										<div />
+									</div>
 								)}
-							</>
+							</div>
 						)}
 					</div>
 				</div>
@@ -595,62 +640,123 @@ export default function Canbus({ client, basePath }: Props) {
 	}
 
 	function renderTopology(entry: TopologyModule): React.ReactNode {
+		const module = availableModules.find((m) => m.id === entry.moduleId);
+
+		const branchCount = module?.channels ?? 0;
+
 		return (
 			<div key={entry.instanceId} className='flex flex-col items-center'>
 				{renderModule(entry)}
 
 				{entry.nodes ? (
 					<>
-						<div className='relative h-16 w-full max-w-5xl'>
-							<div className='absolute left-1/2 top-0 h-6 w-0.75 bg-orange-500 -translate-x-1/2' />
+						{/* Mobile selector */}
 
-							<div className='absolute left-[calc(50%-6px)] top-0 h-6 w-0.75 bg-orange-200' />
-
-							<div className='absolute left-1/4 right-1/4 top-6 h-0.75 bg-orange-500' />
-
-							<div className='absolute left-[calc(25%-6px)] right-[calc(25%-6px)] top-6 h-0.75 bg-orange-200' />
-
-							<div className='absolute left-1/4 top-6 h-10 w-0.75 bg-orange-500' />
-
-							<div className='absolute left-[calc(25%-6px)] top-6 h-10 w-0.75 bg-orange-200' />
-
-							<div className='absolute right-1/4 top-6 h-10 w-0.75 bg-orange-500' />
-
-							<div className='absolute right-[calc(25%-6px)] top-6 h-10 w-0.75 bg-orange-200' />
+						<div className='flex md:hidden items-center justify-between mb-4'>
+							{Array.from({ length: branchCount }, (_, i) => (
+								<Button key={i} variant={mobileBranch === i + 1 ? 'primary' : 'ghost'} onClick={() => setMobileBranch(i + 1)}>
+									Bus {i + 1}
+								</Button>
+							))}
 						</div>
 
-						<>
-							{/* Mobile selector */}
+						{/* Desktop */}
+						<div
+							className='hidden md:grid w-full gap-x-20'
+							style={{
+								gridTemplateColumns: `repeat(${branchCount}, minmax(0,1fr))`,
+							}}>
+							{/* Bus occupies the first row */}
+							<div
+								className='relative h-16'
+								style={{
+									gridColumn: `1 / ${branchCount + 1}`,
+								}}>
+								{/* Incoming */}
+								<div
+									className='absolute top-0 h-6 w-0.75 bg-orange-500'
+									style={{
+										left: 'calc(50% - 3px)',
+									}}
+								/>
 
-							<div className='flex md:hidden items-center justify-between mb-4'>
-								<Button variant={mobileBranch === 1 ? 'primary' : 'ghost'} onClick={() => setMobileBranch(1)}>
-									Bus 1
-								</Button>
+								<div
+									className='absolute top-0 h-7 w-0.75 bg-orange-200'
+									style={{
+										left: 'calc(50% + 3px)',
+									}}
+								/>
 
-								<Button variant={mobileBranch === 2 ? 'primary' : 'ghost'} onClick={() => setMobileBranch(2)}>
-									Bus 2
-								</Button>
+								{/* Horizontal */}
+								<div
+									className='absolute h-0.75 bg-orange-500'
+									style={{
+										top: 22,
+										left: `${100 / branchCount / 2}%`,
+										right: `${100 / branchCount / 2}%`,
+									}}
+								/>
+
+								<div
+									className='absolute h-0.75 bg-orange-200'
+									style={{
+										top: 28,
+										left: `calc(${100 / branchCount / 2}% + 3px)`,
+										right: `calc(${100 / branchCount / 2}% - 3px)`,
+									}}
+								/>
+
+								{/* Branches */}
+								<div
+									className='absolute inset-x-0 top-[22px] grid'
+									style={{
+										gridTemplateColumns: `repeat(${branchCount}, minmax(0,1fr))`,
+									}}>
+									{Array.from({ length: branchCount }, (_, i) => (
+										<div key={i} className='flex justify-center'>
+											<div className='relative h-16 w-3'>
+												<div
+													className='absolute w-0.75 bg-orange-500'
+													style={{
+														left: 'calc(50% - 3px)',
+														top: 0,
+														height: 42,
+													}}
+												/>
+
+												<div
+													className='absolute w-0.75 bg-orange-200'
+													style={{
+														left: 'calc(50% + 3px)',
+														top: 6,
+														height: 36,
+													}}
+												/>
+											</div>
+										</div>
+									))}
+								</div>
 							</div>
 
-							{/* Desktop */}
-							<div className='hidden md:grid grid-cols-2 gap-20 w-full'>
-								<div className='flex flex-col gap-6'>{entry.nodes?.[1]?.map(renderTopology)}</div>
+							{/* Branch columns */}
+							{Array.from({ length: branchCount }, (_, i) => (
+								<div key={i} className='flex flex-col gap-6'>
+									{entry.nodes?.[i + 1]?.map(renderTopology)}
+								</div>
+							))}
+						</div>
 
-								<div className='flex flex-col gap-6'>{entry.nodes?.[2]?.map(renderTopology)}</div>
-							</div>
-
-							{/* Mobile */}
-							<div className='md:hidden'>
-								<div className='flex flex-col gap-6'>{entry.nodes?.[mobileBranch]?.map(renderTopology)}</div>
-							</div>
-						</>
+						{/* Mobile */}
+						<div className='md:hidden'>
+							<div className='flex flex-col gap-6'>{entry.nodes?.[mobileBranch]?.map(renderTopology)}</div>
+						</div>
 					</>
 				) : (
 					<div className='flex justify-center'>
 						<div className='relative h-10 w-4'>
-							<div className='absolute left-0 h-full w-0.75 bg-orange-500' />
+							<div className='absolute left-0 h-16 w-0.75 bg-orange-500' />
 
-							<div className='absolute left-1.5 h-full w-0.75 bg-orange-200' />
+							<div className='absolute left-1.5 h-16 w-0.75 bg-orange-200' />
 						</div>
 					</div>
 				)}
@@ -669,7 +775,9 @@ export default function Canbus({ client, basePath }: Props) {
 			<div className='flex items-center gap-2'>
 				<Input placeholder='Search modules...' value={search} onChange={(e) => setSearch(e.target.value)} />
 
-				<Button onClick={() => setAddModalOpen(true)}>Add ({unplacedModules.length})</Button>
+				{has('projects.write') && <Button onClick={() => setAddModalOpen(true)}>Add ({unplacedModules.length})</Button>}
+
+				{has('projects.write') && <Button onClick={() => setEditing(!editing)}>{editing ? 'Save' : 'Edit'}</Button>}
 			</div>
 
 			<div className='mt-8 flex flex-col gap-6'>{topology.map(renderTopology)}</div>
