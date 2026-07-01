@@ -34,9 +34,7 @@ export default function MultiSelector({ value, options, onChange, placeholder = 
 
 		document.addEventListener('mousedown', handleClickOutside);
 
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
+		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, []);
 
 	function toggle(option: string) {
@@ -49,13 +47,10 @@ export default function MultiSelector({ value, options, onChange, placeholder = 
 	}
 
 	function displayValue() {
-		if (value.length === 0) {
-			return placeholder;
-		}
+		if (!value.length) return placeholder;
 
 		if (value.length === 1) {
-			const selected = options.find((x) => x.value === value[0]);
-			return selected?.label ?? placeholder;
+			return options.find((x) => x.value === value[0])?.label ?? placeholder;
 		}
 
 		if (value.length === 2) {
@@ -65,16 +60,16 @@ export default function MultiSelector({ value, options, onChange, placeholder = 
 				.join(', ');
 		}
 
-		return `${value.length} labels`;
+		return `${value.length} selected`;
 	}
 
 	return (
-		<div ref={ref} className={`relative min-w-[220px] ${className ?? ''}`}>
-			{label && <label className='text-sm font-medium text-zinc-700 dark:text-zinc-300'>{label}</label>}
+		<div ref={ref} className={`relative min-w-60 ${className ?? ''}`}>
+			{label && <label className='mb-2 block text-sm font-medium text-(--text)'>{label}</label>}
 
-			<Button type='button' onClick={() => setOpen((v) => !v)} className='w-full justify-start'>
-				<div className='flex items-center gap-2 overflow-hidden'>
-					{value.length > 0 && (
+			<Button type='button' variant='secondary' onClick={() => setOpen((v) => !v)} className='w-full justify-between'>
+				<div className='flex items-center gap-3 overflow-hidden'>
+					{!!value.length && (
 						<div className='flex -space-x-1'>
 							{value.slice(0, 3).map((selectedValue) => {
 								const option = options.find((x) => x.value === selectedValue);
@@ -82,11 +77,8 @@ export default function MultiSelector({ value, options, onChange, placeholder = 
 								return (
 									<div
 										key={selectedValue}
+										className='size-3 rounded-full border-2 border-white/80 shrink-0'
 										style={{
-											width: 12,
-											height: 12,
-											border: '2px solid rgb(255 255 255 / 0.75)',
-											borderRadius: 999,
 											background: option?.color ?? 'var(--accent)',
 										}}
 									/>
@@ -98,44 +90,21 @@ export default function MultiSelector({ value, options, onChange, placeholder = 
 					<span className='truncate'>{displayValue()}</span>
 				</div>
 
-				<ChevronDown
-					size={16}
-					className='ml-auto shrink-0'
-					style={{
-						transform: open ? 'rotate(180deg)' : undefined,
-						transition: 'transform 0.15s',
-					}}
-				/>
+				<ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
 			</Button>
 
 			{open && (
-				<div
-					className='absolute z-50 mt-2 w-full overflow-hidden rounded-xl bg-white dark:bg-zinc-900 text-zinc-900 dark:text-zinc-100'
-					style={{
-						border: '1px solid var(--border)',
-						boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
-					}}>
-					<div
-						style={{
-							maxHeight: 280,
-							overflowY: 'auto',
-						}}>
+				<div className='absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-(--border)/10 bg-(--foreground) shadow-xl'>
+					<div className='max-h-72 overflow-y-auto p-2'>
 						{options.map((option) => {
 							const selected = value.includes(option.value);
 
 							return (
-								<Button
-									key={option.value}
-									type='button'
-									variant={selected ? 'primary' : 'secondary'}
-									onClick={() => toggle(option.value)}
-									className='w-full px-3 py-2.5 text-left text-sm flex items-center justify-start transition '>
-									<div className='flex items-center gap-3 '>
+								<Button key={option.value} type='button' variant={selected ? 'primary' : 'ghost'} onClick={() => toggle(option.value)} className='mb-1 w-full justify-start'>
+									<div className='flex items-center gap-3'>
 										<div
+											className='size-2.5 rounded-full'
 											style={{
-												width: 10,
-												height: 10,
-												borderRadius: 999,
 												background: option.color ?? 'var(--accent)',
 											}}
 										/>
@@ -146,15 +115,7 @@ export default function MultiSelector({ value, options, onChange, placeholder = 
 							);
 						})}
 
-						{options.length === 0 && (
-							<div
-								className='px-3 py-3 text-sm'
-								style={{
-									color: 'var(--text-muted)',
-								}}>
-								No options
-							</div>
-						)}
+						{!options.length && <div className='p-3 text-sm text-(--text-muted)'>No options</div>}
 					</div>
 				</div>
 			)}

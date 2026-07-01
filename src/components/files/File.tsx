@@ -115,6 +115,10 @@ export default function File({
 	const canDownload = !!onDownload;
 	const canOpen = !!onOpen;
 
+	const openRender = (path: string) => {
+		window.open(`/api/files/render?path=${encodeURIComponent(path)}`, '_blank');
+	};
+
 	function handleDownload() {
 		onDownload?.(file);
 
@@ -177,18 +181,28 @@ export default function File({
 					onDoubleClick={handleOpen}
 					onContextMenu={handleContextMenu}>
 					<div className='min-w-0 flex-1'>
-						<div className='flex items-center gap-2'>
+						<button
+							className='flex gap-2 items-center'
+							onClick={() => {
+								if (file.type === 'file') {
+									openRender(file.path);
+								} else {
+									handleOpen();
+								}
+							}}>
 							<FileIcon file={file} size={16} />
 							<div className='truncate font-medium'>{formattedName}</div>
-						</div>
+						</button>
 
 						<div className='flex flex-wrap gap-3 mt-1 text-xs text-(--text-muted)'>
 							<span>{formattedDate}</span>
 
-							<div className='flex items-center gap-2'>
-								<UserIcon size={14} />
-								<span>{uploader || '-'}</span>
-							</div>
+							{uploader && (
+								<div className='flex items-center gap-2'>
+									<UserIcon size={14} />
+									<span>{uploader || '-'}</span>
+								</div>
+							)}
 
 							{revision > 0 && (
 								<div className='flex items-center gap-2'>
@@ -203,6 +217,7 @@ export default function File({
 									<span>{extension || '-'}</span>
 								</div>
 							)}
+
 							{!!collaborators.length && <span>{collaborators.join(', ')}</span>}
 						</div>
 
@@ -225,10 +240,18 @@ export default function File({
 		<div className='rounded-3xl bg-(--foreground) p-5' draggable={isAllowed || false} onDragStart={() => onDragStart?.(file)} onDoubleClick={handleOpen} onContextMenu={handleContextMenu}>
 			<div className='flex items-start justify-between gap-4'>
 				<div className='min-w-0 flex-1'>
-					<div className='flex items-center gap-2 transition-colors group-hover:text-(--accent)'>
-						<FileIcon file={file} size={18} />
-						<h3 className='font-semibold truncate'>{formattedName}</h3>
-					</div>
+					<button
+						className='flex gap-2 items-center'
+						onClick={() => {
+							if (file.type === 'file') {
+								openRender(file.path);
+							} else {
+								handleOpen();
+							}
+						}}>
+						<FileIcon file={file} size={16} />
+						<div className='truncate font-medium'>{formattedName}</div>
+					</button>
 
 					{!!formattedComment && <p className='text-sm text-(--text-muted) mt-2 wrap-break-word'>{formattedComment}</p>}
 				</div>

@@ -11,10 +11,12 @@ export default function Card({ children, className = '', ...props }: Props) {
 	return (
 		<div
 			className={`
-				bg-white dark:bg-zinc-900
-				border border-zinc-200 dark:border-zinc-800
-				rounded-xl
+				rounded-3xl
+				bg-(--foreground)
+				border
+				border-(--border)/10
 				shadow-sm
+				transition-colors
 				${className}
 			`}
 			{...props}>

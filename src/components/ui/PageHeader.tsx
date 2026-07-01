@@ -12,25 +12,22 @@ type Props = {
 
 export default function PageHeader({ icon, title, description, action }: Props) {
 	return (
-		<div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
-			<div className='flex items-center gap-4 min-w-0'>
+		<div className='flex flex-col gap-6 md:flex-row md:items-center md:justify-between'>
+			<div className='flex min-w-0 items-center gap-4'>
 				<div
 					className='
-						h-11 w-11
-						shrink-0
-						rounded-xl
-						bg-(--active-accent)
-						dark:bg-(--accent)/30
-						flex items-center justify-center
+						flex size-12 shrink-0 items-center justify-center
+						rounded-2xl
+						bg-(--accent)/15
 						text-(--accent)
 					'>
 					{icon}
 				</div>
 
 				<div className='min-w-0'>
-					<h1 className='text-2xl font-semibold tracking-tight text-zinc-900 dark:text-zinc-100'>{title}</h1>
+					<h1 className='truncate text-3xl font-bold tracking-tight'>{title}</h1>
 
-					{description && <p className='text-sm text-zinc-500 dark:text-zinc-400'>{description}</p>}
+					{description && <p className='mt-1 text-sm text-(--text-muted)'>{description}</p>}
 				</div>
 			</div>
 

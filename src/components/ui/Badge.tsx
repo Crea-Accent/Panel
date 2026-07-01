@@ -13,17 +13,22 @@ export default function Badge({ children, color = 'var(--accent)', dot = false }
 	return (
 		<span
 			className='
-				inline-flex items-center gap-1.5
-				px-2 py-0.5
-				text-xs font-medium
-				text-white
-				rounded-md
+				inline-flex items-center gap-2
+				h-7
+				px-3
+				rounded-full
+				text-xs
+				font-medium
+				select-none
 				whitespace-nowrap
+				shadow-sm
+				transition-colors
 			'
 			style={{
 				backgroundColor: color,
+				color: 'white',
 			}}>
-			{dot && <span className='w-1.5 h-1.5 rounded-full bg-white/80' />}
+			{dot && <span className='size-2 rounded-full bg-white/90 shrink-0' />}
 
 			{children}
 		</span>

@@ -52,8 +52,8 @@ export default function ContextMenu({ open, x, y, items, onClose }: Props) {
 					}}
 					className='
 						fixed
-						z-[9999]
-						min-w-[220px]
+						z-9999
+						min-w-55
 
 						bg-white
 						dark:bg-zinc-900

@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
 
 	const mimeTypes: Record<string, string> = {
 		'.pdf': 'application/pdf',
+		'.txt': 'application/txt',
 		'.png': 'image/png',
 		'.jpg': 'image/jpeg',
 		'.jpeg': 'image/jpeg',
@@ -33,11 +34,13 @@ export async function GET(request: NextRequest) {
 		'.gif': 'image/gif',
 	};
 
+	const fileName = path.basename(targetPath);
+
 	return new NextResponse(fileBuffer, {
 		headers: {
 			'Content-Type': mimeTypes[extension] ?? 'application/octet-stream',
 
-			'Content-Disposition': 'inline',
+			'Content-Disposition': `inline; filename="${fileName}"`,
 		},
 	});
 }

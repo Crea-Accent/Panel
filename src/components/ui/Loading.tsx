@@ -8,24 +8,24 @@ type Props = {
 
 export default function Loading({ title = 'Loading', description = 'Please wait...' }: Props) {
 	return (
-		<div className='flex items-center justify-center my-auto'>
-			<div className='rounded-3xl p-10 text-center max-w-md w-full'>
-				<div className='flex justify-center mb-6'>
-					<div className='relative h-16 w-16'>
-						<div className='absolute inset-0 rounded-full border-4 border-zinc-300 dark:border-zinc-700' />
+		<div className='flex flex-1 items-center justify-center p-6'>
+			<div className='w-full max-w-md rounded-3xl bg-(--foreground) border border-(--border)/10 p-10 text-center shadow-sm'>
+				<div className='mb-8 flex justify-center'>
+					<div className='relative size-16'>
+						<div className='absolute inset-0 rounded-full border-4 border-(--border)/15' />
 
 						<div
-							className='absolute inset-0 rounded-full border-4 border-transparent border-t-[#a4b795] animate-spin'
+							className='absolute inset-0 animate-spin rounded-full border-4 border-transparent border-t-(--accent)'
 							style={{
-								animationDuration: '1s',
+								animationDuration: '0.8s',
 							}}
 						/>
 					</div>
 				</div>
 
-				<div className='text-xl font-semibold'>{title}</div>
+				<h2 className='text-xl font-semibold'>{title}</h2>
 
-				<div className='text-sm text-zinc-500 mt-2'>{description}</div>
+				<p className='mt-2 text-sm text-(--text-muted)'>{description}</p>
 			</div>
 		</div>
 	);

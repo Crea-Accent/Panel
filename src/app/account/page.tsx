@@ -78,21 +78,21 @@ export default function Page() {
 
 					<div className='space-y-3 text-sm'>
 						<div>
-							<div className='text-zinc-500'>Name</div>
+							<div className='text-(--text-muted)'>Name</div>
 
-							<div className='font-medium'>{session.user?.name}</div>
+							<div className='font-semibold'>{session.user?.name}</div>
 						</div>
 
 						<div>
-							<div className='text-zinc-500'>Email</div>
+							<div className='text-(--text-muted)'>Email</div>
 
-							<div className='font-medium'>{session.user?.email}</div>
+							<div className='font-semibold'>{session.user?.email}</div>
 						</div>
 					</div>
 				</Card>
 
-				<Card className='p-6'>
-					<div className='flex items-center gap-3 mb-4'>
+				<Card className='space-y-6 p-6'>
+					<div className='flex items-center gap-3'>
 						<Moon size={18} className='text-(--accent)' />
 
 						<h2 className='text-lg font-semibold'>Appearance</h2>
@@ -109,7 +109,7 @@ export default function Page() {
 			</div>
 
 			<Card className='p-6'>
-				<div className='flex items-center gap-3 mb-6'>
+				<div className='flex items-center gap-3'>
 					<Settings2 size={18} className='text-(--accent)' />
 
 					<h2 className='text-lg font-semibold'>Preferences</h2>
@@ -144,13 +144,7 @@ export default function Page() {
 					<div>
 						<div className='font-medium mb-1'>Default View</div>
 
-						<div
-							className='text-sm mb-4'
-							style={{
-								color: 'var(--text-muted)',
-							}}>
-							Preferred layout used throughout the platform.
-						</div>
+						<div className='text-sm text-(--text-muted) mb-4'>Preferred layout used throughout the platform.</div>
 
 						<div className='flex gap-2'>
 							<Button
@@ -224,7 +218,7 @@ export default function Page() {
 							Update Password
 						</Button>
 
-						{message && <span className='text-sm text-zinc-500'>{message}</span>}
+						{message && <span className='text-sm text-(--text-muted)'>{message}</span>}
 					</div>
 				</Card>
 			</motion.div>

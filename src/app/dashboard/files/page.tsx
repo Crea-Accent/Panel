@@ -7,6 +7,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import ConfirmDialog from '@/components/ui/ConfirmDialog';
+import { FileEntry } from '@/components/files/File';
 import FileGrid from '@/components/files/FileGrid';
 import FileList from '@/components/files/FileList';
 import Input from '@/components/ui/Input';
@@ -15,14 +16,6 @@ import PageHeader from '@/components/ui/PageHeader';
 import ViewToggle from '@/components/ui/ViewToggle';
 import { motion } from 'framer-motion';
 import { useFileNavigation } from '@/hooks/useFileNavigation';
-
-type FileEntry = {
-	path: string;
-	name: string;
-	type: string;
-	size?: number | null;
-	modified?: string;
-};
 
 type Settings = {
 	path?: string;
@@ -33,7 +26,7 @@ export default function FilesPage() {
 	const uploadRef = useRef<HTMLInputElement>(null);
 	const [settings, setSettings] = useState<Settings | null>(null);
 
-	const { currentPath, navigate, goUp, goBack, goForward, canGoBack, canGoForward, canGoUp, breadcrumbs } = useFileNavigation(settings?.path ?? '');
+	const { currentPath, navigate, goUp, goBack, goForward, canGoBack, canGoForward, canGoUp, breadcrumbs, Breadcrumbs } = useFileNavigation();
 
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [query, setQuery] = useState('');
@@ -219,7 +212,6 @@ export default function FilesPage() {
 			path: `${currentPath}\\${name}`,
 			name,
 			type: 'directory',
-			size: 0,
 		};
 
 		setFiles((current) => [optimisticFolder, ...current]);
@@ -283,8 +275,6 @@ export default function FilesPage() {
 		(async () => {
 			const s = await fetch('/api/settings/files').then((r) => r.json());
 			setSettings(s);
-
-			if (s?.path) navigate(s.path);
 
 			setLoading(false);
 		})();
@@ -350,9 +340,7 @@ export default function FilesPage() {
 		return <div className='text-sm text-zinc-500 dark:text-zinc-400'>Loading…</div>;
 	}
 
-	if (!settings?.path) {
-		return <div className='text-sm text-zinc-500 dark:text-zinc-400'>No files path configured.</div>;
-	}
+	if (!settings?.path) return <div className='text-sm text-zinc-500 dark:text-zinc-400'>No files path configured.</div>;
 
 	return (
 		<div
@@ -422,37 +410,13 @@ export default function FilesPage() {
 
 			{/* NAVIGATION */}
 
-			<Card className='p-4'>
-				<div className='flex flex-wrap items-center gap-2'>
-					{breadcrumbs.map((crumb, index) => (
-						<div key={crumb.path} className='flex items-center gap-2'>
-							{index > 0 && <span className='text-(--text-muted)'>/</span>}
-
-							<Button variant='ghost' onClick={() => navigate(crumb.path)}>
-								{index === 0 ? <Home size={16} /> : crumb.label}
-							</Button>
-						</div>
-					))}
-				</div>
-			</Card>
+			<Breadcrumbs />
 
 			{/* Table */}
 			{view === 'grid' ? (
-				<FileGrid
-					permission={'files.write'}
-					files={filtered}
-					onDownload={(file) => download(file.path)}
-					onEdit={(file) => rename(file.path)}
-					// onOpen={(file) => openFile(file)}
-				/>
+				<FileGrid permission={'files.write'} files={filtered} onDownload={(file) => download(file.path)} onEdit={(file) => rename(file.path)} onOpen={openFile} />
 			) : (
-				<FileList
-					permission={'files.write'}
-					files={filtered}
-					onDownload={(file) => download(file.path)}
-					onEdit={(file) => rename(file.path)}
-					// onOpen={(file) => openFile(file)}
-				/>
+				<FileList permission={'files.write'} files={filtered} onDownload={(file) => download(file.path)} onEdit={(file) => rename(file.path)} onOpen={openFile} />
 			)}
 
 			<Modal

@@ -235,17 +235,6 @@ export default function Page() {
 						<Input icon={<Search size={16} />} placeholder='Search projects...' value={query} onChange={(e) => setQuery(e.target.value)} />
 					</div>
 
-					<Selector
-						value={sortKey}
-						onChange={(value) => setSortKey(value as SortKey)}
-						options={[
-							{ label: 'Name', value: 'name' },
-							{ label: 'Updated', value: 'updated' },
-							{ label: 'City', value: 'city' },
-							{ label: 'Label', value: 'label' },
-						]}
-					/>
-
 					<Button variant='secondary' icon={sortAsc ? <ArrowUpAZ size={16} /> : <ArrowDownAZ size={16} />} onClick={() => setSortAsc(!sortAsc)} />
 
 					<div className='flex overflow-hidden rounded-lg'>
@@ -253,6 +242,17 @@ export default function Page() {
 					</div>
 
 					<div className='flex flex-wrap gap-2'>
+						<Selector
+							value={sortKey}
+							onChange={(value) => setSortKey(value as SortKey)}
+							options={[
+								{ label: 'Name', value: 'name' },
+								{ label: 'Updated', value: 'updated' },
+								{ label: 'City', value: 'city' },
+								{ label: 'Label', value: 'label' },
+							]}
+						/>
+
 						<MultiSelector
 							placeholder='All Labels'
 							value={labelFilters}

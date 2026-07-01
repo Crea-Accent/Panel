@@ -4,6 +4,7 @@
 import { AnimatePresence, motion } from 'framer-motion';
 import { ReactNode, useEffect } from 'react';
 
+import Button from './Button';
 import { X } from 'lucide-react';
 
 type Props = {
@@ -21,20 +22,20 @@ export default function Modal({ open, title, children, onClose, footer, size = '
 		md: 'max-w-md',
 		lg: 'max-w-lg',
 		xl: 'max-w-xl',
-		xxl: 'max-w-xxl',
+		xxl: 'max-w-7xl',
 	};
 
 	useEffect(() => {
+		if (!open) return;
+
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') onClose();
 		};
 
 		window.addEventListener('keydown', onKeyDown);
 
-		return () => {
-			window.removeEventListener('keydown', onKeyDown);
-		};
-	}, [onClose]);
+		return () => window.removeEventListener('keydown', onKeyDown);
+	}, [open, onClose]);
 
 	return (
 		<AnimatePresence>
@@ -44,12 +45,12 @@ export default function Modal({ open, title, children, onClose, footer, size = '
 					animate={{ opacity: 1 }}
 					exit={{ opacity: 0 }}
 					onClick={onClose}
-					className='fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4'>
+					className='fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-md p-4'>
 					<motion.div
 						initial={{
 							opacity: 0,
-							scale: 0.96,
-							y: 12,
+							scale: 0.97,
+							y: 16,
 						}}
 						animate={{
 							opacity: 1,
@@ -58,44 +59,36 @@ export default function Modal({ open, title, children, onClose, footer, size = '
 						}}
 						exit={{
 							opacity: 0,
-							scale: 0.96,
-							y: 12,
+							scale: 0.97,
+							y: 16,
 						}}
 						transition={{
 							type: 'spring',
-							stiffness: 350,
-							damping: 30,
+							stiffness: 320,
+							damping: 28,
 						}}
 						onClick={(e) => e.stopPropagation()}
 						className={`
 							w-full
 							${widths[size]}
-							bg-white dark:bg-zinc-900
-							border border-zinc-200 dark:border-zinc-800
-							rounded-2xl
-							shadow-xl
+							max-h-[90vh]
+							flex flex-col
+							rounded-3xl
+							bg-(--foreground)
+							border
+							border-(--border)/10
+							shadow-2xl
 							overflow-hidden
 						`}>
-						<div className='flex items-center justify-between px-6 py-5 border-b border-zinc-200 dark:border-zinc-800'>
-							<h2 className='text-lg font-semibold text-zinc-900 dark:text-zinc-100'>{title}</h2>
+						<div className='flex items-center justify-between border-b border-(--border)/10 px-6 py-5'>
+							<h2 className='text-xl font-semibold'>{title}</h2>
 
-							<button
-								onClick={onClose}
-								className='
-									h-8 w-8
-									flex items-center justify-center
-									rounded-lg
-									hover:bg-zinc-100
-									dark:hover:bg-zinc-800
-									transition
-								'>
-								<X size={16} />
-							</button>
+							<Button variant='ghost' size='sm' icon={<X size={16} />} onClick={onClose} />
 						</div>
 
-						<div className='p-6'>{children}</div>
+						<div className='flex-1 overflow-y-auto p-6'>{children}</div>
 
-						{footer && <div className='px-6 py-4 border-t border-zinc-200 dark:border-zinc-800 flex justify-end gap-3'>{footer}</div>}
+						{footer && <div className='flex justify-end gap-3 border-t border-(--border)/10 px-6 py-5'>{footer}</div>}
 					</motion.div>
 				</motion.div>
 			)}

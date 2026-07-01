@@ -22,6 +22,7 @@ type Props = {
 
 export default function Selector({ value, options, onChange, placeholder = 'Select', className }: Props) {
 	const [open, setOpen] = useState(false);
+
 	const ref = useRef<HTMLDivElement>(null);
 
 	useEffect(() => {
@@ -33,26 +34,20 @@ export default function Selector({ value, options, onChange, placeholder = 'Sele
 
 		document.addEventListener('mousedown', handleClickOutside);
 
-		return () => {
-			document.removeEventListener('mousedown', handleClickOutside);
-		};
+		return () => document.removeEventListener('mousedown', handleClickOutside);
 	}, []);
 
 	const selected = options.find((x) => x.value === value);
 
 	return (
-		<div ref={ref} className={`relative min-w-45 ${className ?? ''}`}>
-			<Button type='button' onClick={() => setOpen((v) => !v)} className='w-full justify-start'>
-				<div className='flex items-center gap-2 overflow-hidden min-w-0'>
+		<div ref={ref} className={`relative min-w-60 ${className ?? ''}`}>
+			<Button type='button' variant='secondary' onClick={() => setOpen((v) => !v)} className='w-full justify-between'>
+				<div className='flex min-w-0 items-center gap-3'>
 					{selected?.color && (
 						<div
+							className='size-3 shrink-0 rounded-full border-2 border-white/80'
 							style={{
-								width: 12,
-								height: 12,
-								border: '2px solid rgb(255 255 255 / 0.75)',
-								borderRadius: 999,
 								background: selected.color,
-								flexShrink: 0,
 							}}
 						/>
 					)}
@@ -60,70 +55,30 @@ export default function Selector({ value, options, onChange, placeholder = 'Sele
 					<span className='truncate'>{selected?.label ?? placeholder}</span>
 				</div>
 
-				<ChevronDown
-					size={16}
-					className='ml-auto shrink-0'
-					style={{
-						transform: open ? 'rotate(180deg)' : undefined,
-						transition: 'transform 0.15s',
-					}}
-				/>
+				<ChevronDown size={16} className={`transition-transform ${open ? 'rotate-180' : ''}`} />
 			</Button>
 
 			{open && (
-				<div
-					className='
-						absolute
-						z-50
-						mt-2
-						w-full
-						overflow-hidden
-						rounded-xl
-						bg-white
-						dark:bg-zinc-900
-						text-zinc-900
-						dark:text-zinc-100
-					'
-					style={{
-						border: '1px solid var(--border)',
-						boxShadow: '0 12px 40px rgba(0,0,0,0.25)',
-					}}>
-					<div
-						style={{
-							maxHeight: 280,
-							overflowY: 'auto',
-						}}>
+				<div className='absolute z-50 mt-2 w-full overflow-hidden rounded-2xl border border-(--border)/10 bg-(--foreground) shadow-xl'>
+					<div className='max-h-72 overflow-y-auto p-2'>
 						{options.map((option) => {
-							const selected = option.value === value;
+							const isSelected = option.value === value;
 
 							return (
 								<Button
 									key={option.value}
 									type='button'
-									variant={selected ? 'primary' : 'secondary'}
+									variant={isSelected ? 'primary' : 'ghost'}
 									onClick={() => {
 										onChange(option.value);
 										setOpen(false);
 									}}
-									className='
-				w-full
-				px-3
-				py-2.5
-				my-1
-				text-left
-				text-sm
-				flex
-				items-center
-				justify-start
-				transition
-			'>
+									className='mb-1 w-full justify-start'>
 									<div className='flex items-center gap-3'>
 										{option.color && (
 											<div
+												className='size-2.5 rounded-full'
 												style={{
-													width: 10,
-													height: 10,
-													borderRadius: 999,
 													background: option.color,
 												}}
 											/>
@@ -135,15 +90,7 @@ export default function Selector({ value, options, onChange, placeholder = 'Sele
 							);
 						})}
 
-						{options.length === 0 && (
-							<div
-								className='px-3 py-3 text-sm'
-								style={{
-									color: 'var(--text-muted)',
-								}}>
-								No options
-							</div>
-						)}
+						{!options.length && <div className='p-3 text-sm text-(--text-muted)'>No options</div>}
 					</div>
 				</div>
 			)}

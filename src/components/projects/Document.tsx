@@ -18,7 +18,7 @@ import { usePermissions } from '@/providers/PermissionsProvider';
 import { useSession } from 'next-auth/react';
 import { useUpload } from '@/providers/UploadProvider';
 
-const DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.xlsm'];
+const DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.xls', '.xlsx', '.xlsm', '.txt'];
 
 export default function Documents({ basePath, client }: { basePath: string; client: string }) {
 	const inputRef = useRef<HTMLInputElement>(null);

@@ -18,9 +18,11 @@ type Props = {
 
 export default function ConfirmDialog({ open, title = 'Are you sure?', description, confirmText = 'Confirm', cancelText = 'Cancel', loading = false, onClose, onConfirm }: Props) {
 	useEffect(() => {
+		if (!open) return;
+
 		const onKeyDown = (e: KeyboardEvent) => {
 			if (e.key === 'Escape') onClose();
-			if (e.key == 'Enter') onConfirm();
+			if (e.key === 'Enter') onConfirm();
 		};
 
 		window.addEventListener('keydown', onKeyDown);
@@ -28,7 +30,7 @@ export default function ConfirmDialog({ open, title = 'Are you sure?', descripti
 		return () => {
 			window.removeEventListener('keydown', onKeyDown);
 		};
-	}, [onClose]);
+	}, [open, onClose, onConfirm]);
 
 	return (
 		<Modal
@@ -47,7 +49,7 @@ export default function ConfirmDialog({ open, title = 'Are you sure?', descripti
 					</Button>
 				</>
 			}>
-			{description && <p className='text-sm text-zinc-500 dark:text-zinc-400'>{description}</p>}
+			{description && <p className='text-sm text-(--text-muted)'>{description}</p>}
 		</Modal>
 	);
 }

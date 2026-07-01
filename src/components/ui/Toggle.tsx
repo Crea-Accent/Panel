@@ -21,40 +21,31 @@ export default function Toggle({ checked, onChange, label, description, disabled
 			disabled={disabled}
 			onClick={() => !disabled && onChange(!checked)}
 			className={`
-				w-full flex items-center justify-between gap-4
-				${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
+				flex w-full items-center justify-between gap-4
+				transition-opacity
+				${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'}
 				${className}
 			`}>
-			<div className='flex flex-col text-left'>
-				{label && <span className='text-sm font-medium'>{label}</span>}
+			<div className='flex flex-1 flex-col text-left'>
+				{label && <span className='font-medium text-(--text)'>{label}</span>}
 
-				{description && (
-					<span
-						className='text-xs'
-						style={{
-							color: 'var(--text-muted)',
-						}}>
-						{description}
-					</span>
-				)}
+				{description && <span className='mt-1 text-sm text-(--text-muted)'>{description}</span>}
 			</div>
 
 			<div
-				className='relative shrink-0 transition-all duration-200'
-				style={{
-					width: 44,
-					height: 24,
-					borderRadius: 999,
-					background: checked ? 'var(--accent)' : 'var(--border)',
-				}}>
+				className={`
+					relative h-7 w-12 shrink-0 rounded-full
+					transition-colors duration-200
+					${checked ? 'bg-(--accent)' : 'bg-(--border)/20'}
+				`}>
 				<div
-					className='absolute top-0.5 transition-all duration-200 bg-white shadow-sm'
-					style={{
-						left: checked ? 22 : 2,
-						width: 20,
-						height: 20,
-						borderRadius: 999,
-					}}
+					className={`
+						absolute top-0.5 left-0.5
+						size-6 rounded-full
+						bg-white shadow
+						transition-transform duration-200
+						${checked ? 'translate-x-5' : ''}
+					`}
 				/>
 			</div>
 		</button>

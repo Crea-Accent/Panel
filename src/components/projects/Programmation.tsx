@@ -256,11 +256,11 @@ export default function Programmation({ basePath, client }: { basePath: string; 
 										<FileList
 											files={[latest]}
 											users={users}
-											// onDownload={download}
-											// onEdit={(file) => {
-											// 	setEditingFile(file);
-											// 	setEditModalOpen(true);
-											// }}
+											onDownload={download}
+											onEdit={(file) => {
+												setEditingFile(file);
+												setEditModalOpen(true);
+											}}
 											permission='projects.write'
 										/>
 

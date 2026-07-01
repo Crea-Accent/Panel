@@ -53,7 +53,7 @@ export default function Sidebar() {
 						className='fixed left-0 right-0 bottom-0 z-40 md:hidden backdrop-blur-md'
 						style={{
 							top: HEADER_HEIGHT,
-							background: 'rgba(0,0,0,0.18)',
+							background: 'rgb(0 0 0 / 0.25)',
 						}}
 					/>
 
@@ -68,11 +68,11 @@ export default function Sidebar() {
 							width: SIDEBAR_WIDTH,
 							top: HEADER_HEIGHT,
 							height: `calc(100dvh - ${HEADER_HEIGHT}px)`,
-							background: 'color-mix(in srgb, var(--foreground) 92%, transparent)',
+							background: 'color-mix(in srgb, var(--foreground) 96%, transparent)',
 						}}>
 						{/* Navigation */}
 						<nav>
-							<ul className='space-y-1.5'>
+							<ul className='space-y-2'>
 								{visibleItems.map((item) => (
 									<NavItem key={item.href} href={item.href} label={item.label} Icon={item.icon} currentPath={pathname} />
 								))}
@@ -83,19 +83,12 @@ export default function Sidebar() {
 
 						{/* Account Section */}
 						<div className='relative pt-6 space-y-3'>
-							<div
-								className='absolute top-0 left-0 right-0 h-px'
-								style={{
-									background: 'linear-gradient(90deg, transparent, color-mix(in srgb, var(--accent) 35%, transparent), transparent)',
-								}}
-							/>
-
 							{session ? (
 								<>
 									{/* User Info */}
 									<div className='flex items-center gap-3 px-2'>
 										<div
-											className='w-10 h-10 rounded-xl flex items-center justify-center font-semibold'
+											className='flex size-12 items-center justify-center rounded-2xl font-semibold'
 											style={{
 												background: 'color-mix(in srgb, var(--accent) 20%, var(--foreground))',
 												color: 'var(--accent)',
@@ -104,8 +97,8 @@ export default function Sidebar() {
 										</div>
 
 										<div className='flex-1 min-w-0'>
-											<p className='text-sm font-medium text-zinc-900 dark:text-zinc-100 truncate'>{session.user?.name ?? 'Account'}</p>
-											<p className='text-xs text-zinc-500 dark:text-zinc-400 truncate'>{session.user?.email}</p>
+											<p className='truncate font-semibold'>{session.user?.name ?? 'Account'}</p>
+											<p className='truncate text-sm text-(--text-muted)'>{session.user?.email}</p>
 										</div>
 									</div>
 
@@ -130,13 +123,6 @@ export default function Sidebar() {
 								</Button>
 							)}
 						</div>
-
-						<div
-							className='absolute top-0 right-0 h-full w-px pointer-events-none'
-							style={{
-								background: 'linear-gradient(to bottom, transparent, color-mix(in srgb, var(--accent) 40%, transparent), transparent)',
-							}}
-						/>
 					</motion.aside>
 				</>
 			)}
@@ -156,21 +142,26 @@ function NavItem({ href, label, Icon, currentPath }: { href: string; label: stri
 						? {
 								background: 'color-mix(in srgb, var(--accent) 15%, var(--foreground))',
 								color: 'var(--accent)',
-								boxShadow: '0 0 20px color-mix(in srgb, var(--accent) 12%, transparent)',
 							}
 						: undefined
 				}
-				className='group flex items-center gap-3 h-10 px-3 rounded-xl text-sm font-medium transition-all duration-200 hover:translate-x-1
-'>
-				{isActive && (
-					<motion.div
-						layoutId='sidebar-active'
-						className='absolute left-0 top-1 bottom-1 w-1 rounded-r-full'
-						style={{
-							background: 'var(--accent)',
-						}}
-					/>
-				)}
+				className='
+		group
+		relative
+		flex
+		h-11
+		items-center
+		gap-3
+		rounded-2xl
+		px-4
+		text-sm
+		font-medium
+		transition-all
+		duration-200
+		hover:bg-(--foreground)
+		hover:translate-x-1
+	'>
+				{isActive && <motion.div layoutId='sidebar-active' className='absolute left-1 top-2 bottom-2 w-1 rounded-full bg-(--accent)' />}
 
 				<Icon
 					size={16}
