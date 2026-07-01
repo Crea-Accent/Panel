@@ -18,7 +18,7 @@ import { usePermissions } from '@/providers/PermissionsProvider';
 import { useSession } from 'next-auth/react';
 import { useUpload } from '@/providers/UploadProvider';
 
-const SCHEMA_EXTENSIONS = ['.pdf', '.schrack', '.trik'];
+const SCHEMA_EXTENSIONS = ['.pdf', '.schrack', '.trik', '.xls', '.xlsx', '.xlsm', '.txt'];
 
 export default function Schemas({ basePath, client }: { basePath: string; client: string }) {
 	const inputRef = useRef<HTMLInputElement>(null);
