@@ -336,9 +336,7 @@ export default function FilesPage() {
 		})();
 	}, [currentPath, query]);
 
-	if (loading) {
-		return <div className='text-sm text-zinc-500 dark:text-zinc-400'>Loading…</div>;
-	}
+	if (loading || loadingFiles) return <div className='text-sm text-zinc-500 dark:text-zinc-400'>Loading…</div>;
 
 	if (!settings?.path) return <div className='text-sm text-zinc-500 dark:text-zinc-400'>No files path configured.</div>;
 
@@ -358,22 +356,25 @@ export default function FilesPage() {
 			<PageHeader icon={<Folder size={20} />} title='Files' description='Browse, upload and manage files' />
 
 			{/* Toolbar */}
-			<Card className='p-4 sticky top-4 z-20 backdrop-blur bg-white/80 dark:bg-zinc-900/80'>
+			<Card className='sticky top-4 z-20 p-4'>
 				<div className='flex flex-wrap items-center justify-between gap-4'>
-					<div className='flex flex-wrap items-center gap-3'>
+					{/* Navigation */}
+					<div className='flex items-center gap-2'>
 						<Button icon={<ChevronLeft size={16} />} onClick={goBack} disabled={!canGoBack} />
 
 						<Button icon={<ChevronRight size={16} />} onClick={goForward} disabled={!canGoForward} />
 
 						<Button icon={<ArrowUp size={16} />} onClick={goUp} disabled={!canGoUp} />
 
-						<div className='w-full md:w-80'>
+						{/* Search */}
+						<div className='flex-1 min-w-200 max-w-250'>
 							<Input icon={<Search size={16} />} placeholder='Search files...' value={query} onChange={(e) => setQuery(e.target.value)} />
 						</div>
 
 						<ViewToggle value={view} onChange={setView} />
 
-						<>
+						{/* Actions */}
+						<div className='flex items-center gap-2'>
 							<Button variant='secondary' icon={<Folder size={16} />} onClick={() => setCreatingFolder(true)}>
 								New Folder
 							</Button>
@@ -381,7 +382,7 @@ export default function FilesPage() {
 							<Button icon={<Upload size={16} />} onClick={() => uploadRef.current?.click()}>
 								Upload
 							</Button>
-						</>
+						</div>
 
 						<input type='file' ref={uploadRef} multiple className='hidden' onChange={upload} />
 					</div>

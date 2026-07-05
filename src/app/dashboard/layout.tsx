@@ -37,7 +37,7 @@ export default async function DashboardLayout({
 			<Sidebar />
 
 			<SidebarLayout>
-				<main className='flex-1 w-full md:px-6 py-12 md:py-15'>{children}</main>
+				<main className='flex-1 w-full md:px-6 py-25 md:py-25'>{children}</main>
 			</SidebarLayout>
 		</>
 	);

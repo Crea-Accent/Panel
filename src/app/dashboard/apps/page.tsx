@@ -1,19 +1,25 @@
 /** @format */
 'use client';
 
-import { Download, DownloadIcon, Package } from 'lucide-react';
+import { Download, DownloadIcon, Package, Search } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import Button from '@/components/ui/Button';
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
+import Input from '@/components/ui/Input';
+import Loading from '@/components/ui/Loading';
 import { NotPermitted } from '@/providers/PermissionsProvider';
 import PageHeader from '@/components/ui/PageHeader';
+import ViewToggle from '@/components/ui/ViewToggle';
+import { formatFileSize } from '@/lib/size';
+import { useSession } from 'next-auth/react';
 
 type FileEntry = {
 	path: string;
 	name: string;
 	type: string;
+	size: number;
 	accessible?: boolean;
 };
 
@@ -24,9 +30,13 @@ type AppsSettings = {
 const INSTALLER_EXTENSIONS = ['.exe', '.msi', '.msix', '.msixbundle', '.appx', '.appxbundle'];
 
 export default function AppsPage() {
+	const { data: session } = useSession();
+
 	const [settings, setSettings] = useState<AppsSettings | null>(null);
 	const [files, setFiles] = useState<FileEntry[]>([]);
 	const [loading, setLoading] = useState(true);
+	const [search, setSearch] = useState('');
+	const [view, setView] = useState<'grid' | 'list'>((session?.user?.preferences?.defaultView as 'grid' | 'list') ?? 'grid');
 
 	useEffect(() => {
 		(async () => {
@@ -63,13 +73,15 @@ export default function AppsPage() {
 		document.body.removeChild(a);
 	}
 
-	if (loading) {
-		return (
-			<Card className='p-8 text-center'>
-				<div className='text-sm text-zinc-500'>Loading installers...</div>
-			</Card>
-		);
-	}
+	const filteredInstallers = useMemo(() => {
+		const query = search.trim().toLowerCase();
+
+		if (!query) return installers;
+
+		return installers.filter((file) => file.name.toLowerCase().includes(query));
+	}, [installers, search]);
+
+	if (loading) return <Loading title='Loading Installers' />;
 
 	return (
 		<NotPermitted permission='applications.read'>
@@ -78,61 +90,71 @@ export default function AppsPage() {
 
 				{!settings?.path && <EmptyState icon={<Package size={24} />} title='Apps path not configured' description='Configure the applications directory in settings.' />}
 
-				<Card className='overflow-hidden'>
-					{installers.length === 0 && (
-						<div className='p-8'>
-							<EmptyState icon={<Package size={24} />} title='No installers found' description={`No installer files were found in ${settings?.path}`} />
-						</div>
-					)}
+				<div className='flex flex-col gap-4 md:flex-row md:items-center md:justify-between'>
+					<div className='flex-1 max-w-md'>
+						<Input icon={<Search size={16} />} placeholder='Search installers...' value={search} onChange={(e) => setSearch(e.target.value)} />
+					</div>
 
-					{installers.map((file, index) => (
-						<div
-							key={file.path}
-							className={`
-				flex
-				items-center
-				justify-between
+					<ViewToggle value={view} onChange={setView} />
+				</div>
 
-				px-5
-				py-4
-
-				hover:bg-zinc-50
-				dark:hover:bg-zinc-800
-
-				transition
-
-				${index !== installers.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''}
-			`}>
-							<div className='flex items-center gap-3 min-w-0'>
-								<div
-									className='
-						h-10 w-10
-						rounded-xl
-
-						bg-(--active-accent)
-						dark:bg-(--accent)/20
-
-						flex
-						items-center
-						justify-center
-						shrink-0
-					'>
-									<Package size={18} className='text-(--accent)' />
-								</div>
-
-								<div className='min-w-0'>
-									<p className='font-medium truncate'>{file.name}</p>
-
-									<p className='text-xs text-zinc-500 truncate'>{file.path}</p>
-								</div>
+				{view === 'list' ? (
+					<Card className='overflow-hidden'>
+						{filteredInstallers.length === 0 ? (
+							<div className='p-10'>
+								<EmptyState icon={<Package size={24} />} title='No installers found' description={search ? 'No installers match your search.' : `No installer files were found in ${settings?.path}`} />
 							</div>
+						) : (
+							filteredInstallers.map((file, index) => (
+								<div
+									key={file.path}
+									className={`
+						flex items-center justify-between
+						px-5 py-4
+						hover:bg-(--background)
+						hover:translate-x-1
+						transition-all
+						${index !== filteredInstallers.length - 1 ? 'border-b border-(--border)/10' : ''}
+					`}>
+									<div className='flex items-center gap-3 min-w-0'>
+										<div className='h-10 w-10 rounded-xl bg-(--accent)/15 flex items-center justify-center shrink-0'>
+											<Package size={18} className='text-(--accent)' />
+										</div>
 
-							<Button size='sm' icon={<Download size={16} />} onClick={() => download(file.path)}>
-								<DownloadIcon size={14} />
-							</Button>
-						</div>
-					))}
-				</Card>
+										<div className='min-w-0'>
+											<p className='font-medium truncate'>{file.name}</p>
+											<p className='text-xs text-(--text-muted)'>{formatFileSize(file.size)}</p>
+										</div>
+									</div>
+
+									<Button size='sm' icon={<Download size={16} />} onClick={() => download(file.path)} />
+								</div>
+							))
+						)}
+					</Card>
+				) : (
+					<div className='grid gap-4 sm:grid-cols-2 xl:grid-cols-3'>
+						{filteredInstallers.map((file) => (
+							<Card key={file.path} className='p-5 flex flex-col gap-5'>
+								<div className='flex items-center gap-3'>
+									<div className='h-12 w-12 rounded-xl bg-(--accent)/15 flex items-center justify-center shrink-0'>
+										<Package size={20} className='text-(--accent)' />
+									</div>
+
+									<div className='min-w-0'>
+										<div className='font-medium truncate'>{file.name}</div>
+
+										<div className='text-xs text-(--text-muted)'>{formatFileSize(file.size)}</div>
+									</div>
+								</div>
+
+								<Button icon={<Download size={16} />} onClick={() => download(file.path)}>
+									Download
+								</Button>
+							</Card>
+						))}
+					</div>
+				)}
 			</div>
 		</NotPermitted>
 	);

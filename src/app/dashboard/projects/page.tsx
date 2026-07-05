@@ -231,15 +231,13 @@ export default function Page() {
 						</Button>
 					)}
 
-					<div className='flex-1 min-w-75'>
+					<div className='flex-1 min-w-80'>
 						<Input icon={<Search size={16} />} placeholder='Search projects...' value={query} onChange={(e) => setQuery(e.target.value)} />
 					</div>
 
 					<Button variant='secondary' icon={sortAsc ? <ArrowUpAZ size={16} /> : <ArrowDownAZ size={16} />} onClick={() => setSortAsc(!sortAsc)} />
 
-					<div className='flex overflow-hidden rounded-lg'>
-						<ViewToggle value={view} onChange={setView} />
-					</div>
+					<ViewToggle value={view} onChange={setView} />
 
 					<div className='flex flex-wrap gap-2'>
 						<Selector
@@ -273,17 +271,14 @@ export default function Page() {
 				<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
 					{view === 'list' ? (
 						<Card className='overflow-hidden'>
-							<div className='grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] px-5 h-10 items-center text-xs font-medium text-zinc-500 border-b border-zinc-200 dark:border-zinc-800'>
+							<div className='grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] px-5 h-11 items-center text-xs font-semibold text-(--text-muted) border-b border-(--border)/10'>
 								<button onClick={() => toggleSort('name')} className='text-left'>
 									Name
 								</button>
-
 								<span className='text-center md:text-left'>Label</span>
-
 								<button onClick={() => toggleSort('updated')} className='hidden md:block text-left'>
 									Updated
 								</button>
-
 								<span className='text-right'>Actions</span>
 							</div>
 
@@ -291,19 +286,19 @@ export default function Page() {
 								<motion.div
 									layout
 									key={p.path}
-									className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-14 px-5 text-sm hover:bg-zinc-50 dark:hover:bg-zinc-800 ${index !== filteredProjects.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''}`}>
+									className={`grid grid-cols-[1fr_24px_80px] md:grid-cols-[1fr_140px_120px_100px] items-center h-16 px-5 text-sm hover:bg-(--background) transition-colors ${index !== filteredProjects.length - 1 ? 'border-b border-(--border)/10' : ''}`}>
 									<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} className='flex items-center gap-3 min-w-0'>
 										<div
 											className='w-7 h-7 rounded-lg flex items-center justify-center text-white text-xs font-semibold shrink-0'
 											style={{
-												background: p.label ? labelColor(p.label) : '#6b7280',
+												background: p.label ? labelColor(p.label) : 'var(--accent)',
 											}}>
 											{p.name.slice(0, 2).toUpperCase()}
 										</div>
 										<div className='min-w-0'>
 											<div className='truncate font-medium'>{p.name}</div>
 
-											<div className='truncate text-xs text-zinc-500 h-4'>{p.address?.city || ''}</div>
+											<div className='truncate text-xs text-(--text-muted) h-4'>{p.address?.city || ''}</div>
 										</div>
 									</Link>
 
@@ -324,7 +319,7 @@ export default function Page() {
 									</div>
 
 									{/* Updated */}
-									<div className='hidden md:block text-xs text-zinc-500'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '—'}</div>
+									<div className='hidden md:block text-xs text-(--text-muted)'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : '—'}</div>
 									{/* Actions */}
 									<div className='flex justify-end gap-1'>
 										{p.address?.city && <Button size='sm' variant='ghost' icon={<MapPin size={16} />} onClick={() => openMaps(p)} />}
@@ -339,18 +334,18 @@ export default function Page() {
 							{filteredProjects.map((p, i) => (
 								<motion.div layout key={p.path} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}>
 									<Link href={`/dashboard/projects/${encodeURIComponent(p.name)}`} key={i}>
-										<Card className='p-5 hover:shadow-lg transition min-h-40'>
+										<Card className='p-5 min-h-40 transition-all hover:-translate-y-0.5 hover:border-(--accent)'>
 											<div className='flex items-start justify-between mb-4'>
 												<div>
 													<div className='font-semibold'>{p.name || ''}</div>
 
-													<div className='text-sm text-zinc-500'>{p.address?.city || ''}</div>
+													<div className='text-sm text-(--text-muted)'>{p.address?.city || ''}</div>
 												</div>
 
-												{p.label ? <Badge color={labelColor(p.label)}>{p.label}</Badge> : <></>}
+												{p.label && <Badge color={labelColor(p.label)}>{p.label}</Badge>}
 											</div>
 
-											<div className='text-xs text-zinc-500 mb-4'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : 'No updates'}</div>
+											<div className='text-xs text-(--text-muted) mb-4'>{p.updatedAt ? new Date(p.updatedAt).toLocaleDateString() : 'No updates'}</div>
 
 											<div className='flex gap-2 justify-end'>
 												{has('projects.write') && <Button size='sm' variant='ghost' icon={<Pencil size={16} />} onClick={() => renameProject(p.name)} />}

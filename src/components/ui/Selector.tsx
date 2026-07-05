@@ -41,7 +41,7 @@ export default function Selector({ value, options, onChange, placeholder = 'Sele
 
 	return (
 		<div ref={ref} className={`relative min-w-60 ${className ?? ''}`}>
-			<Button type='button' variant='secondary' onClick={() => setOpen((v) => !v)} className='w-full justify-between'>
+			<Button type='button' variant='secondary' onClick={() => setOpen((v) => !v)} className='w-full justify-between flex'>
 				<div className='flex min-w-0 items-center gap-3'>
 					{selected?.color && (
 						<div

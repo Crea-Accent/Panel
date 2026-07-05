@@ -354,21 +354,30 @@ export default function Canbus({ client, basePath }: Props) {
 
 			const files = await fetch(`/api/files?view=${encodeURIComponent(programmationPath)}&recursive=1`).then((r) => r.json());
 
-			const duoFiles = files
-				.filter((file: any) => file.type === 'file' && file.name.toLowerCase().endsWith('.duo'))
-				.sort((a: any, b: any) => new Date(b.modified).getTime() - new Date(a.modified).getTime());
+			// Find every folder that contains a .duo file
+			const projectFolders: Array<string> = Array.from(
+				new Set(files.filter((f: any) => f.type === 'file' && f.name.toLowerCase().endsWith('.duo')).map((f: any) => f.path.split(/[\\/]/).slice(0, -1).join('/')))
+			);
 
-			if (!duoFiles.length) {
+			// Pick the folder whose name ends with YYYYMMDD
+			const latestFolder = projectFolders
+				.map((folder: string) => {
+					const folderName = folder.split(/[\\/]/).pop() ?? '';
+					const [, date] = folderName.split('__');
+
+					return {
+						folder,
+						date: date ?? '00000000',
+					};
+				})
+				.sort((a, b) => b.date.localeCompare(a.date))[0]?.folder;
+
+			if (!latestFolder) {
 				setFoundModules([]);
 				setAvailableModules([]);
 				setMetadata(metadata);
-
 				return;
 			}
-
-			const latest = duoFiles[0];
-
-			const latestFolder = latest.path.split('\\').slice(0, -1).join('/');
 
 			const nodeDatabase = await fetch(`/api/files/download?path=${encodeURIComponent(`${latestFolder}/Config/nodedatabase.cache.json`)}`).then((r) => r.json());
 

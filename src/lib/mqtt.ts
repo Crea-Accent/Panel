@@ -14,7 +14,7 @@ if (!global.mqttClient) {
 	global.mqttClient = client;
 
 	client.on('connect', () => {
-		console.log('[MQTT] Connected');
+		console.info('[MQTT] Connected');
 
 		client.subscribe('servicelocation/f70b70fc-f12b-4ddc-acc0-25e14eeb2ab5/realtime', (err) => {
 			if (err) {
@@ -22,7 +22,7 @@ if (!global.mqttClient) {
 				return;
 			}
 
-			console.log('[MQTT] Subscribed');
+			console.info('[MQTT] Subscribed');
 		});
 	});
 

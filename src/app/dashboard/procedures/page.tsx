@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Card from '@/components/ui/Card';
 import EmptyState from '@/components/ui/EmptyState';
 import Input from '@/components/ui/Input';
+import Loading from '@/components/ui/Loading';
 import { NotPermitted } from '@/providers/PermissionsProvider';
 import PageHeader from '@/components/ui/PageHeader';
 
@@ -97,6 +98,8 @@ export default function ProceduresPage() {
 		window.open(`/api/files/render?path=${encodeURIComponent(path)}`, '_blank');
 	};
 
+	if (loading) return <Loading title='Loading Procedures' />;
+
 	return (
 		<NotPermitted permission='projects.read'>
 			<div className='space-y-6'>
@@ -106,71 +109,33 @@ export default function ProceduresPage() {
 					<Input icon={<Search size={16} />} value={search} onChange={(e) => setSearch(e.target.value)} placeholder='Search procedures...' />
 				</Card>
 
-				{loading && (
-					<Card className='p-8 text-center'>
-						<div className='text-sm text-zinc-500'>Loading procedures...</div>
-					</Card>
-				)}
-
 				{!loading && filteredCategories.length === 0 && <EmptyState icon={<FileText size={24} />} title='No procedures found' description='Try adjusting your search.' />}
 
 				<div className='space-y-6'>
 					{filteredCategories.map((category) => (
 						<Card key={category.name} className='overflow-hidden'>
-							<div className='px-5 py-4 border-b border-zinc-200 dark:border-zinc-800'>
+							<div className='px-5 py-4 border-b border-(--border)/10 bg-(--foreground)'>
 								<div className='flex items-center justify-between'>
 									<h2 className='font-semibold'>{category.name}</h2>
 
-									<span className='text-xs text-zinc-500'>
+									<span className='text-xs text-(--text-muted)'>
 										{category.files.length} {category.files.length === 1 ? 'procedure' : 'procedures'}
 									</span>
 								</div>
 							</div>
 
-							<div>
+							<div className='p-2'>
 								{category.files.map((file, index) => (
 									<button
 										key={file.path}
 										onClick={() => openPdf(file.path)}
-										className={`
-									w-full
-									flex
-									items-center
-									gap-3
-									
-									px-5
-									py-4
-									
-									text-left
-									
-									hover:bg-zinc-50
-									dark:hover:bg-zinc-800
-									
-									transition
-									
-									${index !== category.files.length - 1 ? 'border-b border-zinc-200 dark:border-zinc-800' : ''}
-									`}>
-										<div
-											className='
-										h-9 w-9
-										shrink-0
-										
-										rounded-lg
-										
-										bg-(--active-accent)
-										dark:bg-(--accent)/20
-										
-										flex
-										items-center
-										justify-center
-										'>
+										className={`w-full flex items-center gap-3 px-5 py-4 text-left hover:bg-(--background) transition-colors ${index !== category.files.length - 1 ? 'border-b border-(--border)/10' : ''}`}>
+										<div className='h-9 w-9 shrink-0 rounded-lg bg-(--accent)/15 flex items-center justify-center'>
 											<FileText size={16} className='text-(--accent)' />
 										</div>
 
 										<div className='min-w-0 flex-1'>
 											<p className='truncate font-medium'>{file.name.replace(/\.pdf$/i, '')}</p>
-
-											<p className='text-xs text-zinc-500'>PDF Document</p>
 										</div>
 									</button>
 								))}

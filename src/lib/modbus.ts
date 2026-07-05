@@ -55,7 +55,7 @@ if (!global.modbusStarted) {
 
 			client.setTimeout(5000);
 
-			console.log('[Modbus] Connected');
+			console.info('[Modbus] Connected');
 
 			const poll = async () => {
 				try {

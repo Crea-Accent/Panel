@@ -16,6 +16,7 @@ import Programmation from '@/components/projects/Programmation';
 import Schemas from '@/components/projects/Schema';
 import Selector from '@/components/ui/Selector';
 import Solar from '@/components/projects/Solar';
+import Tabs from '@/components/ui/Tabs';
 import { motion } from 'framer-motion';
 
 type Tab = 'info' | 'schemas' | 'documents' | 'programmation' | 'pictures' | 'solar' | 'canbus';
@@ -52,13 +53,13 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 	const [metadataActions, setMetadataActions] = useState<MetadataActions | null>(null);
 
 	const tabs = [
-		{ key: 'info', label: 'Info', icon: Folder },
-		{ key: 'solar', label: 'Solar', icon: Sun },
-		{ key: 'schemas', label: 'Schemas', icon: FileText },
-		{ key: 'documents', label: 'Documents', icon: File },
-		{ key: 'programmation', label: 'Programmation', icon: Code },
-		{ key: 'canbus', label: 'Canbus', icon: Cable },
-		{ key: 'pictures', label: 'Pictures', icon: ImageIcon },
+		{ key: 'info', label: 'Info', icon: <Folder /> },
+		{ key: 'solar', label: 'Solar', icon: <Sun /> },
+		{ key: 'schemas', label: 'Schemas', icon: <FileText /> },
+		{ key: 'documents', label: 'Documents', icon: <File /> },
+		{ key: 'programmation', label: 'Programmation', icon: <Code /> },
+		{ key: 'canbus', label: 'Canbus', icon: <Cable /> },
+		{ key: 'pictures', label: 'Pictures', icon: <ImageIcon /> },
 	] as const;
 
 	const isAllowed = has('projects.write');
@@ -104,39 +105,20 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 
 				{/* Navigation + Actions */}
 
-				<div className='flex flex-col sm:flex-row sm:items-center sm:justify-between	gap-2 p-2 rounded-3xl bg-(--foreground)'>
-					{/* Mobile Navigation */}
-
-					<div className='sm:hidden w-full'>
-						<Selector
-							className='w-full'
-							value={tab}
-							options={tabs.map((t) => ({
-								label: t.label,
-								value: t.key,
-							}))}
-							onChange={(value) => setTab(value as Tab)}
-						/>
-					</div>
-
-					{/* Desktop Tabs */}
-
-					<div className='hidden sm:flex gap-1'>
-						{tabs.map((t) => {
-							const active = tab === t.key;
-							const Icon = t.icon;
-
-							return (
-								<Button key={t.key} icon={<Icon size={16} />} onClick={() => setTab(t.key)} variant={active ? 'primary' : 'secondary'}>
-									{t.label}
-								</Button>
-							);
-						})}
-					</div>
+				<div className='flex flex-col lg:flex-row lg:items-center gap-3 p-2 rounded-3xl bg-(--foreground)'>
+					<Tabs
+						value={tab}
+						onChange={setTab}
+						tabs={tabs.map((t) => ({
+							id: t.key,
+							icon: t.icon,
+							label: t.label,
+						}))}
+					/>
 
 					{/* Actions */}
 
-					<div className='flex gap-1 w-full sm:w-auto'>
+					<div className='flex flex-wrap gap-2 lg:ml-auto'>
 						<Button
 							icon={metadataActions?.saved ? <Check size={16} /> : <Save size={16} />}
 							disabled={!metadataActions?.hasChanges || metadataActions?.saving || !isAllowed}
@@ -158,7 +140,7 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 						</Button>
 
 						<Selector
-							className='flex-1 sm:flex-none min-w-45'
+							className='min-w-52'
 							value={metadataActions?.label ?? ''}
 							options={[
 								{

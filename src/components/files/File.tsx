@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import FileIcon from './FileIcon';
 import FileViewer from './FileViewer';
 import { User } from 'next-auth'; // adjust import
+import { formatFileSize } from '@/lib/size';
 import { usePermissions } from '@/providers/PermissionsProvider';
 import { useState } from 'react';
 
@@ -15,6 +16,7 @@ export type FileEntry = {
 	path: string;
 	type?: string;
 	thumbnail?: string;
+	size?: number;
 };
 
 type FileActionHandlers = {
@@ -99,7 +101,7 @@ export default function File({
 
 	const formattedComment = rawComment.replaceAll('__', ' ');
 
-	const formattedDate = rawDate.length === 8 ? `${rawDate.slice(4, 8)}/${rawDate.slice(2, 4)}/${rawDate.slice(0, 2)}` : rawDate;
+	const formattedDate = rawDate.length === 8 ? [rawDate.slice(0, 4), rawDate.slice(4, 6), rawDate.slice(6, 8)].reverse().join('/') : rawDate;
 
 	const collaborators = rawCollaborators
 		.split('-')
@@ -137,8 +139,6 @@ export default function File({
 		if (!mode) return;
 
 		event.preventDefault();
-
-		console.log('context menu', file);
 	}
 
 	if (isImage && !compact)
@@ -218,6 +218,13 @@ export default function File({
 								</div>
 							)}
 
+							{file.size != null && (
+								<div className='flex items-center gap-2'>
+									<Download size={14} />
+									<span>{formatFileSize(file.size)}</span>
+								</div>
+							)}
+
 							{!!collaborators.length && <span>{collaborators.join(', ')}</span>}
 						</div>
 
@@ -285,6 +292,13 @@ export default function File({
 					<div className='flex items-center gap-2'>
 						<FileType size={14} />
 						<span>{extension || '-'}</span>
+					</div>
+				)}
+
+				{file.size != null && (
+					<div className='flex items-center gap-2'>
+						<Download size={14} />
+						<span>{formatFileSize(file.size)}</span>
 					</div>
 				)}
 

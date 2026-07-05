@@ -13,6 +13,7 @@ type Project = {
 	name: string;
 	label?: string;
 	color?: string;
+	distance: number;
 	lat: number;
 	lng: number;
 };
@@ -78,19 +79,19 @@ export function ProjectPromptProvider({ children }: { children: React.ReactNode 
 	}, []);
 
 	const nearbyProjects = useMemo(() => {
-		if (!location) {
-			return [];
-		}
+		if (!location) return [];
 
-		return projects.filter((project) => {
-			if (!project.lat || !project.lng) {
-				return false;
-			}
+		return projects
+			.filter((project) => {
+				if (!project.lat || !project.lng) return false;
 
-			const distance = distanceMeters(location.lat, location.lng, project.lat, project.lng);
+				const distance = distanceMeters(location.lat, location.lng, project.lat, project.lng);
 
-			return distance <= NEARBY_DISTANCE_METERS;
-		});
+				project.distance = distance;
+
+				return distance <= NEARBY_DISTANCE_METERS;
+			})
+			.sort((a, b) => a.distance - b.distance);
 	}, [projects, location]);
 
 	useEffect(() => {
@@ -140,38 +141,44 @@ export function ProjectPromptProvider({ children }: { children: React.ReactNode 
 		<ProjectPromptContext.Provider value={{}}>
 			{children}
 
-			{session && has('projects.read') && (
+			{session && session?.user.preferences?.projectPrompts && has('projects.read') && (
 				<Modal open={open} title={nearbyProjects.length === 1 ? 'Nearby Project Found' : 'Nearby Projects Found'} onClose={dismiss} size='md'>
 					<div className='space-y-4'>
-						<div className='text-sm text-zinc-500'>{nearbyProjects.length === 1 ? 'You appear to be at a project location.' : 'You appear to be near multiple project locations.'}</div>
+						<div className='text-sm text-(--text-muted)'>{nearbyProjects.length === 1 ? 'You appear to be at a project location.' : 'You appear to be near multiple project locations.'}</div>
 
-						<div className='space-y-2 max-h-60 overflow-x-auto'>
+						<div className='space-y-3 max-h-72 overflow-y-auto pr-1 pt-2'>
 							{nearbyProjects.map((project) => (
 								<button
 									key={project.name}
 									onClick={() => openProject(project)}
-									className='w-full text-left rounded-xl border border-zinc-200 dark:border-zinc-800 p-4 hover:bg-zinc-50 dark:hover:bg-zinc-900 transition'>
+									className='w-full rounded-2xl border border-(--border)/10 bg-(--foreground) p-4 text-left transition-all hover:border-(--accent) hover:-translate-y-0.5'>
 									<div className='flex items-center gap-3'>
 										<div
+											className='h-3 w-3 shrink-0 rounded-full'
 											style={{
-												width: 12,
-												height: 12,
-												borderRadius: 999,
 												background: project.color ?? 'var(--accent)',
 											}}
 										/>
 
-										<div>
-											<div className='font-medium'>{project.name}</div>
+										<div className='min-w-0'>
+											<div className='truncate font-medium'>{project.name}</div>
 
-											{project.label && <div className='text-xs text-zinc-500'>{project.label}</div>}
+											{project.label && (
+												<div className='flex gap-1 items-center text-(--text-muted) text-xs'>
+													<div className=''>{project.label}</div>•<div className=''>{Math.round(project.distance)}m</div>
+												</div>
+											)}
 										</div>
 									</div>
 								</button>
 							))}
 						</div>
 
-						<div className='flex justify-end'>
+						<div className='flex justify-between items-center pt-2'>
+							<span className='text-xs text-(--text-muted)'>
+								{nearbyProjects.length} nearby project{nearbyProjects.length === 1 ? '' : 's'}
+							</span>
+
 							<Button variant='secondary' onClick={dismiss}>
 								Dismiss
 							</Button>
