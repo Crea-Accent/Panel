@@ -2,96 +2,12 @@
 <svg viewBox="0 0 1024 768" version="1.1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" stroke-linecap="round" stroke-linejoin="round" fill-rule="evenodd" xml:space="preserve" style="background-color:transparent;" >
 <defs >
 <style >g[clip-path] > * {vector-effect: non-scaling-stroke;}</style>
-<clipPath id="clipId0" >
-<path d="M0,768 1024,768 1024,0 0,0 z" />
-</clipPath>
-<filter id="A" >
-<feColorMatrix type="matrix" values="
-1 0 0 0 0
-0 1 0 0 0
-0 0 1 0 0
-1 1 1 1 0
-0 0 0 0 1
-" />
-</filter>
-<filter id="colorAdd" >
-<feComposite in="SourceGraphic" in2="BackgroundImage" operator="arithmetic" k1="0" k2="1" k3="1" k4="0" />
-</filter>
-<linearGradient id="g_0" gradientUnits="userSpaceOnUse" x1="211.733" y1="410.348" x2="197.552" y2="410.348" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_1" gradientUnits="userSpaceOnUse" x1="211.733" y1="284.858" x2="197.731" y2="286.44" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_2" gradientUnits="userSpaceOnUse" x1="237.564" y1="410.348" x2="211.733" y2="410.348" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_3" gradientUnits="userSpaceOnUse" x1="237.564" y1="404.46" x2="236.288" y2="410.057" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_4" gradientUnits="userSpaceOnUse" x1="237.564" y1="357.401" x2="211.733" y2="357.401" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_5" gradientUnits="userSpaceOnUse" x1="237.564" y1="284.858" x2="214.639" y2="293.02" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_6" gradientUnits="userSpaceOnUse" x1="323.043" y1="410.348" x2="237.564" y2="410.348" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_7" gradientUnits="userSpaceOnUse" x1="323.043" y1="404.46" x2="322.639" y2="410.32" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_8" gradientUnits="userSpaceOnUse" x1="323.043" y1="362.214" x2="237.564" y2="362.214" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_9" gradientUnits="userSpaceOnUse" x1="323.043" y1="357.401" x2="322.772" y2="362.199" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_10" gradientUnits="userSpaceOnUse" x1="323.043" y1="315.155" x2="237.564" y2="315.155" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_11" gradientUnits="userSpaceOnUse" x1="323.043" y1="284.858" x2="313.502" y2="311.774" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_12" gradientUnits="userSpaceOnUse" x1="336.91" y1="404.46" x2="323.043" y2="404.46" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_13" gradientUnits="userSpaceOnUse" x1="336.91" y1="362.214" x2="324.391" y2="366.324" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_14" gradientUnits="userSpaceOnUse" x1="336.91" y1="357.401" x2="323.043" y2="357.401" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_15" gradientUnits="userSpaceOnUse" x1="336.91" y1="315.155" x2="324.391" y2="319.265" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_16" gradientUnits="userSpaceOnUse" x1="373.824" y1="404.46" x2="336.91" y2="404.46" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
-<linearGradient id="g_17" gradientUnits="userSpaceOnUse" x1="373.824" y1="357.401" x2="350.972" y2="375.327" >
-<stop offset="0" stop-color="rgb(255,0,0)" stop-opacity="1" />
-<stop offset="1" stop-color="rgb(255,0,0)" stop-opacity="0" />
-</linearGradient>
 </defs>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" />
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="rgb(237,31,36)" stroke="rgb(237,31,36)" stroke-width="1px" >
+<path d="M197.552,410.348 197.552,284.857 323.043,410.348 z" />
+<path d="M323.043,410.348 197.552,284.857 323.043,284.857 z" />
+</g>
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="10.0392,101.647 1013.96,101.647 " />
 <polyline points="1013.96,101.647 1013.96,195.765 " />
 <polyline points="1013.96,195.765 10.0392,195.765 " />
@@ -121,37 +37,18 @@
 <circle cx="45.5948" cy="496.941" r="9.41176" />
 <polyline points="37.8604,502.304 53.3291,491.578 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(12.549 0 -0 12.549 22.1724 462.048)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >OUT</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="72.0622,359.754 72.0622,312.695 " />
 <polyline points="72.0622,312.695 147.356,312.695 " />
 <polyline points="147.356,312.695 147.356,406.813 " />
 <polyline points="147.356,406.813 72.0622,406.813 " />
 <polyline points="72.0622,406.813 72.0622,359.754 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,0,0)" stroke="rgb(255,0,0)" stroke-width="1px" >
-<path fill="url(#g_0)" d="M197.552,410.348 197.552,284.858 211.733,410.348 z" />
-<path fill="url(#g_1)" d="M211.733,410.348 197.552,284.858 211.733,284.858 z" />
-<path fill="url(#g_2)" d="M211.733,410.348 211.733,404.46 237.564,410.348 z" />
-<path fill="url(#g_3)" d="M237.564,410.348 211.733,404.46 237.564,404.46 z" />
-<path fill="url(#g_4)" d="M211.733,357.401 211.733,284.858 237.564,357.401 z" />
-<path fill="url(#g_5)" d="M237.564,357.401 211.733,284.858 237.564,284.858 z" />
-<path fill="url(#g_6)" d="M237.564,410.348 237.564,404.46 323.043,410.348 z" />
-<path fill="url(#g_7)" d="M323.043,410.348 237.564,404.46 323.043,404.46 z" />
-<path fill="url(#g_8)" d="M237.564,362.214 237.564,357.401 323.043,362.214 z" />
-<path fill="url(#g_9)" d="M323.043,362.214 237.564,357.401 323.043,357.401 z" />
-<path fill="url(#g_10)" d="M237.564,315.155 237.564,284.858 323.043,315.155 z" />
-<path fill="url(#g_11)" d="M323.043,315.155 237.564,284.858 323.043,284.858 z" />
-<path fill="url(#g_12)" d="M323.043,404.46 323.043,362.214 336.91,404.46 z" />
-<path fill="url(#g_13)" d="M336.91,404.46 323.043,362.214 336.91,362.214 z" />
-<path fill="url(#g_14)" d="M323.043,357.401 323.043,315.155 336.91,357.401 z" />
-<path fill="url(#g_15)" d="M336.91,357.401 323.043,315.155 336.91,315.155 z" />
-<path fill="url(#g_16)" d="M336.91,404.46 336.91,357.401 373.824,404.46 z" />
-<path fill="url(#g_17)" d="M373.824,404.46 336.91,357.401 373.824,357.401 z" />
-</g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="197.552,410.348 197.552,284.857 " />
 <polyline points="197.552,284.857 323.043,284.857 " />
 <polyline points="323.043,284.857 323.043,410.348 " />
@@ -163,19 +60,19 @@
 <polyline points="982.588,406.813 982.588,359.754 " />
 <circle cx="107.767" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 123.124 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >1</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="843.874" cy="359.754" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(12.549 0 -0 12.549 392.941 331.388)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >RELAY NO CONTACT MODULE</text>
 <text transform="matrix(12.549 0 -0 12.549 392.69 351.504)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >INPUT 200-240 VAC 50 Hz</text>
 <text transform="matrix(12.549 0 -0 12.549 393.016 371.62)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >MAX. LOAD 12 X10 A</text>
 <text transform="matrix(18.8235 0 -0 18.8235 674.988 374.436)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >CE</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="383.799,310.433 383.799,381.72 " />
 <polyline points="383.799,381.72 718.331,381.72 " />
 <polyline points="718.331,381.72 718.331,319.938 " />
@@ -274,7 +171,7 @@
 <circle cx="978.405" cy="496.941" r="9.41176" />
 <polyline points="970.671,502.304 986.14,491.578 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(12.549 0 -0 12.549 77.4462 483.086)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >L</text>
 <text transform="matrix(12.549 0 -0 12.549 40.153 483.086)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >N</text>
 <text transform="matrix(12.549 0 -0 12.549 152.74 483.086)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >L</text>
@@ -301,61 +198,61 @@
 <text transform="matrix(12.549 0 -0 12.549 935.316 483.086)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >N</text>
 <text transform="matrix(12.549 0 -0 12.549 21.3818 318.714)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >IN</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="263.901" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 235.16 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >3</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="154.25" cy="433.956" r="9.41176" />
 <circle cx="217.418" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 78.41 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >0</text>
 <text transform="matrix(18.8235 0 -0 18.8235 188.381 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >2</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="442.407" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 459.534 443.427)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >5</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="598.541" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 569.669 443.427)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >7</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="488.891" cy="433.956" r="9.41176" />
 <circle cx="552.058" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 413.803 443.427)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >4</text>
 <text transform="matrix(18.8235 0 -0 18.8235 522.814 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >6</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="777.048" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 794.174 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >9</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="933.182" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 900.072 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >11</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="823.531" cy="433.956" r="9.41176" />
 <circle cx="886.699" cy="433.956" r="9.41176" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(18.8235 0 -0 18.8235 747.71 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >8</text>
 <text transform="matrix(18.8235 0 -0 18.8235 846.405 443.502)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >10</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <circle cx="83.2418" cy="148.706" r="12.549" />
 <circle cx="45.5948" cy="148.706" r="12.549" />
 <circle cx="45.5948" cy="271.059" r="9.41176" />
@@ -429,7 +326,7 @@
 <circle cx="978.405" cy="271.059" r="9.41176" />
 <polyline points="970.671,265.696 986.14,276.422 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(255,255,255)" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <text transform="matrix(12.549 0 -0 12.549 77.4462 297.463)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >L</text>
 <text transform="matrix(12.549 0 -0 12.549 40.153 297.463)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >N</text>
 <text transform="matrix(12.549 0 -0 12.549 152.74 297.463)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >L</text>
@@ -451,7 +348,7 @@
 <text transform="matrix(12.549 0 -0 12.549 972.61 297.463)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >L</text>
 <text transform="matrix(12.549 0 -0 12.549 935.316 297.463)" font-family="Arial,&apos;sans-serif&apos;" font-size="1.39636" >N</text>
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="45.5948,67.1373 45.5948,148.706 " />
 <polyline points="83.2418,67.1373 83.2418,148.706 " />
 <polyline points="120.889,67.1373 120.889,148.706 " />
@@ -477,10 +374,10 @@
 <polyline points="940.758,67.1373 940.758,148.706 " />
 <polyline points="978.405,67.1373 978.405,148.706 " />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="211.812,289.1 211.821,351.05 211.825,358.794 212.322,362.168 216.206,362.16 219.686,362.583 219.686,364.53 219.686,365.503 219.11,365.903 211.826,366.401 211.813,381.885 211.812,385.756 211.829,387.814 212.364,391.358 213.592,393.893 215.048,395.282 219.002,396.272 219.601,396.704 219.596,397.754 219.597,399.855 219.593,400.906 218.885,401.34 215.168,400.609 212.491,399.03 210.683,396.977 208.82,392.027 208.411,386.356 208.416,382.306 208.422,374.271 208.416,366.242 205.03,365.615 205.03,363.609 205.03,362.606 205.596,362.165 207.596,362.163 208.416,361.984 208.416,360.993 208.419,357.031 208.422,349.107 208.417,317.403 208.415,301.546 208.425,293.624 208.398,289.663 208.764,289.051 209.761,289.055 211.76,289.06 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M205.03,365.912 205.03,362.17 205.455,365.912 z" />
 <path d="M205.455,365.912 205.03,362.17 205.455,362.165 z" />
 <path d="M205.455,365.912 205.455,362.165 205.773,365.912 z" />
@@ -1130,10 +1027,10 @@
 <path d="M219.604,365.901 219.604,362.17 219.686,365.901 z" />
 <path d="M219.686,365.901 219.604,362.17 219.686,362.17 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="269.679,313.325 272.358,313.325 273.036,313.988 273.037,315.327 273.041,320.685 273.038,331.4 273.035,342.113 274.487,344.84 278.411,347.571 281.963,348.068 283.374,347.177 284.119,345.535 284.482,341.137 284.474,338.142 284.476,332.945 284.464,322.546 284.471,317.347 284.48,314.749 284.486,313.45 285.656,313.331 287.831,313.736 287.838,316.334 287.844,321.529 287.831,342.638 286.291,349.675 284.709,351.679 283.153,352.495 278.653,352.146 275,349.578 273.586,347.727 273.154,347.012 273.041,347.275 272.892,352.351 270.27,352.357 269.666,351.648 269.667,350.326 269.671,345.041 269.673,334.468 269.679,313.325 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M269.669,352.363 269.666,352.363 269.669,349.111 z" />
 <path d="M269.669,352.363 269.669,349.111 269.67,352.363 z" />
 <path d="M269.67,352.363 269.669,349.111 269.67,346.709 z" />
@@ -1684,11 +1581,11 @@
 <path d="M287.847,342.072 287.844,340.721 287.847,340.888 z" />
 <path d="M287.847,342.072 287.847,340.888 287.854,341.209 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="314.171,324.844 312.714,319.814 309.835,314.721 307.005,312.346 304.394,311.552 301.374,312.149 298.612,314.28 295.788,318.731 294.657,321.719 293.591,326.388 293.162,331.37 293.242,334.855 293.973,340.031 295.525,345.04 298.208,349.609 300.698,351.856 304.079,352.822 307.58,351.67 310.264,349.061 312.87,344.119 314.261,338.993 314.924,331.704 314.171,324.844 " />
 <polyline points="311.131,337.069 309.782,342.27 308.637,344.612 306.659,346.998 303.909,348.032 301.363,346.994 298.441,342.718 296.661,335.074 296.907,327.28 297.989,322.753 300.685,317.991 303.526,316.354 306.266,317.056 309.437,321.288 311.344,329.101 311.131,337.069 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M293.17,332.768 293.169,332.718 293.17,331.429 z" />
 <path d="M293.17,332.768 293.17,331.429 293.196,334.084 z" />
 <path d="M293.196,334.084 293.17,331.429 293.196,330.343 z" />
@@ -1962,11 +1859,11 @@
 <path d="M314.789,333.183 314.765,330.288 314.789,330.782 z" />
 <path d="M314.789,333.183 314.789,330.782 314.809,332.447 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="259.677,295.552 259.677,310.406 259.677,312.261 259.677,313.189 259.049,313.605 254.058,315.161 250.306,317.748 246.177,323.083 244.473,327.494 243.746,333.093 244.848,339.98 247.018,344.506 248.331,346.342 250.637,348.699 253.606,350.765 256.21,351.893 259.954,352.647 261.826,352.674 262.759,352.634 263.063,351.984 263.062,322.096 263.063,307.147 263.069,299.672 263.073,295.935 259.677,295.552 " />
 <polyline points="259.648,348.074 254.935,346.623 251.34,343.885 247.985,338.513 247.199,335.455 247.038,333.251 247.162,330.956 247.942,327.762 249.399,324.724 250.879,322.772 252.508,321.172 255.398,319.343 258.418,318.298 259.526,318.093 259.665,318.855 259.648,348.074 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M243.773,333.826 243.767,333.684 243.773,332.62 z" />
 <path d="M243.773,333.826 243.773,332.62 243.812,334.73 z" />
 <path d="M243.812,334.73 243.773,332.62 243.812,331.886 z" />
@@ -2178,10 +2075,10 @@
 <path d="M263.067,300.356 263.065,295.603 263.067,295.603 z" />
 <path d="M263.067,300.356 263.067,295.603 263.073,295.604 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="253.959,364.135 257.656,362.314 262.334,361.654 263.097,362.359 263.095,363.699 263.102,366.368 256.689,367.927 253.882,369.986 251.771,372.951 250.561,375.834 249.753,380.505 250.019,384.789 250.75,387.65 252.369,391.031 254.423,393.433 258.93,395.891 261.514,396.275 262.826,396.269 263.102,397.292 263.102,399.916 263.102,401.228 261.607,401.269 257.806,400.699 254.817,399.365 251.817,396.97 248.952,392.942 246.789,386.529 246.654,377.211 248.62,370.683 251.308,366.519 253.959,364.135 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M246.321,382.183 246.311,381.285 246.321,380.993 z" />
 <path d="M246.321,382.183 246.321,380.993 246.341,382.547 z" />
 <path d="M246.341,382.547 246.321,380.993 246.341,380.348 z" />
@@ -2911,10 +2808,10 @@
 <path d="M263.102,366.684 263.1,365.75 263.102,366.269 z" />
 <path d="M263.1,361.882 263.1,361.69 263.102,361.69 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="277.605,362.702 281.147,361.667 284.662,362.658 286.175,364.483 286.768,365.806 287.657,369.337 287.841,375.091 287.838,380.117 287.832,400.217 287.39,401.033 286.142,401.035 284.893,401.042 284.484,400.198 284.473,395.174 284.469,385.129 284.472,375.083 284.299,369.558 282.708,366.572 279.819,366.397 277.14,367.409 274.159,369.913 273.035,372.763 273.035,375.684 273.035,387.366 273.035,399.049 273.035,400.51 272.098,401.033 269.666,400.544 269.666,394.703 269.666,371.337 269.666,365.496 269.666,362.575 270.559,362.009 272.009,362.004 273.035,362.429 273.033,363.874 273.038,366.757 273.047,367.475 273.42,366.907 274.574,365.235 277.605,362.702 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M269.666,401.033 269.666,362.01 269.948,401.033 z" />
 <path d="M269.948,401.033 269.666,362.01 269.948,362.01 z" />
 <path d="M269.948,401.033 269.948,362.01 270.3,401.033 z" />
@@ -3315,11 +3212,11 @@
 <path d="M287.842,373.48 287.842,372.34 287.842,372.353 z" />
 <path d="M287.842,373.48 287.842,372.353 287.844,372.444 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="232.726,394.251 229.73,390.896 228.251,387.309 227.289,380.926 227.448,379.491 229.063,379.492 232.294,379.493 238.761,379.498 241.992,379.495 243.606,379.491 243.621,377.924 242.694,371.524 241.626,368.189 239.322,363.996 236.151,361.218 231.756,361.074 228.695,363.405 226.863,366.161 224.688,372.309 223.891,378.759 223.932,382.015 224.411,386.164 226.22,392.201 228.354,395.82 231.935,399.164 235.815,400.852 240.524,401.267 240.687,397.967 240.664,396.257 238.183,396.222 234.862,395.435 232.726,394.251 " />
 <polyline points="229.204,369.033 231.56,366.009 234.519,365.281 236.955,366.888 238.559,369.436 239.948,373.652 240.15,375.668 237.949,375.673 229.152,375.677 227.31,375.363 227.715,373.195 229.204,369.033 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M223.905,381.232 223.895,380.282 223.905,379.434 z" />
 <path d="M223.905,381.232 223.905,379.434 223.906,381.269 z" />
 <path d="M223.906,381.269 223.905,379.434 223.906,379.332 z" />
@@ -3860,11 +3757,11 @@
 <path d="M243.652,379.491 243.596,377.645 243.652,378.612 z" />
 <path d="M243.652,379.491 243.652,378.612 243.656,378.672 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="314.53,376.292 312.685,369.058 308.878,363.013 305.928,361.14 302.243,361.109 298.928,363.25 297.156,365.475 294.873,370.346 293.323,377.439 293.272,384.427 294.056,389.683 295.707,394.739 299.835,400.508 303.419,402.071 306.983,401.346 311.063,397.143 313.284,392.216 314.478,386.973 314.53,376.292 " />
 <polyline points="310.247,390.217 308.54,394.079 305.472,397.01 302.651,397.052 300.296,395.204 298.211,391.445 296.588,383.345 297.171,375.098 298.358,371.108 299.277,369.231 301.443,366.581 304.274,365.605 306.834,366.792 309.76,371.38 311.23,377.214 311.475,382.03 310.247,390.217 " />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(204,204,203)" stroke="rgb(204,204,203)" stroke-width="1px" >
+<g clip-path="url(#clipId0)" fill="currentColor" stroke="currentColor" stroke-width="1px" >
 <path d="M293.212,383.523 293.18,381.889 293.212,380.283 z" />
 <path d="M293.212,383.523 293.212,380.283 293.212,383.53 z" />
 <path d="M293.212,383.53 293.212,380.283 293.212,380.262 z" />
@@ -4122,11 +4019,8 @@
 <path d="M314.825,382.281 314.805,379.66 314.825,380.559 z" />
 <path d="M314.825,382.281 314.825,380.559 314.835,380.971 z" />
 </g>
-<g clip-path="url(#clipId0)" fill="rgb(237,31,36)" stroke="rgb(237,31,36)" stroke-width="1px" >
-<path d="M197.552,410.348 197.552,284.857 323.043,410.348 z" />
-<path d="M323.043,410.348 197.552,284.857 323.043,284.857 z" />
-</g>
-<g clip-path="url(#clipId0)" fill="none" stroke="rgb(255,255,255)" stroke-width="1px" >
+
+<g clip-path="url(#clipId0)" fill="none" stroke="currentColor" stroke-width="1px" >
 <polyline points="197.552,410.348 197.552,284.857 323.043,284.857 323.043,410.348 197.552,410.348 " />
 </g>
 </svg>

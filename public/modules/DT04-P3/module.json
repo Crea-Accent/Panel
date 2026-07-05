@@ -2,5 +2,9 @@
 	"id": "DT04-P3",
 	"name": "3 kan. 10A relaismodule met polariteitswissel",
 	"description": "Bedienen van motoren voor rolluiken, gordijnen, zonnewering…",
+	"category": "Module",
+	"type": "user",
+	"current": "0.16",
+	"voltage": "24",
 	"detectable": true
 }

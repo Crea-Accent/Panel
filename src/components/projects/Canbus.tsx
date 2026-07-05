@@ -23,10 +23,10 @@ import { useEffect, useState } from 'react';
 
 import Button from '../ui/Button';
 import Card from '../ui/Card';
-import Image from 'next/image';
 import Input from '../ui/Input';
 import Loading from '../ui/Loading';
 import Modal from '../ui/Modal';
+import { ReactSVG } from 'react-svg';
 import { usePermissions } from '@/providers/PermissionsProvider';
 
 const units = {
@@ -569,8 +569,8 @@ export default function Canbus({ client, basePath }: Props) {
 		return (
 			<Card key={entry.instanceId}>
 				<div className='flex flex-col gap-4'>
-					<div className='aspect-video rounded-lg p-1 overflow-hidden max-h-70'>
-						<Image src={`/modules/${module.id}/drawing.svg`} alt={module.name} width={100} height={100} className='w-150 h-full object-contain' unoptimized />
+					<div className='rounded-lg p-1 overflow-hidden max-h-70'>
+						<ReactSVG src={`/modules/${module.id}/drawing.svg`} className='h-auto w-100' />
 					</div>
 
 					<div className='px-3'>
@@ -820,8 +820,8 @@ export default function Canbus({ client, basePath }: Props) {
 							{manualModules.map((module, i) => (
 								<Card key={i} onClick={() => addManualModule(module)} className='cursor-pointer transition hover:scale-[1.02]'>
 									<div className='flex flex-col gap-4 p-2'>
-										<div className='aspect-video rounded-lg overflow-hidden'>
-											<Image src={`/modules/${module.id}/drawing.svg`} alt={module.name} className='w-full h-full object-contain p-4' width={100} height={100} />
+										<div className='rounded-lg p-1 overflow-hidden max-h-70'>
+											<ReactSVG src={`/modules/${module.id}/drawing.svg`} className='h-100 w-auto' />
 										</div>
 
 										<div>
@@ -849,8 +849,8 @@ export default function Canbus({ client, basePath }: Props) {
 						{detectableModules.map((module, i) => (
 							<Card key={i} onClick={() => (moduleSelection?.mode === 'add' ? addDetectedModule(module) : changeModuleType(module))} className='cursor-pointer transition hover:scale-[1.02]'>
 								<div className='flex flex-col gap-4 p-2'>
-									<div className='aspect-video rounded-lg p-1 overflow-hidden'>
-										<Image src={`/modules/${module.id}/drawing.svg`} alt={module.name} className='w-full h-full object-contain' height={100} width={100} />
+									<div className='rounded-lg p-1 overflow-hidden max-h-70'>
+										<ReactSVG src={`/modules/${module.id}/drawing.svg`} className='h-100 w-auto' />
 									</div>
 
 									<div>
