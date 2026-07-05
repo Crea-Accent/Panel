@@ -784,9 +784,9 @@ export default function Canbus({ client, basePath }: Props) {
 			<div className='flex items-center gap-2'>
 				<Input placeholder='Search modules...' value={search} onChange={(e) => setSearch(e.target.value)} />
 
-				{has('projects.write') && <Button onClick={() => setAddModalOpen(true)}>Add ({unplacedModules.length})</Button>}
-
 				{has('projects.write') && <Button onClick={() => setEditing(!editing)}>{editing ? 'Save' : 'Edit'}</Button>}
+
+				{has('projects.write') && editing && <Button onClick={() => setAddModalOpen(true)}>Add ({unplacedModules.length})</Button>}
 			</div>
 
 			<div className='mt-8 flex flex-col gap-6'>{topology.map(renderTopology)}</div>
@@ -803,7 +803,9 @@ export default function Canbus({ client, basePath }: Props) {
 										<div>
 											<h4 className='font-semibold'>{node.name}</h4>
 
-											<p className='text-sm opacity-70'>{node.physicalAddress}</p>
+											<p className='text-sm opacity-70'>
+												{node.physicalAddress} - {node.nodeAddress}
+											</p>
 
 											<p className='text-sm opacity-70'>{node.numberOfUnits} units</p>
 										</div>
@@ -842,7 +844,11 @@ export default function Canbus({ client, basePath }: Props) {
 					<div>
 						<h3 className='font-semibold'>{moduleSelection?.mode === 'add' ? moduleSelection.node.name : availableModules.find((x) => x.id === moduleSelection?.topology.moduleId)?.name}</h3>
 
-						<p className='opacity-70'>{moduleSelection?.mode === 'add' ? moduleSelection.node.physicalAddress : moduleSelection?.topology.physicalAddress}</p>
+						<p className='opacity-70'>
+							{moduleSelection?.mode === 'add' ? moduleSelection.node.physicalAddress : moduleSelection?.topology.physicalAddress}
+							{' - '}
+							{moduleSelection?.mode === 'add' && moduleSelection?.node?.nodeAddress}
+						</p>
 					</div>
 
 					<div className='grid grid-cols-1 gap-4 max-h-[70vh] overflow-y-auto pr-2 lg:grid-cols-3'>
