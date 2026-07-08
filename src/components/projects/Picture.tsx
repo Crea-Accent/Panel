@@ -332,6 +332,16 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 							onDrop={async () => {
 								await moveFileToGroup(draggingFile, folder);
 							}}>
+							{folderFiles.length === 0 && (
+								<div className='rounded-3xl p-6 min-h-20 flex items-center justify-center border-2 border-dashed border-(--accent)/30 bg-(--background)'>
+									<div className='text-center'>
+										<div className='text-sm font-medium text-(--text-muted)'>No images</div>
+
+										<div className='text-xs text-(--text-muted) mt-1 opacity-70'>Drag images here or upload new ones</div>
+									</div>
+								</div>
+							)}
+
 							<div className='flex items-center justify-between'>
 								<h3 className='font-semibold'>{folder}</h3>
 
@@ -364,16 +374,6 @@ export default function Pictures({ basePath, client }: { basePath: string; clien
 									)}
 								</div>
 							</div>
-
-							{folderFiles.length === 0 && (
-								<div className='rounded-3xl p-6 min-h-20 flex items-center justify-center border-2 border-dashed border-(--accent)/30 bg-(--background)'>
-									<div className='text-center'>
-										<div className='text-sm font-medium text-(--text-muted)'>No images</div>
-
-										<div className='text-xs text-(--text-muted) mt-1 opacity-70'>Drag images here or upload new ones</div>
-									</div>
-								</div>
-							)}
 
 							{view === 'grid' ? (
 								<FileGrid
