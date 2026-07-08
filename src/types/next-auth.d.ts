@@ -34,6 +34,7 @@ declare module 'next-auth' {
 
 declare module 'next-auth/jwt' {
 	interface JWT extends DefaultJWT {
+		id: string;
 		roleId?: string;
 		permissions?: string[];
 		theme?: 'light' | 'dark' | 'system';

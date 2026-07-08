@@ -11,8 +11,18 @@ import path from 'path';
 const DATA_DIR = path.join(process.cwd(), 'data');
 const USERS_PATH = path.join(DATA_DIR, 'users.json');
 const ROLES_PATH = path.join(DATA_DIR, 'roles.json');
+const PRESENCES_PATH = path.join(DATA_DIR, 'presences.json');
 
 type User = Session['user'];
+
+type Presence = {
+	lastSeen: string;
+	page?: string;
+	project?: string;
+	idle: boolean;
+};
+
+type Presences = Record<string, Presence>;
 
 function ensureFiles() {
 	if (!fs.existsSync(DATA_DIR)) {
@@ -23,6 +33,9 @@ function ensureFiles() {
 	}
 	if (!fs.existsSync(ROLES_PATH)) {
 		fs.writeFileSync(ROLES_PATH, JSON.stringify([], null, 2));
+	}
+	if (!fs.existsSync(PRESENCES_PATH)) {
+		fs.writeFileSync(PRESENCES_PATH, '{}');
 	}
 }
 
@@ -41,11 +54,53 @@ function loadRoles(): Role[] {
 	return JSON.parse(fs.readFileSync(ROLES_PATH, 'utf8'));
 }
 
+function loadPresences(): Presences {
+	ensureFiles();
+
+	try {
+		return JSON.parse(fs.readFileSync(PRESENCES_PATH, 'utf8'));
+	} catch {
+		fs.writeFileSync(PRESENCES_PATH, '{}');
+
+		return {};
+	}
+}
+
+function getPresenceStatus(presence?: Presence): 'online' | 'idle' | 'offline' {
+	if (!presence) {
+		return 'offline';
+	}
+
+	const age = Date.now() - new Date(presence.lastSeen).getTime();
+
+	if (age > 60_000) {
+		return 'offline';
+	}
+
+	return presence.idle ? 'idle' : 'online';
+}
+
 // ---------- GET ----------
 export async function GET() {
 	const users = loadUsers();
-	const safeUsers = users.map(({ passwordHash, ...rest }) => rest);
-	return NextResponse.json({ users: safeUsers });
+	const presences = loadPresences();
+
+	const safeUsers = users.map(({ passwordHash, ...user }) => {
+		const presence = presences[user.id];
+
+		return {
+			...user,
+
+			presence: {
+				...presence,
+				status: getPresenceStatus(presence),
+			},
+		};
+	});
+
+	return NextResponse.json({
+		users: safeUsers,
+	});
 }
 
 // ---------- POST (CREATE USER) ----------

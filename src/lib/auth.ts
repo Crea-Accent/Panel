@@ -69,6 +69,7 @@ export const authConfig: NextAuthOptions = {
 				token.theme = user.theme;
 				token.projects = user.projects ?? [];
 				token.preferences = user.preferences || {};
+				token.id = user.id;
 
 				return token;
 			}
@@ -83,6 +84,7 @@ export const authConfig: NextAuthOptions = {
 				token.theme = dbUser.theme ?? 'system';
 				token.projects = dbUser.projects ?? [];
 				token.preferences = dbUser.preferences || {};
+				token.id = dbUser.id;
 			}
 
 			return token;
@@ -95,6 +97,7 @@ export const authConfig: NextAuthOptions = {
 				session.user.theme = token.theme;
 				session.user.projects = token.projects;
 				session.user.preferences = token.preferences || {};
+				session.user.id = token.id;
 			}
 			return session;
 		},

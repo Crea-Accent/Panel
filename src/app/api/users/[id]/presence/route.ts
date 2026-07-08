@@ -1,0 +1,134 @@
+/** @format */
+
+import { NextRequest, NextResponse } from 'next/server';
+
+import { Session } from 'next-auth';
+import fs from 'fs';
+import path from 'path';
+
+const DATA_DIR = path.join(process.cwd(), 'data');
+const USERS_PATH = path.join(DATA_DIR, 'users.json');
+const ROLES_PATH = path.join(DATA_DIR, 'roles.json');
+const PRESENCES_PATH = path.join(DATA_DIR, 'presences.json');
+
+type User = Session['user'];
+
+type Presence = {
+	lastSeen: string;
+	page?: string;
+	project?: string;
+	idle: boolean;
+};
+
+type Presences = Record<string, Presence>;
+
+function ensureFiles() {
+	if (!fs.existsSync(DATA_DIR)) {
+		fs.mkdirSync(DATA_DIR, { recursive: true });
+	}
+
+	if (!fs.existsSync(USERS_PATH)) {
+		fs.writeFileSync(USERS_PATH, JSON.stringify([], null, 2));
+	}
+
+	if (!fs.existsSync(ROLES_PATH)) {
+		fs.writeFileSync(ROLES_PATH, JSON.stringify([], null, 2));
+	}
+
+	if (!fs.existsSync(PRESENCES_PATH)) {
+		fs.writeFileSync(PRESENCES_PATH, '{}');
+	}
+}
+
+function loadUsers(): User[] {
+	ensureFiles();
+
+	return JSON.parse(fs.readFileSync(USERS_PATH, 'utf8'));
+}
+
+function loadPresences(): Presences {
+	ensureFiles();
+
+	try {
+		return JSON.parse(fs.readFileSync(PRESENCES_PATH, 'utf8'));
+	} catch {
+		fs.writeFileSync(PRESENCES_PATH, '{}');
+		console.log('e');
+
+		return {};
+	}
+}
+
+function savePresences(presences: Presences) {
+	ensureFiles();
+
+	try {
+		fs.writeFileSync(PRESENCES_PATH, JSON.stringify(presences, null, 2));
+	} catch {
+		console.log('e');
+	}
+}
+
+// ---------- GET ----------
+
+export async function GET(_: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	const { id } = await params;
+
+	const users = loadUsers();
+	const presences = loadPresences();
+
+	const user = users.find((u) => u.id === id);
+
+	if (!user) {
+		return NextResponse.json(
+			{
+				error: 'User not found',
+			},
+			{ status: 404 }
+		);
+	}
+
+	const presence = presences[id] ?? null;
+
+	return NextResponse.json({
+		user: {
+			...user,
+			passwordHash: undefined,
+		},
+		presence,
+	});
+}
+
+// ---------- POST (Heartbeat) ----------
+
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+	const { id } = await params;
+
+	const users = loadUsers();
+
+	const user = users.find((u) => u.id === id);
+
+	if (!user) {
+		return NextResponse.json(
+			{
+				error: 'User not found',
+			},
+			{ status: 404 }
+		);
+	}
+
+	const body = await request.json().catch(() => {});
+
+	const presences = loadPresences();
+
+	presences[id] = {
+		lastSeen: new Date().toISOString(),
+		page: body?.page || null,
+		project: body?.project || null,
+		idle: body?.idle ?? false,
+	};
+
+	savePresences(presences);
+
+	return NextResponse.json({});
+}
