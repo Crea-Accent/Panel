@@ -149,8 +149,7 @@ export default function SidePanel() {
 														? `Last seen ${lastSeen(user.presence.lastSeen)}`
 														: String(user.presence.project ?? user.presence.page ?? 'Online')
 																.split('/')
-																.map((p) => <span className='capitalize'>{p}</span>)
-																.join(' - ')}
+																.map((p) => <span className='capitalize'>{p}</span>)}
 												</div>
 											</div>
 
