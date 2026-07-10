@@ -2,10 +2,17 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ChevronDown, ChevronUp, Plus, Shield, Trash2, X } from 'lucide-react';
+import { Building2, ChevronDown, ChevronUp, Plus, Shield, Trash2, X } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import Button from '../ui/Button';
+import Card from '../ui/Card';
+import EmptyState from '../ui/EmptyState';
+import Input from '../ui/Input';
+import Modal from '../ui/Modal';
+import PageHeader from '../ui/PageHeader';
 import PermissionMatrix from './PermissionMatrix';
+import Selector from '../ui/Selector';
 
 type Role = {
 	id: string;
@@ -13,23 +20,36 @@ type Role = {
 	defaultPermissions: string[];
 };
 
+type Company = {
+	id: string;
+	name: string;
+};
+
 export default function RoleSettings() {
 	const [roles, setRoles] = useState<Role[]>([]);
 	const [newRoleName, setNewRoleName] = useState('');
 	const [expandedRole, setExpandedRole] = useState<string | null>(null);
 	const [showModal, setShowModal] = useState(false);
+	const [creating, setCreating] = useState(false);
+	const [companies, setCompanies] = useState<Company[]>([]);
+	const [companyId, setCompanyId] = useState('');
+
+	async function loadCompanies() {
+		const res = await fetch('/api/settings/companies');
+		const data = await res.json();
+
+		setCompanies(data.companies ?? []);
+
+		if (!companyId && data.companies.length) {
+			setCompanyId(data.companies[0].id);
+		}
+	}
 
 	async function load() {
-		const res = await fetch('/api/settings/roles');
+		const res = await fetch(`/api/settings/roles?companyId=${companyId}`);
 		const data = await res.json();
 		setRoles(data.roles);
 	}
-
-	useEffect(() => {
-		(() => {
-			load();
-		})();
-	}, []);
 
 	async function saveRole(role: Role) {
 		await fetch('/api/settings/roles', {
@@ -47,6 +67,7 @@ export default function RoleSettings() {
 			method: 'POST',
 			headers: { 'Content-Type': 'application/json' },
 			body: JSON.stringify({
+				companyId,
 				name: newRoleName,
 				defaultPermissions: [],
 			}),
@@ -63,173 +84,147 @@ export default function RoleSettings() {
 		load();
 	}
 
-	const card = 'bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm overflow-hidden';
+	function updateRoleName(role: Role, name: string) {
+		setRoles((roles) =>
+			roles.map((r) =>
+				r.id === role.id
+					? {
+							...r,
+							name,
+						}
+					: r
+			)
+		);
+	}
 
-	const input = 'text-base font-medium bg-transparent border-b border-transparent focus:border-(--accent) focus:outline-none transition text-gray-900 dark:text-zinc-100';
+	function updatePermissions(role: Role, defaultPermissions: string[]) {
+		setRoles((roles) =>
+			roles.map((r) =>
+				r.id === role.id
+					? {
+							...r,
+							defaultPermissions,
+						}
+					: r
+			)
+		);
+	}
+
+	useEffect(() => {
+		load();
+		loadCompanies();
+	}, []);
+
+	useEffect(() => {
+		if (companyId) {
+			load();
+		}
+	}, [companyId]);
 
 	return (
-		<div className='space-y-8'>
+		<div className='space-y-6'>
+			<PageHeader icon={<Shield size={20} />} title='Roles' description='Manage permission templates for each company.' />
+
 			{/* Header */}
-			<div className='flex justify-between items-center'>
-				<div>
-					<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100 flex items-center gap-2'>
-						<Shield className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
-						Roles
-					</h2>
-					<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Define default permission templates.</p>
+
+			<div className='flex flex-wrap justify-between gap-4 items-end'>
+				<div className='w-80'>
+					<Selector
+						value={companyId}
+						options={companies.map((company) => ({
+							label: company.name,
+							value: company.id,
+						}))}
+						onChange={setCompanyId}
+					/>
 				</div>
 
-				<button onClick={() => setShowModal(true)} className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium flex items-center gap-2 hover:bg-(--hover-accent) transition'>
-					<Plus className='w-4 h-4' />
+				<Button icon={<Plus size={16} />} onClick={() => setCreating(true)}>
 					New Role
-				</button>
+				</Button>
 			</div>
 
-			{/* Role Cards */}
-			<div className='space-y-4'>
-				<AnimatePresence>
+			{/* Roles */}
+
+			{roles.length === 0 ? (
+				<EmptyState icon={<Building2 size={28} />} title='No Roles' description='Create the first role for this company.' />
+			) : (
+				<div className='space-y-4'>
 					{roles.map((role) => {
-						const isOpen = expandedRole === role.id;
+						const expanded = expandedRole === role.id;
 
 						return (
-							<motion.div
-								key={role.id}
-								initial={{
-									opacity: 0,
-									y: 6,
-								}}
-								animate={{
-									opacity: 1,
-									y: 0,
-								}}
-								exit={{
-									opacity: 0,
-									y: -6,
-								}}
-								className={card}>
+							<Card key={role.id} className='overflow-hidden'>
 								{/* Header */}
-								<div className='p-6 flex justify-between items-center'>
-									<input
-										className={input}
-										value={role.name}
-										onChange={(e) =>
-											saveRole({
-												...role,
-												name: e.target.value,
-											})
-										}
-									/>
 
-									<div className='flex items-center gap-3'>
-										<button
-											onClick={() => setExpandedRole(isOpen ? null : role.id)}
-											className='h-9 w-9 flex items-center justify-center rounded-xl text-gray-500 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
-											{isOpen ? <ChevronUp className='w-4 h-4' /> : <ChevronDown className='w-4 h-4' />}
-										</button>
+								<div className='p-6 flex items-center justify-between gap-4'>
+									<div className='flex-1'>
+										<Input value={role.name} onChange={(e) => updateRoleName(role, e.target.value)} disabled={!expanded} />
+									</div>
 
-										<button onClick={() => deleteRole(role.id)} className='h-9 w-9 flex items-center justify-center rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-900/30 transition'>
-											<Trash2 className='w-4 h-4' />
-										</button>
+									<div className='flex items-center gap-2'>
+										<Button variant='secondary' icon={expanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />} onClick={() => setExpandedRole(expanded ? null : role.id)} />
+
+										<Button variant='danger' icon={<Trash2 size={16} />} onClick={() => deleteRole(role.id)} />
 									</div>
 								</div>
 
 								{/* Permissions */}
-								<AnimatePresence>
-									{isOpen && (
+
+								<AnimatePresence initial={false}>
+									{expanded && (
 										<motion.div
 											initial={{
+												height: 0,
 												opacity: 0,
-												y: -4,
 											}}
 											animate={{
+												height: 'auto',
 												opacity: 1,
-												y: 0,
 											}}
 											exit={{
+												height: 0,
 												opacity: 0,
-												y: -4,
 											}}
-											className='px-6 pb-6 border-t border-gray-200 dark:border-zinc-800'>
-											<div className='pt-6'>
-												<PermissionMatrix
-													value={role.defaultPermissions}
-													onChange={(next) =>
-														saveRole({
-															...role,
-															defaultPermissions: next,
-														})
-													}
-												/>
+											transition={{
+												duration: 0.2,
+											}}
+											className='overflow-hidden border-t border-(--border)/10'>
+											<div className='p-6 space-y-6'>
+												<PermissionMatrix value={role.defaultPermissions} onChange={(permissions) => updatePermissions(role, permissions)} />
+
+												<div className='flex justify-end'>
+													<Button icon={<Shield size={16} />} onClick={() => saveRole(role)}>
+														Save Role
+													</Button>
+												</div>
 											</div>
 										</motion.div>
 									)}
 								</AnimatePresence>
-							</motion.div>
+							</Card>
 						);
 					})}
-				</AnimatePresence>
-			</div>
+				</div>
+			)}
 
-			{/* Modal */}
-			<AnimatePresence>
-				{showModal && (
-					<>
-						<motion.div
-							initial={{
-								opacity: 0,
-							}}
-							animate={{
-								opacity: 1,
-							}}
-							exit={{
-								opacity: 0,
-							}}
-							className='fixed inset-0 bg-black/40 backdrop-blur-sm z-40'
-							onClick={() => setShowModal(false)}
-						/>
+			{/* Create */}
 
-						<motion.div
-							initial={{
-								opacity: 0,
-								scale: 0.96,
-							}}
-							animate={{
-								opacity: 1,
-								scale: 1,
-							}}
-							exit={{
-								opacity: 0,
-								scale: 0.96,
-							}}
-							className='fixed inset-0 flex items-center justify-center z-50'>
-							<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-xl w-full max-w-md p-6 space-y-6'>
-								<div className='flex justify-between items-center'>
-									<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Create Role</h3>
-									<button onClick={() => setShowModal(false)} className='h-9 w-9 flex items-center justify-center rounded-xl hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
-										<X className='w-4 h-4' />
-									</button>
-								</div>
+			<Modal open={creating} onClose={() => setCreating(false)} title='New Role' size='md'>
+				<div className='space-y-6'>
+					<Input label='Role Name' value={newRoleName} onChange={(e) => setNewRoleName(e.target.value)} />
 
-								<input
-									className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-(--accent)/20 focus:border-(--accent) transition'
-									placeholder='Role name'
-									value={newRoleName}
-									onChange={(e) => setNewRoleName(e.target.value)}
-								/>
+					<div className='flex justify-end gap-2'>
+						<Button variant='secondary' onClick={() => setCreating(false)}>
+							Cancel
+						</Button>
 
-								<button
-									onClick={async () => {
-										await createRole();
-										setShowModal(false);
-									}}
-									className='h-10 w-full rounded-xl bg-(--accent) text-white text-sm font-medium hover:bg-(--hover-accent) transition'>
-									Create Role
-								</button>
-							</div>
-						</motion.div>
-					</>
-				)}
-			</AnimatePresence>
+						<Button icon={<Plus size={16} />} onClick={createRole}>
+							Create Role
+						</Button>
+					</div>
+				</div>
+			</Modal>
 		</div>
 	);
 }

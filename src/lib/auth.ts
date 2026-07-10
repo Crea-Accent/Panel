@@ -49,6 +49,7 @@ export const authConfig: NextAuthOptions = {
 					name: user.name,
 					email: user.email,
 					roleId: user.roleId,
+					companyId: user.companyId,
 					permissions: user.permissions,
 					theme: user.theme || 'system',
 					projects: user.projects || [],
@@ -65,6 +66,7 @@ export const authConfig: NextAuthOptions = {
 			// 🔹 On login
 			if (user) {
 				token.roleId = user.roleId;
+				token.companyId = user.companyId;
 				token.permissions = user.permissions;
 				token.theme = user.theme;
 				token.projects = user.projects ?? [];
@@ -80,6 +82,7 @@ export const authConfig: NextAuthOptions = {
 
 			if (dbUser) {
 				token.roleId = dbUser.roleId;
+				token.companyId = dbUser.companyId;
 				token.permissions = dbUser.permissions;
 				token.theme = dbUser.theme ?? 'system';
 				token.projects = dbUser.projects ?? [];
@@ -93,6 +96,7 @@ export const authConfig: NextAuthOptions = {
 		async session({ session, token }) {
 			if (session.user) {
 				session.user.roleId = token.roleId;
+				session.user.companyId = token.companyId;
 				session.user.permissions = token.permissions;
 				session.user.theme = token.theme;
 				session.user.projects = token.projects;

@@ -1,18 +1,28 @@
 /** @format */
 'use client';
 
-import { HardDrive, Save } from 'lucide-react';
+import { ClipboardList, FolderTree, Save } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Toggle from '@/components/ui/Toggle';
 import { motion } from 'framer-motion';
 
 type ProceduresSettings = {
 	path?: string;
+	includeSubfolders?: boolean;
+	watchChanges?: boolean;
+	allowPdf?: boolean;
 };
 
 export default function ProceduresSettings() {
 	const [settings, setSettings] = useState<ProceduresSettings>({
 		path: '',
+		includeSubfolders: true,
+		watchChanges: false,
+		allowPdf: true,
 	});
 
 	const [loading, setLoading] = useState(true);
@@ -25,6 +35,9 @@ export default function ProceduresSettings() {
 
 			setSettings({
 				path: '',
+				includeSubfolders: true,
+				watchChanges: false,
+				allowPdf: true,
 				...data,
 			});
 
@@ -39,88 +52,121 @@ export default function ProceduresSettings() {
 
 		await fetch('/api/settings/procedures', {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: JSON.stringify(settings),
 		});
 
-		setTimeout(() => setSaving(false), 600);
+		setTimeout(() => setSaving(false), 500);
 	}
 
-	if (loading) return <div className='text-sm text-gray-500 dark:text-zinc-400'>Loading…</div>;
+	if (loading) {
+		return <div className='text-sm text-(--text-muted)'>Loading...</div>;
+	}
 
 	return (
 		<div className='space-y-6'>
 			{/* Header */}
+
 			<div>
-				<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>Procedures</h2>
-				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Configure where installer files are stored.</p>
+				<h2 className='text-lg font-semibold'>Procedures</h2>
+
+				<p className='text-sm text-(--text-muted) mt-1'>Manage where installation procedures are stored and how they are discovered.</p>
 			</div>
 
-			{/* Card */}
-			<motion.div
-				initial={{ opacity: 0, y: 6 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ duration: 0.2 }}
-				className='
-                    bg-white dark:bg-zinc-900
-                    border border-gray-200 dark:border-zinc-800
-                    rounded-2xl
-                    shadow-sm
-                    p-6
-                    space-y-5
-                '>
-				<div className='flex items-center gap-3'>
-					<div className='h-9 w-9 rounded-xl bg-(--active-accent) dark:bg-(--accent)/10 flex items-center justify-center'>
-						<HardDrive className='w-4 h-4 text-(--accent) dark:text-(--accent)' strokeWidth={1.8} />
+			{/* Storage */}
+
+			<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
+				<Card className='p-6 space-y-6'>
+					<div className='flex items-center gap-3'>
+						<div className='h-10 w-10 rounded-xl bg-(--active-accent) flex items-center justify-center'>
+							<ClipboardList size={18} className='text-(--accent)' />
+						</div>
+
+						<div>
+							<h3 className='font-semibold'>Procedure Library</h3>
+
+							<p className='text-sm text-(--text-muted)'>Choose where procedure files are stored.</p>
+						</div>
 					</div>
-					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Location</h3>
-				</div>
 
-				<input
-					className='
-                        h-10 w-full
-                        rounded-xl
-                        border border-gray-200 dark:border-zinc-700
-                        bg-white dark:bg-zinc-800
-                        px-4 text-sm
-                        text-gray-900 dark:text-zinc-100
-                        placeholder:text-gray-400 dark:placeholder:text-zinc-500
-                        focus:outline-none
-                        focus:ring-2 focus:ring-(--accent)/20
-                        focus:border-(--accent)
-                        transition
-                    '
-					placeholder='C:/Installers'
-					value={settings.path || ''}
-					onChange={(e) =>
-						setSettings({
-							...settings,
-							path: e.target.value,
-						})
-					}
-				/>
+					<Input
+						label='Root Folder'
+						placeholder='D:\Procedures'
+						value={settings.path ?? ''}
+						onChange={(e) =>
+							setSettings({
+								...settings,
+								path: e.target.value,
+							})
+						}
+					/>
 
-				<p className='text-xs text-gray-500 dark:text-zinc-500'>This folder will be scanned for setup files (.exe, .msi, etc).</p>
+					<p className='text-sm text-(--text-muted)'>All Markdown, PDF and other supported procedure files will be loaded from this directory.</p>
 
-				<div className='pt-2'>
-					<button
-						onClick={save}
-						className='
-                            h-10 px-4
-                            rounded-xl
-                            bg-(--accent)
-                            text-white
-                            text-sm font-medium
-                            flex items-center gap-2
-                            hover:bg-(--hover-accent)
-                            transition
-                            disabled:opacity-60
-                        '
-						disabled={saving}>
-						<Save className='w-4 h-4' />
-						{saving ? 'Saving…' : 'Save Changes'}
-					</button>
-				</div>
+					<div className='flex justify-end'>
+						<Button icon={<Save size={16} />} loading={saving} onClick={save}>
+							Save Changes
+						</Button>
+					</div>
+				</Card>
+			</motion.div>
+
+			{/* Behaviour */}
+
+			<motion.div initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.2 }}>
+				<Card className='p-6 space-y-6'>
+					<div className='flex items-center gap-3'>
+						<div className='h-10 w-10 rounded-xl bg-(--active-accent) flex items-center justify-center'>
+							<FolderTree size={18} className='text-(--accent)' />
+						</div>
+
+						<div>
+							<h3 className='font-semibold'>Library Behaviour</h3>
+
+							<p className='text-sm text-(--text-muted)'>Control how procedures are discovered.</p>
+						</div>
+					</div>
+
+					<div className='space-y-5'>
+						<Toggle
+							label='Include subfolders'
+							description='Recursively scan all nested folders.'
+							checked={settings.includeSubfolders ?? false}
+							onChange={(checked) =>
+								setSettings({
+									...settings,
+									includeSubfolders: checked,
+								})
+							}
+						/>
+
+						<Toggle
+							label='Watch for file changes'
+							description='Automatically reload procedures when files change.'
+							checked={settings.watchChanges ?? false}
+							onChange={(checked) =>
+								setSettings({
+									...settings,
+									watchChanges: checked,
+								})
+							}
+						/>
+
+						<Toggle
+							label='Allow PDF procedures'
+							description='Include PDF documents alongside Markdown procedures.'
+							checked={settings.allowPdf ?? false}
+							onChange={(checked) =>
+								setSettings({
+									...settings,
+									allowPdf: checked,
+								})
+							}
+						/>
+					</div>
+				</Card>
 			</motion.div>
 		</div>
 	);

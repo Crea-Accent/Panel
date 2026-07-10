@@ -23,10 +23,13 @@ export default function Page() {
 	const [message, setMessage] = useState<string | null>(null);
 
 	const [projectPromptEnabled, setProjectPromptEnabled] = useState<boolean>(session?.user?.preferences?.projectPrompts ?? true);
+	const [debugMode, setDebugMode] = useState<boolean>(session?.user?.preferences?.debugMode ?? false);
 	const [defaultView, setDefaultView] = useState<'grid' | 'list'>((session?.user?.preferences?.defaultView as 'grid' | 'list') ?? 'grid');
 
 	useEffect(() => {
 		setProjectPromptEnabled(session?.user?.preferences?.projectPrompts ?? true);
+
+		setDebugMode(session?.user?.preferences?.debugMode ?? false);
 
 		setDefaultView((session?.user?.preferences?.defaultView as 'grid' | 'list') ?? 'grid');
 	}, [session]);
@@ -132,6 +135,31 @@ export default function Page() {
 									body: JSON.stringify({
 										preferences: {
 											projectPrompts: value,
+										},
+									}),
+								});
+							} catch (error) {
+								console.error(error);
+							}
+						}}
+					/>
+
+					<Toggle
+						label='Debug mode'
+						description='See debug options'
+						checked={debugMode}
+						onChange={async (value) => {
+							setDebugMode(value);
+
+							try {
+								await fetch('/api/users', {
+									method: 'PUT',
+									headers: {
+										'Content-Type': 'application/json',
+									},
+									body: JSON.stringify({
+										preferences: {
+											debugMode: value,
 										},
 									}),
 								});

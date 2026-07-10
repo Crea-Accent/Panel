@@ -1,13 +1,19 @@
 /** @format */
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 
 import { Session } from 'next-auth';
 import { usePathname } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 
 type User = Omit<Session['user'], 'passwordHash'> & {
+	company?: {
+		id: string;
+		name: string;
+		color: string;
+	};
+
 	presence: {
 		status: 'online' | 'idle' | 'offline';
 		lastSeen: string | null;
@@ -36,17 +42,27 @@ export function StatusProvider({ children }: { children: React.ReactNode }) {
 
 	const lastActivity = useRef(Date.now());
 
-	const refresh = async () => {
+	const refresh = useCallback(async () => {
 		try {
-			const res = await fetch('/api/users');
+			const [usersRes, companiesRes] = await Promise.all([fetch('/api/users'), fetch('/api/settings/companies')]);
 
-			const data = await res.json();
+			const usersData = await usersRes.json();
+			const companiesData = await companiesRes.json();
 
-			setUsers((data.users ?? []).filter((u: User) => u.id !== session?.user.id));
+			const companies = new Map((companiesData.companies ?? []).map((c: any) => [c.id, c]));
+
+			const enriched = (usersData.users ?? [])
+				.filter((u: User) => u.id !== session?.user.id)
+				.map((u: User) => ({
+					...u,
+					company: companies.get(u.companyId),
+				}));
+
+			setUsers(enriched);
 		} catch (err) {
 			console.error(err);
 		}
-	};
+	}, [session?.user.id]);
 
 	useEffect(() => {
 		const updateActivity = () => {
@@ -83,6 +99,8 @@ export function StatusProvider({ children }: { children: React.ReactNode }) {
 						idle: Date.now() - lastActivity.current > IDLE_TIMEOUT,
 					}),
 				});
+
+				await refresh();
 			} catch (error) {
 				console.error(error);
 			}
@@ -115,17 +133,27 @@ export function StatusProvider({ children }: { children: React.ReactNode }) {
 	}, [pathname, session?.user.id]);
 
 	useEffect(() => {
-		refresh();
+		const onFocus = () => refresh();
+
+		window.addEventListener('focus', onFocus);
+
+		return () => {
+			window.removeEventListener('focus', onFocus);
+		};
 	}, []);
 
-	const REFRESH_INTERVAL = 15000;
-
 	useEffect(() => {
-		refresh();
+		const handler = () => {
+			if (!document.hidden) {
+				refresh();
+			}
+		};
 
-		const interval = setInterval(refresh, REFRESH_INTERVAL);
+		document.addEventListener('visibilitychange', handler);
 
-		return () => clearInterval(interval);
+		return () => {
+			document.removeEventListener('visibilitychange', handler);
+		};
 	}, []);
 
 	return (

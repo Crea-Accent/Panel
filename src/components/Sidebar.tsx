@@ -2,7 +2,7 @@
 'use client';
 
 import { AnimatePresence, motion } from 'framer-motion';
-import { ClipboardList, Folder, FolderArchive, FolderKanban, Home, KeyRound, LogIn, LogOut, Network, Package, Settings, User } from 'lucide-react';
+import { ClipboardList, Folder, FolderArchive, FolderKanban, Home, House, KeyRound, LogIn, LogOut, Menu, Network, Package, Settings, User } from 'lucide-react';
 import { HEADER_HEIGHT, SIDEBAR_WIDTH } from '@/lib/layout';
 import { signIn, signOut, useSession } from 'next-auth/react';
 
@@ -12,23 +12,26 @@ import { usePathname } from 'next/navigation';
 import { usePermissions } from '@/providers/PermissionsProvider';
 import { useSidebar } from '../providers/SidebarProvider';
 
-export default function Sidebar() {
+export default function Sidebar({ type = 'dashboard', items = [] }: any) {
 	const pathname = usePathname() || '';
 	const { open, setOpen, toggle } = useSidebar();
 	const { data: session, status } = useSession();
 	const { has, loading } = usePermissions();
 
-	const navItems = [
-		{ href: '/dashboard', label: 'Home', icon: Home },
-		{ href: '/dashboard/projects', label: 'Projects', icon: FolderKanban, permission: 'projects.read' },
-		{ href: '/dashboard/files', label: 'Files', icon: Folder, permission: 'files.read' },
-		{ href: '/dashboard/procedures', label: 'Procedures', icon: ClipboardList, permission: 'projects.read' },
-		{ href: '/dashboard/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
-		{ href: '/dashboard/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
-		{ href: '/dashboard/workspace', label: 'Workspace', icon: FolderArchive, permission: 'files.read' },
-		{ href: '/dashboard/events', label: 'Events', icon: Network, permission: 'events.read' },
-		{ href: '/dashboard/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
-	];
+	const navItems =
+		type == 'dashboard'
+			? [
+					{ href: '/dashboard', label: 'Home', icon: Home },
+					{ href: '/dashboard/projects', label: 'Projects', icon: FolderKanban, permission: 'projects.read' },
+					{ href: '/dashboard/files', label: 'Files', icon: Folder, permission: 'files.read' },
+					{ href: '/dashboard/procedures', label: 'Procedures', icon: ClipboardList, permission: 'projects.read' },
+					{ href: '/dashboard/apps', label: 'Apps', icon: Package, permission: 'applications.read' },
+					{ href: '/dashboard/passwords', label: 'Passwords', icon: KeyRound, permission: 'passwords.read' },
+					{ href: '/dashboard/workspace', label: 'Workspace', icon: FolderArchive, permission: 'files.read' },
+					{ href: '/dashboard/events', label: 'Events', icon: Network, permission: 'events.read' },
+					{ href: '/dashboard/settings', label: 'Settings', icon: Settings, permission: 'admin.read' },
+				]
+			: [{ href: '/portal', label: 'List', icon: Menu }, ...items.map((item: any) => ({ href: item.href, label: item.label, icon: House, permission: 'client.read' }))];
 
 	const visibleItems = navItems.filter((item) => !item.permission || has(item.permission as any));
 

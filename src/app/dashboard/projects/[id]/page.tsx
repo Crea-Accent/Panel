@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { Cable, Check, ClipboardCheck, Code, File, FileText, Folder, ImageIcon, Save, Settings, Share, Sun } from 'lucide-react';
+import { Cable, Check, ClipboardCheck, Code, Eye, File, FileText, Folder, ImageIcon, Save, Settings, Share, Sun } from 'lucide-react';
 import { NotPermitted, usePermissions } from '@/providers/PermissionsProvider';
 import { useEffect, useState } from 'react';
 
@@ -9,6 +9,7 @@ import Button from '@/components/ui/Button';
 import Canbus from '@/components/projects/Canbus';
 import Documents from '@/components/projects/Document';
 import EmptyState from '@/components/ui/EmptyState';
+import Link from 'next/link';
 import Loading from '@/components/ui/Loading';
 import Metadata from '@/components/projects/Metadata';
 import Pictures from '@/components/projects/Picture';
@@ -138,6 +139,10 @@ export default function ProjectPage({ params }: { params: Promise<{ id: string }
 							disabled={shared || !isAllowed}>
 							<span className='hidden sm:inline'>{shared ? 'Copied' : 'Share'}</span>
 						</Button>
+
+						<Link href={`/portal/${encodeURIComponent(client)}`}>
+							<Button icon={<Eye />}>View</Button>
+						</Link>
 
 						<Selector
 							className='min-w-52'

@@ -3,12 +3,16 @@
 
 import { createContext, useContext, useEffect, useState } from 'react';
 
+import tinycolor from 'tinycolor2';
+import { useSession } from 'next-auth/react';
+
 type Theme = 'light' | 'dark' | 'system';
 
 type ThemeContextType = {
 	theme: Theme;
 	resolvedTheme: 'light' | 'dark';
 	setTheme: (theme: Theme) => void;
+	setAccent: (color: string) => void;
 };
 
 const ThemeContext = createContext<ThemeContextType | null>(null);
@@ -35,7 +39,19 @@ function applyTheme(theme: Theme) {
 	root.classList.toggle('dark', prefersDark === 'dark');
 }
 
-export function ThemeProvider({ children, sessionTheme }: { children: React.ReactNode; sessionTheme?: Theme }) {
+function applyAccent(color?: string) {
+	const accent = tinycolor(color || '#a4b795');
+
+	document.documentElement.style.setProperty('--accent', accent.toHexString());
+
+	document.documentElement.style.setProperty('--hover-accent', accent.clone().darken(8).toHexString());
+
+	document.documentElement.style.setProperty('--active-accent', accent.clone().setAlpha(0.15).toRgbString());
+}
+
+export function ThemeProvider({ children }: { children: React.ReactNode }) {
+	const { data: session } = useSession();
+
 	const [theme, setTheme] = useState<Theme>(() => {
 		if (typeof window === 'undefined') return 'system';
 
@@ -45,7 +61,7 @@ export function ThemeProvider({ children, sessionTheme }: { children: React.Reac
 			return stored;
 		}
 
-		return sessionTheme ?? 'system';
+		return session?.user?.theme ?? 'system';
 	});
 
 	const [resolvedTheme, setResolvedTheme] = useState<'light' | 'dark'>('light');
@@ -65,14 +81,14 @@ export function ThemeProvider({ children, sessionTheme }: { children: React.Reac
 
 	useEffect(() => {
 		(() => {
-			if (!sessionTheme) return;
+			if (!session?.user?.theme) return;
 
-			if (sessionTheme !== theme) {
-				localStorage.setItem('theme', sessionTheme);
-				setTheme(sessionTheme);
+			if (session?.user?.theme !== theme) {
+				localStorage.setItem('theme', session?.user?.theme);
+				setTheme(session?.user?.theme);
 			}
 		})();
-	}, [sessionTheme]);
+	}, [session?.user?.theme]);
 
 	/* ---------- USER CHANGE ---------- */
 
@@ -104,7 +120,37 @@ export function ThemeProvider({ children, sessionTheme }: { children: React.Reac
 		return () => media.removeEventListener('change', handler);
 	}, [theme]);
 
-	return <ThemeContext.Provider value={{ theme, resolvedTheme, setTheme: updateTheme }}>{children}</ThemeContext.Provider>;
+	useEffect(() => {
+		if (!session?.user?.companyId) return;
+
+		(async () => {
+			try {
+				const res = await fetch('/api/settings/companies');
+
+				const data = await res.json();
+
+				const company = data.companies?.find((c: any) => c.id === session.user.companyId);
+
+				if (!company) return;
+
+				applyAccent(session.user.preferences?.debugMode ? '#8b7cf6' : company.color);
+			} catch (err) {
+				console.error(err);
+			}
+		})();
+	}, [session?.user?.companyId]);
+
+	return (
+		<ThemeContext.Provider
+			value={{
+				theme,
+				resolvedTheme,
+				setTheme: updateTheme,
+				setAccent: applyAccent,
+			}}>
+			{children}
+		</ThemeContext.Provider>
+	);
 }
 
 export function useTheme() {

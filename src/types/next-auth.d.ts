@@ -5,6 +5,7 @@ import { JWT as DefaultJWT } from 'next-auth/jwt';
 export type Role = {
 	id: string;
 	name: string;
+	companyId: string;
 	defaultPermissions: string[];
 };
 
@@ -16,11 +17,13 @@ export type BaseUser = {
 	email: string;
 	passwordHash?: string;
 	roleId?: string;
+	companyId?: string;
 	permissions?: string[];
 	theme?: Theme;
 	projects?: string[];
 	preferences?: {
 		projectPrompts?: boolean;
+		debugMode?: boolean;
 		defaultView?: 'list' | 'grid';
 	};
 };
@@ -36,11 +39,13 @@ declare module 'next-auth/jwt' {
 	interface JWT extends DefaultJWT {
 		id: string;
 		roleId?: string;
+		companyId?: string;
 		permissions?: string[];
 		theme?: 'light' | 'dark' | 'system';
 		projects: string[];
 		preferences: {
 			projectPrompts?: boolean;
+			debugMode?: boolean;
 			defaultView?: 'list' | 'grid';
 		};
 	}

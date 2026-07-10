@@ -32,10 +32,10 @@ export default async function RootLayout({
 	const session = await getServerSession(authConfig);
 
 	return (
-		<html lang='en' className='h-full dark'>
+		<html lang='en' suppressHydrationWarning className='h-full dark'>
 			<body className='h-full antialiased font-sans selection:bg-(--accent) selection:text-white transition-colors duration-1000'>
 				<SessionProvider>
-					<ThemeProvider sessionTheme={session?.user?.theme}>
+					<ThemeProvider>
 						<PermissionsProvider>
 							<LocalProvider>
 								<ProjectPromptProvider>

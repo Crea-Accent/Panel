@@ -72,7 +72,7 @@ export default function SidePanel() {
 		<>
 			{/* Floating Button */}
 
-			<div className='fixed bottom-6 right-6 z-[9998]'>
+			<div className='fixed bottom-6 right-6 z-9998'>
 				<Button size='lg' onClick={() => setOpen((x) => !x)} icon={open ? <X size={18} /> : <Users size={18} />}>
 					{open ? null : online}
 				</Button>
@@ -83,7 +83,7 @@ export default function SidePanel() {
 			<AnimatePresence>
 				{open && (
 					<>
-						<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} className='fixed inset-0 z-[9997] bg-black/20 backdrop-blur-sm' />
+						<motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setOpen(false)} className='fixed inset-0 z-9997 bg-black/20 backdrop-blur-sm' />
 
 						<motion.aside
 							initial={{ x: 460 }}
@@ -94,7 +94,7 @@ export default function SidePanel() {
 								stiffness: 350,
 								damping: 32,
 							}}
-							className='fixed right-0 top-0 bottom-0 z-[9998] w-[420px] bg-(--background) border-l border-(--border)/10 shadow-2xl'>
+							className='fixed right-0 top-0 bottom-0 z-9998 w-105 bg-(--background) border-l border-(--border)/10 shadow-2xl'>
 							<div className='flex flex-col h-full'>
 								{/* Header */}
 
@@ -137,32 +137,36 @@ export default function SidePanel() {
 					flex
 					items-center
 					justify-center
-				'>
+				'
+												style={{
+													backgroundColor: `${user.company?.color}22`,
+													color: user.company?.color,
+												}}>
 												{user.name?.[0]?.toUpperCase()}
 											</div>
 
 											<div className='flex-1 min-w-0'>
 												<div className='font-medium truncate'>{user.name}</div>
 
-												<div className='text-sm text-(--text-muted) truncate'>
+												<div className='text-sm text-(--text-muted) truncate flex gap-2'>
 													{user.presence.status === 'offline'
 														? `Last seen ${lastSeen(user.presence.lastSeen)}`
 														: String(user.presence.project ?? user.presence.page ?? 'Online')
 																.split('/')
-																.map((p) => <span className='capitalize'>{p}</span>)}
+																.map((p, i) => (
+																	<span key={p + i} className='capitalize'>
+																		{decodeURIComponent(p)}
+																	</span>
+																))}
 												</div>
 											</div>
 
-											{user.presence.status === 'offline' ? (
-												<div className='text-xs text-(--text-muted)'>{lastSeen(user.presence.lastSeen)}</div>
-											) : (
-												<div
-													className='h-3 w-3 rounded-full'
-													style={{
-														background: user.presence.status === 'online' ? '#22c55e' : '#eab308',
-													}}
-												/>
-											)}
+											<div
+												className='h-3 w-3 rounded-full'
+												style={{
+													background: statusColor(user.presence.status),
+												}}
+											/>
 										</button>
 									))}
 								</div>

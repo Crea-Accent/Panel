@@ -1,10 +1,14 @@
 /** @format */
 'use client';
 
-import { AlertCircle, AlertTriangle, CheckCircle, HardDrive, Info, Loader2, RefreshCw, Save } from 'lucide-react';
+import { AlertCircle, AlertTriangle, CheckCircle, HardDrive, Info, Loader2, RefreshCw, Save, SlidersHorizontal } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import { motion } from 'framer-motion';
+import Button from '@/components/ui/Button';
+import Card from '@/components/ui/Card';
+import Input from '@/components/ui/Input';
+import Loading from '@/components/ui/Loading';
+import PageHeader from '@/components/ui/PageHeader';
 
 type VersionInfo = {
 	localVersion: string;
@@ -26,24 +30,25 @@ export default function GeneralSettings() {
 	const [filesSettings, setFilesSettings] = useState<FilesSettings>({
 		path: '',
 	});
+
 	const [savingPath, setSavingPath] = useState(false);
 
-	/* ---------------- VERSION ---------------- */
-
 	async function checkVersion() {
-		setLoading(true);
 		try {
-			const res = await fetch('/api/version', { cache: 'no-store' });
-			const data = await res.json();
-			setInfo(data);
+			const res = await fetch('/api/version', {
+				cache: 'no-store',
+			});
+
+			setInfo(await res.json());
 		} catch {
 			setInfo({
 				localVersion: '-',
 				remoteVersion: '-',
 				upToDate: false,
-				error: 'Failed to check version',
+				error: 'Unable to check for updates.',
 			});
 		}
+
 		setLoading(false);
 	}
 
@@ -53,16 +58,15 @@ export default function GeneralSettings() {
 
 		const source = new EventSource('/api/update');
 
-		source.onmessage = (event) => {
-			setLogs((prev) => [...prev, event.data]);
+		source.onmessage = ({ data }) => {
+			setLogs((prev) => [...prev, data]);
 
-			if (event.data.toLowerCase().includes('update complete')) {
+			if (data.toLowerCase().includes('update complete')) {
 				source.close();
+
 				setTimeout(() => {
-					// Appending '?v=timestamp' forces the browser and Cloudflare
-					// to ignore old cached HTML/CSS and request the raw, fresh build.
 					window.location.href = window.location.pathname + '?v=' + Date.now();
-				}, 4000);
+				}, 3000);
 			}
 		};
 
@@ -72,42 +76,41 @@ export default function GeneralSettings() {
 		};
 	}
 
-	function getMessageMeta(message: string) {
-		const lower = message.toLowerCase();
+	function messageStyle(message: string) {
+		const text = message.toLowerCase();
 
-		if (lower.includes('error')) {
+		if (text.includes('error'))
 			return {
 				icon: AlertCircle,
-				className: 'bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 border-red-200 dark:border-red-900/40',
+				color: 'text-red-500',
 			};
-		}
 
-		if (lower.includes('warning') || lower.includes('warn')) {
+		if (text.includes('warn'))
 			return {
 				icon: AlertTriangle,
-				className: 'bg-yellow-50 dark:bg-yellow-900/20 text-yellow-700 dark:text-yellow-400 border-yellow-200 dark:border-yellow-900/40',
+				color: 'text-yellow-500',
 			};
-		}
 
-		if (lower.includes('complete') || lower.includes('success')) {
+		if (text.includes('complete') || text.includes('success'))
 			return {
 				icon: CheckCircle,
-				className: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400 border-green-200 dark:border-green-900/40',
+				color: 'text-green-500',
 			};
-		}
 
 		return {
 			icon: Info,
-			className: 'bg-(--active-accent) dark:bg-(--accent)/20 text-(--accent) dark:text-(--accent) border-(--accent) dark:border-(--accent)/40',
+			color: 'text-(--accent)',
 		};
 	}
-
-	/* ---------------- FILES PATH ---------------- */
 
 	async function loadFilesSettings() {
 		const res = await fetch('/api/settings/files');
 		const data = await res.json();
-		setFilesSettings({ path: '', ...data });
+
+		setFilesSettings({
+			path: '',
+			...data,
+		});
 	}
 
 	async function saveFilesPath() {
@@ -115,123 +118,108 @@ export default function GeneralSettings() {
 
 		await fetch('/api/settings/files', {
 			method: 'POST',
-			headers: { 'Content-Type': 'application/json' },
+			headers: {
+				'Content-Type': 'application/json',
+			},
 			body: JSON.stringify(filesSettings),
 		});
 
-		setTimeout(() => setSavingPath(false), 600);
+		setSavingPath(false);
 	}
 
 	useEffect(() => {
-		(() => {
-			checkVersion();
-			loadFilesSettings();
-		})();
+		checkVersion();
+		loadFilesSettings();
 	}, []);
 
+	if (loading) {
+		return <Loading title='General' description='Loading system settings...' />;
+	}
+
 	return (
-		<div className='space-y-8'>
-			{/* Header */}
-			<div>
-				<h2 className='text-lg font-semibold text-gray-900 dark:text-zinc-100'>General</h2>
-				<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>System information, application updates and root configuration.</p>
-			</div>
+		<div className='space-y-6'>
+			<PageHeader icon={<SlidersHorizontal />} title='General' description='System information and global configuration.' />
 
-			{/* VERSION CARD */}
-			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-6'>
-				<div className='flex justify-between items-center'>
-					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Application Version</h3>
+			<Card className='p-6 space-y-6'>
+				<div className='flex items-center justify-between'>
+					<div>
+						<h3 className='font-semibold'>Application Version</h3>
+						<p className='text-sm text-(--text-muted)'>Check for updates and install the latest release.</p>
+					</div>
 
-					<button
-						onClick={checkVersion}
-						className='h-9 px-3 flex items-center gap-2 rounded-xl text-sm font-medium text-gray-600 dark:text-zinc-400 hover:bg-gray-100 dark:hover:bg-zinc-800 transition'>
-						<RefreshCw className='w-4 h-4' />
+					<Button variant='secondary' icon={<RefreshCw size={16} />} onClick={checkVersion}>
 						Refresh
-					</button>
+					</Button>
 				</div>
 
-				{loading ? (
-					<div className='flex items-center gap-2 text-sm text-gray-500 dark:text-zinc-400'>
-						<Loader2 className='w-4 h-4 animate-spin' />
-						Checking version…
-					</div>
-				) : info?.error ? (
-					<div className='text-sm text-red-600 dark:text-red-400'>{info.error}</div>
+				{info?.error ? (
+					<div className='text-red-500 text-sm'>{info.error}</div>
 				) : (
 					<>
-						<div className='text-sm space-y-1 text-gray-700 dark:text-zinc-400'>
+						<div className='grid grid-cols-2 gap-4'>
 							<div>
-								Current version: <span className='font-medium text-gray-900 dark:text-zinc-100'>{info?.localVersion}</span>
+								<div className='text-sm text-(--text-muted)'>Installed</div>
+
+								<div className='font-medium'>{info?.localVersion}</div>
 							</div>
+
 							<div>
-								Latest version: <span className='font-medium text-gray-900 dark:text-zinc-100'>{info?.remoteVersion}</span>
+								<div className='text-sm text-(--text-muted)'>Latest</div>
+
+								<div className='font-medium'>{info?.remoteVersion}</div>
 							</div>
 						</div>
 
 						{info?.upToDate ? (
-							<div className='flex items-center gap-2 text-green-600 dark:text-green-400 text-sm'>
-								<CheckCircle className='w-4 h-4' />
-								Application is up to date
+							<div className='flex items-center gap-2 text-green-500'>
+								<CheckCircle size={18} />
+								Application is up to date.
 							</div>
 						) : (
-							<div className='space-y-4'>
-								<div className='flex items-center gap-2 text-yellow-600 dark:text-yellow-400 text-sm'>
-									<AlertCircle className='w-4 h-4' />
-									Update available
+							<>
+								<div className='flex items-center gap-2 text-yellow-500'>
+									<AlertCircle size={18} />
+									Update available.
 								</div>
 
-								<motion.button
-									whileTap={{ scale: 0.97 }}
-									onClick={runUpdate}
-									disabled={updating}
-									className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium flex items-center gap-2 disabled:opacity-50 hover:bg-(--accent) transition'>
-									{updating ? (
-										<>
-											<Loader2 className='w-4 h-4 animate-spin' />
-											Updating…
-										</>
-									) : (
-										<>
-											<RefreshCw className='w-4 h-4' />
-											Update Now
-										</>
-									)}
-								</motion.button>
+								<Button icon={updating ? <Loader2 size={16} className='animate-spin' /> : <RefreshCw size={16} />} onClick={runUpdate} disabled={updating}>
+									{updating ? 'Updating...' : 'Install Update'}
+								</Button>
 
-								{updating && logs.length > 0 && (
-									<div className='space-y-2 max-h-56 overflow-y-auto'>
+								{logs.length > 0 && (
+									<Card className='p-4 space-y-2 bg-(--foreground)'>
 										{logs.map((log, i) => {
-											const meta = getMessageMeta(log);
+											const meta = messageStyle(log);
 											const Icon = meta.icon;
 
 											return (
-												<div key={i} className={`flex items-start gap-2 text-xs font-mono p-2 rounded-lg border ${meta.className}`}>
-													<Icon className='w-3.5 h-3.5 mt-[2px]' />
-													<span className='whitespace-pre-wrap break-words'>{log}</span>
+												<div key={i} className='flex gap-2 text-sm'>
+													<Icon size={16} className={meta.color} />
+
+													<span className='font-mono'>{log}</span>
 												</div>
 											);
 										})}
-									</div>
+									</Card>
 								)}
-							</div>
+							</>
 						)}
 					</>
 				)}
-			</div>
+			</Card>
 
-			{/* FILES ROOT PATH */}
-			<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl shadow-sm p-6 space-y-4'>
-				<div className='flex items-center gap-3'>
-					<div className='h-9 w-9 rounded-xl bg-(--active-accent) dark:bg-(--accent)/10 flex items-center justify-center'>
-						<HardDrive className='w-4 h-4 text-(--accent) dark:text-(--accent)' />
-					</div>
-					<h3 className='text-base font-medium text-gray-900 dark:text-zinc-100'>Files Root Path</h3>
+			<Card className='p-6 space-y-6'>
+				<div>
+					<h3 className='font-semibold'>Files Root</h3>
+
+					<p className='text-sm text-(--text-muted)'>Base directory used by the file explorer.</p>
 				</div>
 
-				<input
-					className='h-10 w-full rounded-xl border border-gray-200 dark:border-zinc-700 bg-white dark:bg-zinc-800 px-4 text-sm text-gray-900 dark:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-(--accent)/20 focus:border-(--accent) transition'
-					placeholder='D:\\Shared'
-					value={filesSettings.path || ''}
+				<Input
+					label='Root Folder'
+					icon={<HardDrive size={16} />}
+					placeholder='D:\Shared'
+					value={filesSettings.path ?? ''}
 					onChange={(e) =>
 						setFilesSettings({
 							...filesSettings,
@@ -240,18 +228,12 @@ export default function GeneralSettings() {
 					}
 				/>
 
-				<p className='text-xs text-gray-500 dark:text-zinc-500'>This directory is used as the root for the file explorer module.</p>
-
-				<div className='pt-2'>
-					<button
-						onClick={saveFilesPath}
-						className='h-10 px-4 rounded-xl bg-(--accent) text-white text-sm font-medium flex items-center gap-2 hover:bg-(--hover-accent) transition disabled:opacity-60'
-						disabled={savingPath}>
-						<Save className='w-4 h-4' />
-						{savingPath ? 'Saving…' : 'Save Path'}
-					</button>
+				<div className='flex justify-end'>
+					<Button icon={<Save size={16} />} onClick={saveFilesPath} loading={savingPath}>
+						Save Changes
+					</Button>
 				</div>
-			</div>
+			</Card>
 		</div>
 	);
 }

@@ -1,128 +1,96 @@
 /** @format */
 'use client';
 
-import { ChevronDown, ClipboardList, Folder, FolderArchive, Package, Settings, Shield, Users } from 'lucide-react';
+import { Boxes, BriefcaseBusiness, Building2, ClipboardList, FolderOpen, ShieldCheck, SlidersHorizontal, Users } from 'lucide-react';
 
+import { APIProvider } from '@vis.gl/react-google-maps';
 import AppsSettings from '@/components/settings/Apps';
+import CompaniesSettings from '@/components/settings/Companies';
 import GeneralSettings from '@/components/settings/General';
 import { NotPermitted } from '@/providers/PermissionsProvider';
 import ProceduresSettings from '@/components/settings/Procedures';
 import ProjectSettings from '@/components/settings/Projects';
 import RoleSettings from '@/components/settings/Roles';
+import Tabs from '@/components/ui/Tabs';
 import UserSettings from '@/components/settings/Users';
 import Workspace from '@/components/settings/Workspace';
 import { motion } from 'framer-motion';
 import { useState } from 'react';
 
-type Tab = 'general' | 'projects' | 'users' | 'roles' | 'apps' | 'workspace' | 'procedures';
+type Tab = 'general' | 'projects' | 'workspace' | 'procedures' | 'apps' | 'users' | 'roles' | 'companies';
 
 export default function SettingsPage() {
 	const [tab, setTab] = useState<Tab>('general');
 
-	const tabs = [
-		{ key: 'general', label: 'General', icon: Settings },
-		{ key: 'projects', label: 'Projects', icon: Folder },
-		{ key: 'workspace', label: 'Workspace', icon: FolderArchive },
-		{ key: 'procedures', label: 'Procedures', icon: ClipboardList },
-		{ key: 'apps', label: 'Apps', icon: Package },
-		{ key: 'users', label: 'Users', icon: Users },
-		{ key: 'roles', label: 'Roles', icon: Shield },
-	] as const;
-
 	return (
 		<NotPermitted permission='admin.read'>
-			<div className='space-y-6'>
-				{/* Header */}
-				<div>
-					<h1 className='text-2xl font-semibold text-gray-900 dark:text-zinc-100'>Settings</h1>
-					<p className='text-sm text-gray-500 dark:text-zinc-400 mt-1'>Manage project configuration and access control.</p>
+			<APIProvider apiKey={process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY!}>
+				<div className='space-y-6'>
+					<Tabs
+						value={tab}
+						onChange={setTab}
+						tabs={[
+							{
+								id: 'general',
+								label: 'General',
+								icon: <SlidersHorizontal size={16} />,
+							},
+							{
+								id: 'projects',
+								label: 'Projects',
+								icon: <FolderOpen size={16} />,
+							},
+							{
+								id: 'workspace',
+								label: 'Workspace',
+								icon: <BriefcaseBusiness size={16} />,
+							},
+							{
+								id: 'procedures',
+								label: 'Procedures',
+								icon: <ClipboardList size={16} />,
+							},
+							{
+								id: 'apps',
+								label: 'Apps',
+								icon: <Boxes size={16} />,
+							},
+							{
+								id: 'users',
+								label: 'Users',
+								icon: <Users size={16} />,
+							},
+							{
+								id: 'roles',
+								label: 'Roles',
+								icon: <ShieldCheck size={16} />,
+							},
+							{
+								id: 'companies',
+								label: 'Companies',
+								icon: <Building2 size={16} />,
+							},
+						]}
+					/>
+
+					<motion.div
+						key={tab}
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{
+							duration: 0.2,
+						}}>
+						{tab === 'general' && <GeneralSettings />}
+						{tab === 'projects' && <ProjectSettings />}
+						{tab === 'workspace' && <Workspace />}
+						{tab === 'procedures' && <ProceduresSettings />}
+						{tab === 'apps' && <AppsSettings />}
+						{tab === 'users' && <UserSettings />}
+						{tab === 'roles' && <RoleSettings />}
+						{tab === 'companies' && <CompaniesSettings />}
+					</motion.div>
 				</div>
-
-				{/* Mobile Select */}
-				<div className='sm:hidden w-full'>
-					<div className='relative'>
-						<select
-							value={tab}
-							onChange={(e) => setTab(e.target.value as Tab)}
-							className='
-							w-full h-10
-							appearance-none
-							bg-white dark:bg-zinc-900
-							border border-gray-200 dark:border-zinc-700
-							rounded-xl
-							px-4 pr-10
-							text-sm font-medium
-							text-gray-900 dark:text-zinc-100
-							focus:outline-none
-							focus:ring-2 focus:ring-(--accent)/20
-							focus:border-(--accent)
-							transition
-						'>
-							{tabs.map((t) => (
-								<option key={t.key} value={t.key}>
-									{t.label}
-								</option>
-							))}
-						</select>
-
-						<ChevronDown className='absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-zinc-500 pointer-events-none' strokeWidth={1.8} />
-					</div>
-				</div>
-
-				{/* Desktop Tabs */}
-				<div className='hidden sm:block'>
-					<div className='flex gap-1 bg-gray-100 dark:bg-zinc-800 p-1 rounded-2xl w-fit'>
-						{tabs.map((t) => {
-							const active = tab === t.key;
-							const Icon = t.icon;
-
-							return (
-								<button
-									key={t.key}
-									onClick={() => setTab(t.key)}
-									className={`
-									relative
-									h-10
-									px-4
-									rounded-xl
-									text-sm font-medium
-									flex items-center gap-2
-									transition-colors
-									${active ? 'text-gray-900 dark:text-zinc-100' : 'text-gray-500 dark:text-zinc-400 hover:text-gray-900 dark:hover:text-zinc-100'}
-								`}>
-									{active && (
-										<motion.div
-											layoutId='settings-tab'
-											className='absolute inset-0 bg-white dark:bg-zinc-900 rounded-xl shadow-sm'
-											transition={{
-												type: 'spring',
-												stiffness: 350,
-												damping: 30,
-											}}
-										/>
-									)}
-
-									<span className='relative z-10 flex items-center gap-2'>
-										<Icon className='w-4 h-4' strokeWidth={1.8} />
-										{t.label}
-									</span>
-								</button>
-							);
-						})}
-					</div>
-				</div>
-
-				{/* Content */}
-				<motion.div key={tab} initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.2 }}>
-					{tab === 'general' && <GeneralSettings />}
-					{tab === 'projects' && <ProjectSettings />}
-					{tab === 'users' && <UserSettings />}
-					{tab === 'roles' && <RoleSettings />}
-					{tab === 'apps' && <AppsSettings />}
-					{tab === 'workspace' && <Workspace />}
-					{tab === 'procedures' && <ProceduresSettings />}
-				</motion.div>
-			</div>
+			</APIProvider>
 		</NotPermitted>
 	);
 }

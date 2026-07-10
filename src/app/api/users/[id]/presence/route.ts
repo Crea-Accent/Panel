@@ -53,7 +53,6 @@ function loadPresences(): Presences {
 		return JSON.parse(fs.readFileSync(PRESENCES_PATH, 'utf8'));
 	} catch {
 		fs.writeFileSync(PRESENCES_PATH, '{}');
-		console.log('e');
 
 		return {};
 	}
@@ -64,9 +63,7 @@ function savePresences(presences: Presences) {
 
 	try {
 		fs.writeFileSync(PRESENCES_PATH, JSON.stringify(presences, null, 2));
-	} catch {
-		console.log('e');
-	}
+	} catch {}
 }
 
 // ---------- GET ----------

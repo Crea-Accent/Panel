@@ -1,14 +1,29 @@
 /** @format */
-
 'use client';
 
+import { Boxes, Building2, ClipboardList, FolderOpen, HardDrive, Package, Settings, Shield, Users } from 'lucide-react';
+
+import Card from '@/components/ui/Card';
 import { PERMISSIONS } from '@/lib/permissions';
-import { motion } from 'framer-motion';
+import Toggle from '@/components/ui/Toggle';
 
 type Props = {
 	value: string[];
 	onChange: (next: string[]) => void;
 	compareWith?: string[];
+};
+
+const icons: Record<string, React.ReactNode> = {
+	apps: <Package size={18} />,
+	companies: <Building2 size={18} />,
+	files: <HardDrive size={18} />,
+	general: <Settings size={18} />,
+	permissions: <Shield size={18} />,
+	procedures: <ClipboardList size={18} />,
+	projects: <FolderOpen size={18} />,
+	roles: <Shield size={18} />,
+	users: <Users size={18} />,
+	workspace: <Boxes size={18} />,
 };
 
 export default function PermissionMatrix({ value, onChange, compareWith }: Props) {
@@ -20,16 +35,20 @@ export default function PermissionMatrix({ value, onChange, compareWith }: Props
 
 	function toggle(domain: string, type: 'read' | 'write') {
 		const key = `${domain}.${type}`;
-		const exists = value.includes(key);
 
 		let next = [...value];
 
-		if (exists) {
+		if (next.includes(key)) {
 			next = next.filter((p) => p !== key);
+
+			// Removing read also removes write.
+			if (type === 'read') {
+				next = next.filter((p) => p !== `${domain}.write`);
+			}
 		} else {
 			next.push(key);
 
-			// write implies read
+			// Write implies read.
 			if (type === 'write' && !next.includes(`${domain}.read`)) {
 				next.push(`${domain}.read`);
 			}
@@ -38,59 +57,36 @@ export default function PermissionMatrix({ value, onChange, compareWith }: Props
 		onChange(next);
 	}
 
-	function isOverride(domain: string, type: 'read' | 'write') {
+	function override(domain: string, type: 'read' | 'write') {
 		if (!compareWith) return false;
 
-		const roleHas = compareWith.includes(`${domain}.${type}`);
-		const userHas = value.includes(`${domain}.${type}`);
-
-		return roleHas !== userHas;
+		return compareWith.includes(`${domain}.${type}`) !== value.includes(`${domain}.${type}`);
 	}
 
 	return (
-		<div className='bg-white dark:bg-zinc-900 border border-gray-200 dark:border-zinc-800 rounded-2xl overflow-hidden shadow-sm'>
-			{/* Header */}
-			<div className='grid grid-cols-3 bg-gray-50 dark:bg-zinc-800 text-xs font-medium text-gray-500 dark:text-zinc-500 uppercase tracking-wide px-6 py-4'>
-				<div>Permission</div>
-				<div className='text-center'>Read</div>
-				<div className='text-center'>Write</div>
-			</div>
-
-			{/* Rows */}
+		<div className='grid gap-4 md:grid-cols-2 xl:grid-cols-3'>
 			{domains.map((domain) => (
-				<motion.div key={domain} layout className='grid grid-cols-3 items-center px-6 py-4 border-t border-gray-100 dark:border-zinc-800 text-sm'>
-					<div className='capitalize font-medium text-gray-900 dark:text-zinc-100'>{domain}</div>
+				<Card key={domain} className='p-5 space-y-4'>
+					<div className='flex items-center gap-3'>
+						<div className='text-(--accent)'>{icons[domain] ?? <Shield size={18} />}</div>
 
-					{(['read', 'write'] as const).map((type) => {
-						const active = has(domain, type);
-						const override = isOverride(domain, type);
+						<div className='font-semibold capitalize'>{domain}</div>
+					</div>
 
-						return (
-							<div key={type} className='flex justify-center'>
-								<button
-									onClick={() => toggle(domain, type)}
-									className={`
-										relative w-11 h-6 rounded-full transition-colors duration-200
-										${active ? 'bg-(--accent)' : 'bg-gray-300 dark:bg-zinc-700'}
-										${override ? 'ring-2 ring-amber-400/60 ring-offset-2 ring-offset-white dark:ring-offset-zinc-900' : ''}
-									`}>
-									<motion.span
-										layout
-										transition={{
-											type: 'spring',
-											stiffness: 500,
-											damping: 30,
-										}}
-										className='absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white dark:bg-zinc-200 shadow-sm'
-										style={{
-											x: active ? 20 : 0,
-										}}
-									/>
-								</button>
+					<div className='space-y-3'>
+						{(['read', 'write'] as const).map((type) => (
+							<div key={type} className='flex items-center justify-between'>
+								<div className='flex items-center gap-2'>
+									<span className='text-sm'>{type === 'read' ? 'Read' : 'Write'}</span>
+
+									{override(domain, type) && <div className='h-2 w-2 rounded-full bg-yellow-400' title='Override' />}
+								</div>
+
+								<Toggle checked={has(domain, type)} onChange={() => toggle(domain, type)} />
 							</div>
-						);
-					})}
-				</motion.div>
+						))}
+					</div>
+				</Card>
 			))}
 		</div>
 	);

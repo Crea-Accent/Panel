@@ -106,9 +106,9 @@ export async function GET() {
 // ---------- POST (CREATE USER) ----------
 export async function POST(request: NextRequest) {
 	const body = await request.json();
-	const { name, email, password, roleId } = body || {};
+	const { name, email, password, roleId, companyId } = body || {};
 
-	if (!name || !email || !password || !roleId) {
+	if (!name || !email || !password || !roleId || !companyId) {
 		return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
 	}
 
@@ -132,6 +132,7 @@ export async function POST(request: NextRequest) {
 		email,
 		passwordHash,
 		roleId,
+		companyId,
 		permissions: [...role.defaultPermissions],
 		theme: 'system',
 		preferences: {
@@ -151,7 +152,7 @@ export async function POST(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
 	const body = await request.json();
 
-	const { id, name, email, roleId, password, permissions, theme, projects, preferences } = body || {};
+	const { id, name, email, companyId, roleId, password, permissions, theme, projects, preferences } = body || {};
 
 	if (!id) {
 		return NextResponse.json({ error: 'Missing user id' }, { status: 400 });
@@ -182,6 +183,10 @@ export async function PATCH(request: NextRequest) {
 	if (name) users[index].name = name;
 	if (email) users[index].email = email;
 
+	if (companyId) {
+		users[index].companyId = companyId;
+	}
+
 	if (roleId) {
 		const role = roles.find((r) => r.id === roleId);
 
@@ -190,6 +195,12 @@ export async function PATCH(request: NextRequest) {
 		}
 
 		users[index].roleId = roleId;
+
+		// Keep permissions in sync with the selected role
+		users[index].permissions = [...role.defaultPermissions];
+
+		// Ensure company matches the role
+		users[index].companyId = role.companyId;
 	}
 
 	if (Array.isArray(permissions)) {

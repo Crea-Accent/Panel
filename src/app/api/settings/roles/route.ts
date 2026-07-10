@@ -10,7 +10,11 @@ const ROLES_PATH = path.join(DATA_DIR, 'roles.json');
 
 type Role = {
 	id: string;
+
+	companyId: string;
+
 	name: string;
+
 	defaultPermissions: string[];
 };
 
@@ -35,25 +39,39 @@ function saveRoles(roles: Role[]) {
 }
 
 // GET
-export async function GET() {
-	return NextResponse.json({ roles: loadRoles() });
+export async function GET(request: NextRequest) {
+	const url = new URL(request.url);
+
+	const companyId = url.searchParams.get('companyId');
+
+	const roles = loadRoles();
+
+	if (!companyId) {
+		return NextResponse.json({ roles });
+	}
+
+	return NextResponse.json({
+		roles: roles.filter((role) => role.companyId === companyId),
+	});
 }
 
 // POST
 export async function POST(request: NextRequest) {
 	const body = await request.json();
-	const { name, defaultPermissions } = body || {};
+	const { companyId, name, defaultPermissions } = body || {};
 
-	if (!name) {
-		return NextResponse.json({ error: 'Missing role name' }, { status: 400 });
-	}
+	if (!companyId || !name) return NextResponse.json({ error: 'Missing role name' }, { status: 400 });
 
 	const roles = loadRoles();
 
 	const newRole: Role = {
 		id: `r_${Date.now()}`,
+
+		companyId,
+
 		name,
-		defaultPermissions: defaultPermissions || [],
+
+		defaultPermissions: defaultPermissions ?? [],
 	};
 
 	roles.push(newRole);
@@ -65,7 +83,7 @@ export async function POST(request: NextRequest) {
 // PATCH
 export async function PATCH(request: NextRequest) {
 	const body = await request.json();
-	const { id, name, defaultPermissions } = body || {};
+	const { id, companyId, name, defaultPermissions } = body || {};
 
 	if (!id) {
 		return NextResponse.json({ error: 'Missing role id' }, { status: 400 });
@@ -79,9 +97,9 @@ export async function PATCH(request: NextRequest) {
 	}
 
 	if (name) roles[index].name = name;
-	if (Array.isArray(defaultPermissions)) {
-		roles[index].defaultPermissions = defaultPermissions;
-	}
+	if (companyId) roles[index].companyId = companyId;
+
+	if (Array.isArray(defaultPermissions)) roles[index].defaultPermissions = defaultPermissions;
 
 	saveRoles(roles);
 
