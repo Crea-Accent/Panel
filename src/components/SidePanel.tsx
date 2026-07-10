@@ -145,7 +145,12 @@ export default function SidePanel() {
 												<div className='font-medium truncate'>{user.name}</div>
 
 												<div className='text-sm text-(--text-muted) truncate'>
-													{user.presence.status === 'offline' ? `Last seen ${lastSeen(user.presence.lastSeen)}` : (user.presence.project ?? user.presence.page ?? 'Online')}
+													{user.presence.status === 'offline'
+														? `Last seen ${lastSeen(user.presence.lastSeen)}`
+														: String(user.presence.project ?? user.presence.page ?? 'Online')
+																.split('/')
+																.map((p) => <span className='capitalize'>{p}</span>)
+																.join(' - ')}
 												</div>
 											</div>
 
