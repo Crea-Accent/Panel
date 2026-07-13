@@ -1,7 +1,7 @@
 /** @format */
 'use client';
 
-import { APIProvider, AdvancedMarker, ColorScheme, Map } from '@vis.gl/react-google-maps';
+import { APIProvider, AdvancedMarker, ColorScheme, Map, useMap } from '@vis.gl/react-google-maps';
 import { Clock, FolderKanban, MapPin, Search, TrendingUp } from 'lucide-react';
 import { ReactElement, useEffect, useMemo, useRef, useState } from 'react';
 
@@ -10,6 +10,7 @@ import Card from '@/components/ui/Card';
 import EnergyCard from '@/components/EnergyCard';
 import Input from '@/components/ui/Input';
 import Link from 'next/link';
+import { MarkerClusterer } from '@googlemaps/markerclusterer';
 import Modal from '@/components/ui/Modal';
 import { motion } from 'framer-motion';
 import { useSession } from 'next-auth/react';
@@ -39,6 +40,43 @@ type ProjectMapEntry = {
 
 	address: any;
 };
+
+function MarkerCluster({ children }: { children: (setMarkerRef: (marker: google.maps.marker.AdvancedMarkerElement | null, key: string) => void) => React.ReactNode }) {
+	const map = useMap();
+
+	const clusterer = useRef<MarkerClusterer | null>(null);
+
+	const [markers, setMarkers] = useState<Record<string, google.maps.marker.AdvancedMarkerElement>>({});
+
+	useEffect(() => {
+		if (!map || clusterer.current) return;
+
+		clusterer.current = new MarkerClusterer({ map });
+	}, [map]);
+
+	useEffect(() => {
+		if (!clusterer.current) return;
+
+		clusterer.current.clearMarkers();
+		clusterer.current.addMarkers(Object.values(markers));
+	}, [markers]);
+
+	const setMarkerRef = (marker: google.maps.marker.AdvancedMarkerElement | null, key: string) => {
+		setMarkers((prev) => {
+			const next = { ...prev };
+
+			if (marker) {
+				next[key] = marker;
+			} else {
+				delete next[key];
+			}
+
+			return next;
+		});
+	};
+
+	return <>{children(setMarkerRef)}</>;
+}
 
 export default function Home() {
 	const searchRef = useRef<HTMLInputElement | null>(null);
@@ -225,63 +263,68 @@ export default function Home() {
 								width: '100%',
 								height: '100%',
 							}}>
-							{mapProjects.map((project) => {
-								const isHighlighted = query.trim().length > 0 && filteredProjects.some((p) => p.name === project.name);
+							<MarkerCluster>
+								{(setMarkerRef) =>
+									mapProjects.map((project) => {
+										const isHighlighted = query.trim().length > 0 && filteredProjects.some((p) => p.name === project.name);
 
-								return (
-									<AdvancedMarker
-										key={project.name}
-										position={{
-											lat: project.lat,
-											lng: project.lng,
-										}}>
-										<div
-											onClick={() => setSelectedProject(project)}
-											className='relative cursor-pointer'
-											style={{
-												opacity: query.trim().length === 0 ? 1 : isHighlighted ? 1 : 0.2,
-											}}>
-											{/* Pulse */}
-											<div
-												className={isHighlighted ? 'absolute animate-ping' : 'absolute'}
-												style={{
-													width: isHighlighted ? 30 : 24,
-													height: isHighlighted ? 30 : 24,
-													left: -4,
-													top: -4,
-													background: project.color,
-													borderRadius: '999px',
-													opacity: query.trim().length === 0 ? 0.25 : isHighlighted ? 0.35 : 0,
-												}}
-											/>
-
-											{/* Pin */}
-											<div
-												className='flex items-center justify-center text-white text-[9px] font-bold select-none'
-												style={{
-													width: isHighlighted ? 30 : 24,
-													height: isHighlighted ? 30 : 24,
-													background: project.color,
-													borderRadius: '50% 50% 50% 0',
-													transform: 'rotate(-45deg)',
-													border: '2px solid white',
-													boxShadow: isHighlighted ? `0 0 20px ${project.color}, 0 4px 12px rgba(0,0,0,0.35)` : '0 4px 12px rgba(0,0,0,0.35)',
-													transition: 'all 0.2s ease',
+										return (
+											<AdvancedMarker
+												key={project.name}
+												ref={(marker) => setMarkerRef(marker, project.name)}
+												position={{
+													lat: project.lat,
+													lng: project.lng,
 												}}>
-												<span
+												<div
+													onClick={() => setSelectedProject(project)}
+													className='relative cursor-pointer'
 													style={{
-														transform: 'rotate(45deg)',
+														opacity: query.trim().length === 0 ? 1 : isHighlighted ? 1 : 0.2,
 													}}>
-													{project.name
-														.replace(/[^a-zA-Z0-9]/g, '')
-														.substring(0, 2)
-														.toUpperCase()}
-												</span>
-											</div>
-										</div>
-									</AdvancedMarker>
-								);
-							})}
+													{/* Pulse */}
+													<div
+														className={isHighlighted ? 'absolute animate-ping' : 'absolute'}
+														style={{
+															width: isHighlighted ? 30 : 24,
+															height: isHighlighted ? 30 : 24,
+															left: -4,
+															top: -4,
+															background: project.color,
+															borderRadius: '999px',
+															opacity: query.trim().length === 0 ? 0.25 : isHighlighted ? 0.35 : 0,
+														}}
+													/>
+
+													{/* Pin */}
+													<div
+														className='flex items-center justify-center text-white text-[9px] font-bold select-none'
+														style={{
+															width: isHighlighted ? 30 : 24,
+															height: isHighlighted ? 30 : 24,
+															background: project.color,
+															borderRadius: '50% 50% 50% 0',
+															transform: 'rotate(-45deg)',
+															border: '2px solid white',
+															boxShadow: isHighlighted ? `0 0 20px ${project.color}, 0 4px 12px rgba(0,0,0,0.35)` : '0 4px 12px rgba(0,0,0,0.35)',
+															transition: 'all 0.2s ease',
+														}}>
+														<span
+															style={{
+																transform: 'rotate(45deg)',
+															}}>
+															{project.name
+																.replace(/[^a-zA-Z0-9]/g, '')
+																.substring(0, 2)
+																.toUpperCase()}
+														</span>
+													</div>
+												</div>
+											</AdvancedMarker>
+										);
+									})
+								}
+							</MarkerCluster>
 						</Map>
 					</APIProvider>
 				</div>
